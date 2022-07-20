@@ -179,7 +179,6 @@ __global__ void xzPlaneForward(const int* sizeD, const int* sizeV, float *devSin
 
     const int coord[4] = {x, y, z, n};
     // printf("%d %d %d\n", x,y,z);
-
     forwardProj(coord, sizeD, sizeV, devSino, devVoxel, *geom);
 }
 
