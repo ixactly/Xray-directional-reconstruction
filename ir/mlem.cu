@@ -178,7 +178,7 @@ __global__ void xzPlaneForward(const int* sizeD, const int* sizeV, float *devSin
     if (x >= sizeV[0] || z >= sizeV[2]) return;
 
     const int coord[4] = {x, y, z, n};
-    printf("%d %d %d\n", x,y,z);
+    // printf("%d %d %d\n", x,y,z);
 
     forwardProj(coord, sizeD, sizeV, devSino, devVoxel, *geom);
 }
