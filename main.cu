@@ -15,8 +15,8 @@ int main() {
     // ground truth
     Volume<float> ct(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     GeometryCUDA geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE);
-    sinogram.load("../volume_bin/yukiphantom_float_1024x1024x1000.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-    ct.load("../volume_bin/yuki_recon2-128x128x128.raw", NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    // sinogram.load("../volume_bin/yukiphantom_float_1024x1024x1000.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+    // ct.load("../volume_bin/yuki_recon2-128x128x128.raw", NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
     for (int i = NUM_VOXEL / 3; i < NUM_VOXEL * 2 / 3 + 1; i++) {
         for (int j = NUM_VOXEL / 3; j < NUM_VOXEL * 2 / 3 + 1; j++) {
@@ -31,7 +31,6 @@ int main() {
     start = std::chrono::system_clock::now();
 
     // main function
-
     // mlem.forwardproj(sinogram, ctGT, geom, Rotate::CCW);
     bool rotate = true;
     reconstruct(sinogram, ct, geom, 1, 50, rotate);

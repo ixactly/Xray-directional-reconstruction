@@ -6,15 +6,16 @@
 #include <random>
 
 template <typename T>
-__device__ int sign(T val) {
+__device__ __host__ int sign(T val) {
     return (val > T(0)) - (val < T(0));
 }
 
-__device__ void forwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], float *devSino, const float* devVoxel, const GeometryCUDA& geom) {
+__device__ __host__ void forwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], float *devSino, const float* devVoxel, const GeometryCUDA& geom) {
 
     // sourceとvoxel座標間の関係からdetのu, vを算出
     // detectorの中心 と 再構成領域の中心 と 光源 のz座標は一致していると仮定
     const int n = coord[3];
+    const int x = coord[0], y = coord[1], z = coord[2];
     const float theta = 2.0f * M_PI * n / sizeD[2];
 
     float offset[3] = {0.0, 0.0, 0.0};
@@ -23,23 +24,22 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
     // Source to voxel center
     float src2cent[3] = {-vecSod[0], -vecSod[1], -vecSod[2]};
     // Source to voxel
-    float src2voxel[3] = {(2.0f * coord[0] - sizeV[0] + 1) * 0.5f * geom.voxSize + src2cent[0],
-                          (2.0f * coord[1] - sizeV[1] + 1) * 0.5f * geom.voxSize + src2cent[1],
-                          (2.0f * coord[2] - sizeV[2] + 1) * 0.5f * geom.voxSize + src2cent[2]};
+    float src2voxel[3] = {(2.0f * (float)coord[0] - (float)sizeV[0] + 1) * 0.5f * geom.voxSize + src2cent[0],
+                          (2.0f * (float)coord[1] - (float)sizeV[1] + 1) * 0.5f * geom.voxSize + src2cent[1],
+                          (2.0f * (float)coord[2] - (float)sizeV[2] + 1) * 0.5f * geom.voxSize + src2cent[2]};
 
-    const float beta = acos((src2cent[0] * src2voxel[0] + src2cent[1] * src2voxel[1]) /
+    const double beta = acos((src2cent[0] * src2voxel[0] + src2cent[1] * src2voxel[1]) /
                             (sqrt(src2cent[0] * src2cent[0] + src2cent[1] * src2cent[1]) *
                              sqrt(src2voxel[0] * src2voxel[0] + src2voxel[1] * src2voxel[1])));
-    const float gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
-
+    const double gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
     const int signU = sign(src2voxel[0] * src2cent[1] - src2voxel[1] * src2cent[0]);
 
     // src2voxel x src2cent
     // 光線がhitするdetector平面座標の算出(detectorSizeで除算して、正規化済み)
-    float u = tanf(signU * beta) * geom.sdd / geom.detSize + sizeD[0] * 0.5f;
-    float v = tanf(gamma) * geom.sdd / cosf(beta) / geom.detSize + sizeD[1] * 0.5f; // normalization
+    float u = tanf(signU * beta) * geom.sdd / geom.detSize + (float)sizeD[0] * 0.5f;
+    float v = tanf(gamma) * geom.sdd / cosf(beta) / geom.detSize + (float)sizeD[1] * 0.5f; // normalization
 
-    if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
+    if (!(0.5 < u && u < (float)sizeD[0] - 0.5 && 0.5 < v && v < (float)sizeD[1] - 0.5))
         return;
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
@@ -49,11 +49,17 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
             (1.0f - (u_tmp - intU)) * (1.0f - (v_tmp - intV));
 
     const unsigned int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
-
+    /*
     atomicAdd(&devSino[intU + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n], c1 * devVoxel[idxVoxel]);
     atomicAdd(&devSino[(intU+1) + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n], c2 * devVoxel[idxVoxel]);
     atomicAdd(&devSino[(intU+1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * devVoxel[idxVoxel]);
     atomicAdd(&devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * devVoxel[idxVoxel]);
+    */
+
+    devSino[intU + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n] += c1 * devVoxel[idxVoxel];
+    devSino[(intU+1) + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n] += c2 * devVoxel[idxVoxel];
+    devSino[(intU+1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] += c3 * devVoxel[idxVoxel];
+    devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] += c4 * devVoxel[idxVoxel];
 }
 
 __global__ void printKernel() {
@@ -127,25 +133,34 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
     // progressbar pbar(epoch * nProj);
 
     // main routine
-
     for (int ep = 0; ep < epoch; ep++) {
         for (int &sub: subsetOrder) {
 
             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                 // pbar.update();
                 int n = (sub + batch * subOrder) % nProj;
+                /*
                 for (int y = 0; y < sizeV[1]; y++) {
                     xzPlaneForward<<<grid, block>>>(devD, devV, devSino, devVoxel, devGeom, y, n);
                     // voxelOne<<<grid, block>>>(devD, devV, devSino, devVoxel, devGeom, y, n);
                     // printKernel<<<grid, block>>>();
                     cudaDeviceSynchronize();
                 }
+                 */
+                for (int x = 0; x < sizeV[0]; x++) {
+                    for (int y = 0; y < sizeV[1]; y++) {
+                        for (int z = 0; z < sizeV[2]; z++) {
+                            const int coord[4] = {z, y, x, 0};
+                            forwardProj(coord, sizeD, sizeV, sinogram.getPtr(), voxel.getPtr(), geom);
+                        }
+                    }
+                }
             }
         }
     }
 
-    cudaMemcpy(voxel.getPtr(), devVoxel, sizeof(float) * sizeV[0] * sizeV[1] * sizeV[2], cudaMemcpyDeviceToHost);
-    cudaMemcpy(sinogram.getPtr(), devSino, sizeof(float) * sizeD[0] * sizeD[1] * sizeD[2], cudaMemcpyDeviceToHost);
+    // cudaMemcpy(voxel.getPtr(), devVoxel, sizeof(float) * sizeV[0] * sizeV[1] * sizeV[2], cudaMemcpyDeviceToHost);
+    // cudaMemcpy(sinogram.getPtr(), devSino, sizeof(float) * sizeD[0] * sizeD[1] * sizeD[2], cudaMemcpyDeviceToHost);
 
     cudaFree(devSino);
     cudaFree(devVoxel);
