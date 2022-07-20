@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
-project(cuda_example CUDA)
+project(3dReconGPU CUDA)
 
 set(CMAKE_CUDA_STANDARD 17)
 
-add_executable(cuda_example main.cu)
+add_executable(3dReconGPU main.cu ir/Volume.h ir/Params.h ir/mlem.cu ir/Geometry.h ir/mlem.cuh)
 
-set_target_properties(cuda_example PROPERTIES
+set_target_properties(3dReconGPU PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)

@@ -2,68 +2,57 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <random>
+#include <chrono>
+#include "ir/Volume.h"
+#include "ir/Params.h"
+#include "ir/Geometry.h"
+#include "ir/mlem.cuh"
 
-inline constexpr int n = 16;
-
-__global__ void d_multiply(const int* d_A, const int* d_B, int* d_C, const int sizeX) {
-    const unsigned int x = blockDim.x * blockIdx.x + threadIdx.x;
-    const unsigned int y = blockDim.y * blockIdx.y + threadIdx.y;
-    if (x >= n || y >= n) {
-        return;
-    }
-
-    int tmp = 0;
-    for (int i = 0; i < sizeX; i++) {
-        tmp += d_A[sizeX * y + i] * d_B[sizeX * i + x];
-    }
-    d_C[sizeX * y + x] = tmp;
-}
 
 int main() {
 
-    size_t nbytes = n * n * sizeof(int);
+    Volume<float> sinogram(NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+    // ground truth
+    Volume<float> ct(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    GeometryCUDA geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE);
+    sinogram.load("../volume_bin/yukiphantom_float_1024x1024x1000.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+    ct.load("../volume_bin/yuki_recon2-128x128x128.raw", NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
-    std::random_device rnd;
-    std::mt19937 mt(rnd());            // メルセンヌ・ツイスタの32ビット版、引数は初期シード
-    //std::mt19937 mt((int)time(0));        // メルセンヌ・ツイスタの32ビット版、引数は初期シード
-    std::uniform_int_distribution<> rand(0, 3);
-
-    int h_A[n*n];
-    int h_B[n*n];
-    int h_C[n*n];
-
-    for (auto &e : h_A)
-        e = rand(mt);
-    for (auto &e : h_B)
-        e = rand(mt);
-
-    int *d_A, *d_B, *d_C;
-
-    cudaMalloc(&d_A, nbytes);
-    cudaMalloc(&d_B, nbytes);
-    cudaMalloc(&d_C, nbytes);
-
-    cudaMemcpy(d_A, h_A, nbytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, h_B, nbytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_C, h_C, nbytes, cudaMemcpyHostToDevice);
-
-    const int blockSize = 16;
-    dim3 grid((n + blockSize - 1) / blockSize, (n + blockSize - 1) / blockSize, 1);
-    dim3 block(blockSize, blockSize, 1);
-
-    d_multiply<<<grid, block>>>(d_A, d_B, d_C, n);
-
-    cudaMemcpy(h_A, d_A, nbytes,cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_B, d_B, nbytes,cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_C, d_C, nbytes,cudaMemcpyDeviceToHost);
-
-    for (auto& e : h_C) {
-        std::cout << e << " ";
+    for (int i = NUM_VOXEL / 3; i < NUM_VOXEL * 2 / 3 + 1; i++) {
+        for (int j = NUM_VOXEL / 3; j < NUM_VOXEL * 2 / 3 + 1; j++) {
+            for (int k = NUM_VOXEL / 3; k < NUM_VOXEL * 2 / 3 + 1; k++) {
+                ct(i, j, k) = 1.0;
+            }
+        }
     }
 
-    cudaFree(d_A);
-    cudaFree(d_B);
-    cudaFree(d_C);
+    // measure clock
+    std::chrono::system_clock::time_point start, end;
+    start = std::chrono::system_clock::now();
+
+    // main function
+
+    // mlem.forwardproj(sinogram, ctGT, geom, Rotate::CCW);
+    bool rotate = true;
+    reconstruct(sinogram, ct, geom, 1, 50, rotate);
+
+    end = std::chrono::system_clock::now();
+    double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
+                                      (1000.0 * 1000.0));
+    std::cout << "\n time: " << time << " (s)" << std::endl;
+
+
+    std::string savefilePath =
+            "../volume_bin/cube_phantom_cuda-" + std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
+            std::to_string(NUM_PROJ) + ".raw";
+    sinogram.save(savefilePath);
+
+    /*
+    std::string savefilePath =
+            "../volume_bin/tmp_cuda-" + std::to_string(NUM_VOXEL) + "x" +
+            std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+    */
+    // ct.save(savefilePath);
 
     return 0;
 }
