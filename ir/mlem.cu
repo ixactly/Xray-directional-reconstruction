@@ -4,6 +4,7 @@
 #include "Geometry.h"
 #include "mlem.cuh"
 #include <random>
+#include "Pbar.h"
 
 template <typename T>
 __device__ __host__ int sign(T val) {
@@ -112,7 +113,6 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
     devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] += c4 * devVoxel[idxVoxel];
     */
 }
-
 __device__ void backwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], const float *devSino, float* devVoxel, const GeometryCUDA& geom) {
 
     // sourceとvoxel座標間の関係からdetのu, vを算出
@@ -178,8 +178,9 @@ __global__ void xzPlaneForward(const int* sizeD, const int* sizeV, float *devSin
     if (x >= sizeV[0] || z >= sizeV[2]) return;
 
     const int coord[4] = {x, y, z, n};
+    printf("%d %d %d\n", x,y,z);
+
     forwardProj(coord, sizeD, sizeV, devSino, devVoxel, *geom);
-    // printf("pass\n");
 }
 
 __global__ void xzPlaneBackward(const int* sizeD, const int* sizeV, const float *devSino, float *devVoxel, GeometryCUDA *geom,
@@ -255,7 +256,7 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
     std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
 
     // progress bar
-    // progressbar pbar(epoch * nProj);
+    progressbar pbar(epoch * nProj);
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
@@ -263,38 +264,39 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
         for (int &sub: subsetOrder) {
             // forward
             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                // pbar.update();
+                pbar.update();
                 int n = (sub + batch * subOrder) % nProj;
+
+                // forward
                 for (int y = 0; y < sizeV[1]; y++) {
-                    xzPlaneForward<<<gridV, blockV>>>(devD, devV, devSino, devVoxel, devGeom, y, n);
-                    // voxelOne<<<grid, block>>>(devD, devV, devSino, devVoxel, devGeom, y, n);
-                    // printKernel<<<grid, block>>>();
+                    xzPlaneForward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
-            }
-            // ratio
-            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                int n = (sub + batch * subOrder) % nProj;
+                // ratio
+                /*
                 projRatio<<<gridD, blockD>>>(devD, devProj, devSino, n);
                 cudaDeviceSynchronize();
-            }
+                 */
 
-            // backward
-            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                int n = (sub + batch * subOrder) % nProj;
+                // backward
+                /*
                 for (int y = 0; y < sizeV[1]; y++) {
-                    xzPlaneBackward<<<gridV, blockV>>>(devD, devV, devSino, devVoxel, devGeom, y, n);
+                    xzPlaneBackward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
+                */
             }
         }
     }
 
     cudaMemcpy(voxel.getPtr(), devVoxel, sizeof(float) * sizeV[0] * sizeV[1] * sizeV[2], cudaMemcpyDeviceToHost);
+    cudaMemcpy(sinogram.getPtr(), devProj, sizeof(float) * sizeD[0] * sizeD[1] * sizeD[2], cudaMemcpyDeviceToHost);
 
     cudaFree(devSino);
     cudaFree(devVoxel);
     cudaFree(devGeom);
+    cudaFree(devProj);
+
     cudaFree(devV);
     cudaFree(devD);
 }
