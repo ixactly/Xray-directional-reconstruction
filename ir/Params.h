@@ -30,13 +30,13 @@ inline constexpr int NUM_VOXEL = 1344;
 inline constexpr double SRC_OBJ_DISTANCE = 500.0;
 inline constexpr double SRC_DETECT_DISTANCE = 1000.0;
 
-inline constexpr int NUM_PROJ = 100;
+inline constexpr int NUM_PROJ = 500;
 
-inline constexpr int NUM_DETECT_U = 100;
-inline constexpr int NUM_DETECT_V = 100;
+inline constexpr int NUM_DETECT_U = 500;
+inline constexpr int NUM_DETECT_V = 500;
 
 inline constexpr double DETECTOR_SIZE = 0.1;
 
-inline constexpr int NUM_VOXEL = 100;
+inline constexpr int NUM_VOXEL = 500;
 
 #endif //CUDA_EXAMPLE_PARAMS_H

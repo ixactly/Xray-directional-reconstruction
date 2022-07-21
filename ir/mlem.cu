@@ -271,16 +271,16 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
                     xzPlaneForward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
+
                 // ratio
                 projRatio<<<gridD, blockD>>>(devD, devProj, devSino, n);
                 cudaDeviceSynchronize();
-                /*
+
                 // backward
                 for (int y = 0; y < sizeV[1]; y++) {
                     xzPlaneBackward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
-                 */
             }
         }
     }
