@@ -15,7 +15,6 @@ inline constexpr int NUM_DETECT_V = 1024;
 inline constexpr double DETECTOR_SIZE = 0.4; // 1024 / 256
 inline constexpr int NUM_VOXEL = 1024; // 1024
 */
-
 // params on cfrp
 /*
 inline constexpr double SRC_OBJ_DISTANCE = 1069.0;

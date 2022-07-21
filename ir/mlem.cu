@@ -196,9 +196,8 @@ __global__ void projRatio(const int sizeD[3], float* devProj, const float* devSi
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
 
-    devProj[u + sizeD[0] * v + sizeD[0] * sizeD[1] * n] = devSino[u + sizeD[0] * v + sizeD[0] * sizeD[1] * n] / (devProj[u + sizeD[0] * v + sizeD[0] * sizeD[1] * n] + 1e-8);
+    devProj[u + sizeD[0] * v + sizeD[0] * sizeD[1] * n] = devSino[u + sizeD[0] * v + sizeD[0] * sizeD[1] * n] / (devProj[u + sizeD[0] * v + sizeD[0] * sizeD[1] * n] + 1e-7);
 }
-
 
 __global__ void voxelOne(const int* sizeD, const int* sizeV, float *devSino, float *devVoxel, GeometryCUDA *geom,
                                const int y, const int n) {
@@ -244,6 +243,7 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
     dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
     dim3 blockD(blockSize, blockSize, 1);
     dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+
     // forward, divide, backward proj
     int subsetSize = (nProj + batch - 1) / batch;
     std::vector<int> subsetOrder(batch);
@@ -272,18 +272,15 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
                     cudaDeviceSynchronize();
                 }
                 // ratio
-                /*
                 projRatio<<<gridD, blockD>>>(devD, devProj, devSino, n);
                 cudaDeviceSynchronize();
-                 */
-
-                // backward
                 /*
+                // backward
                 for (int y = 0; y < sizeV[1]; y++) {
                     xzPlaneBackward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
-                */
+                 */
             }
         }
     }
