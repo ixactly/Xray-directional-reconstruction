@@ -15,18 +15,8 @@ inline constexpr int NUM_DETECT_V = 1024;
 inline constexpr double DETECTOR_SIZE = 0.4; // 1024 / 256
 inline constexpr int NUM_VOXEL = 1024; // 1024
 */
-// params on cfrp
+
 /*
-inline constexpr double SRC_OBJ_DISTANCE = 1069.0;
-inline constexpr double SRC_DETECT_DISTANCE = 1450.0;
-inline constexpr int NUM_PROJ = 360;
-inline constexpr int NUM_DETECT_U = 1344;
-inline constexpr int NUM_DETECT_V = 1;
-inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0;
-inline constexpr int NUM_VOXEL = 1344;
-*/
-
-
 inline constexpr double SRC_OBJ_DISTANCE = 500.0;
 inline constexpr double SRC_DETECT_DISTANCE = 1000.0;
 
@@ -36,7 +26,19 @@ inline constexpr int NUM_DETECT_U = 500;
 inline constexpr int NUM_DETECT_V = 500;
 
 inline constexpr double DETECTOR_SIZE = 0.1;
-
 inline constexpr int NUM_VOXEL = 500;
+*/
+
+// cfrp
+inline constexpr float SRC_OBJ_DISTANCE = 1069.0;
+inline constexpr float SRC_DETECT_DISTANCE = 1450.0;
+
+inline constexpr int NUM_PROJ = 360;
+
+inline constexpr int NUM_DETECT_U = 1344;
+inline constexpr int NUM_DETECT_V = 1344;
+
+inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0 / 1.5;
+inline constexpr int NUM_VOXEL = 896;
 
 #endif //CUDA_EXAMPLE_PARAMS_H

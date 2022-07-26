@@ -281,6 +281,7 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
                     xzPlaneBackward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
+
             }
         }
     }
