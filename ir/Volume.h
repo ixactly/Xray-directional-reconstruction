@@ -5,13 +5,13 @@
 #ifndef CUDA_EXAMPLE_VOLUME_H
 #define CUDA_EXAMPLE_VOLUME_H
 
-#include "../../../../../usr/include/c++/9/memory"
-#include "../../../../../usr/include/c++/9/array"
-#include "../../../../../usr/include/c++/9/string"
-#include "../../../../../usr/include/c++/9/fstream"
-#include "../../../../../usr/include/c++/9/functional"
-#include "iostream"
-#include "cstring"
+#include <memory>
+#include <array>
+#include <string>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <cstring>
 
 template<typename T>
 class Volume {

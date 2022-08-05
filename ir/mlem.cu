@@ -5,6 +5,7 @@
 #include "mlem.cuh"
 #include <random>
 #include "Pbar.h"
+#include "Params.h"
 
 template <typename T>
 __device__ __host__ int sign(T val) {
@@ -18,7 +19,7 @@ __host__ void forwardProjhost(const int coord[4], const int sizeD[3], const int 
     const int n = coord[3];
     const double theta = 2.0 * M_PI * n / sizeD[2];
 
-    double offset[3] = {0.0, 0.0, 0.0};
+    double offset[3] = {INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]};
     double vecSod[3] = {sin(theta) * geom.sod + offset[0], -cos(theta) * geom.sod + offset[1], 0};
 
     // Source to voxel center
@@ -82,13 +83,14 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
     const double beta = acos((src2cent[0] * src2voxel[0] + src2cent[1] * src2voxel[1]) /
                              (sqrt(src2cent[0] * src2cent[0] + src2cent[1] * src2cent[1]) *
                               sqrt(src2voxel[0] * src2voxel[0] + src2voxel[1] * src2voxel[1])));
-    const double gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
+    // const double gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
     const int signU = sign(src2voxel[0] * src2cent[1] - src2voxel[1] * src2cent[0]);
 
     // src2voxel x src2cent
     // 光線がhitするdetector平面座標の算出(detectorSizeで除算して、正規化済み)
     double u = tan(signU * beta) * geom.sdd / geom.detSize + (float)sizeD[0] * 0.5;
-    double v = tan(gamma) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
+    // double v = tan(gamma) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
+    double v = (src2voxel[2] / sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1])) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
 
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
@@ -133,13 +135,13 @@ __device__ void backwardProj(const int coord[4], const int sizeD[3], const int s
     const double beta = acos((src2cent[0] * src2voxel[0] + src2cent[1] * src2voxel[1]) /
                              (sqrt(src2cent[0] * src2cent[0] + src2cent[1] * src2cent[1]) *
                               sqrt(src2voxel[0] * src2voxel[0] + src2voxel[1] * src2voxel[1])));
-    const double gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
+    // const double gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
     const int signU = sign(src2voxel[0] * src2cent[1] - src2voxel[1] * src2cent[0]);
 
     // src2voxel x src2cent
     // 光線がhitするdetector平面座標の算出(detectorSizeで除算して、正規化済み)
     double u = tan(signU * beta) * geom.sdd / geom.detSize + (float)sizeD[0] * 0.5;
-    double v = tan(gamma) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
+    double v = (src2voxel[2] / sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1])) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
 
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
@@ -255,7 +257,7 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
     std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
 
     // progress bar
-    progressbar pbar(epoch * nProj);
+    progressbar pbar(epoch * subsetSize * batch);
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
@@ -281,7 +283,6 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
                     xzPlaneBackward<<<gridV, blockV>>>(devD, devV, devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
-
             }
         }
     }

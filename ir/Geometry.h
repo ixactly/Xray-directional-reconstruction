@@ -8,15 +8,15 @@
 class GeometryCUDA {
 
 public:
-    GeometryCUDA(float sdd, float sod, float detSize) : sdd(sdd), sod(sod), detSize(detSize) {
+    GeometryCUDA(double sdd, double sod, double detSize) : sdd(sdd), sod(sod), detSize(detSize) {
         voxSize = sod * detSize / sdd;
     }
 
-    float sdd; // Object-Detector Distance
-    float sod; // Source-Object Distance
+    double sdd; // Object-Detector Distance
+    double sod; // Source-Object Distance
 
-    float voxSize; // voxel size
-    float detSize; // detector size
+    double voxSize; // voxel size
+    double detSize; // detector size
 
 };
 

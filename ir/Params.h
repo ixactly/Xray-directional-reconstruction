@@ -27,6 +27,9 @@ inline constexpr int NUM_DETECT_V = 500;
 
 inline constexpr double DETECTOR_SIZE = 0.1;
 inline constexpr int NUM_VOXEL = 500;
+
+inline constexpr double INIT_OFFSET[3] = {0.0, 0.0, 0.0};
+
 */
 
 // cfrp
@@ -35,10 +38,12 @@ inline constexpr float SRC_DETECT_DISTANCE = 1450.0;
 
 inline constexpr int NUM_PROJ = 360;
 
-inline constexpr int NUM_DETECT_U = 1344;
-inline constexpr int NUM_DETECT_V = 1344;
+inline constexpr int NUM_DETECT_U = 1000;
+inline constexpr int NUM_DETECT_V = 1000;
 
-inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0 / 1.5;
-inline constexpr int NUM_VOXEL = 896;
+inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0;
+inline constexpr int NUM_VOXEL = 1000;
+
+inline constexpr double INIT_OFFSET[3] = {-1.98, 0.0, 0.0};
 
 #endif //CUDA_EXAMPLE_PARAMS_H
