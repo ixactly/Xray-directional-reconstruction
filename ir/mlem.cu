@@ -70,7 +70,7 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
     const int n = coord[3];
     const double theta = 2.0 * M_PI * n / sizeD[2];
 
-    double offset[3] = {0.0, 0.0, 0.0};
+    double offset[3] = {INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]};
     double vecSod[3] = {sin(theta) * geom.sod + offset[0], -cos(theta) * geom.sod + offset[1], 0};
 
     // Source to voxel center
@@ -115,6 +115,65 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
     devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] += c4 * devVoxel[idxVoxel];
     */
 }
+
+__device__ void forwardProjSC(const int coord[4], const int sizeD[3], const int sizeV[3], float devSino[], const float devVoxel[], const GeometryCUDA& geom, BasisVector base[]) {
+
+    // sourceとvoxel座標間の関係からdetのu, vを算出
+    // detectorの中心 と 再構成領域の中心 と 光源 のz座標は一致していると仮定
+    const int n = coord[3];
+
+    const double theta = 2.0 * M_PI * n / sizeD[2];
+
+    double offset[3] = {0.0, 0.0, 0.0};
+    double vecSod[3] = {sin(theta) * geom.sod + offset[0], -cos(theta) * geom.sod + offset[1], 0};
+
+    // Source to voxel center
+    double src2cent[3] = {-vecSod[0], -vecSod[1], -vecSod[2]};
+    // Source to voxel
+    double src2voxel[3] = {(2.0 * coord[0] - sizeV[0] + 1) * 0.5f * geom.voxSize + src2cent[0],
+                           (2.0 * coord[1] - sizeV[1] + 1) * 0.5f * geom.voxSize + src2cent[1],
+                           (2.0 * coord[2] - sizeV[2] + 1) * 0.5f * geom.voxSize + src2cent[2]};
+
+    const double beta = acos((src2cent[0] * src2voxel[0] + src2cent[1] * src2voxel[1]) /
+                             (sqrt(src2cent[0] * src2cent[0] + src2cent[1] * src2cent[1]) *
+                              sqrt(src2voxel[0] * src2voxel[0] + src2voxel[1] * src2voxel[1])));
+    // const double gamma = atan2(src2voxel[2], sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1]));
+    const int signU = sign(src2voxel[0] * src2cent[1] - src2voxel[1] * src2cent[0]);
+
+    // src2voxel x src2cent
+    // 光線がhitするdetector平面座標の算出(detectorSizeで除算して、正規化済み)
+    double u = tan(signU * beta) * geom.sdd / geom.detSize + (float)sizeD[0] * 0.5;
+    // double v = tan(gamma) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
+    double v = (src2voxel[2] / sqrt(src2voxel[0]*src2voxel[0]+src2voxel[1]*src2voxel[1])) * geom.sdd / cos(beta) / geom.detSize + (float)sizeD[1] * 0.5; // normalization
+
+    if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
+        return;
+
+    double u_tmp = u - 0.5, v_tmp = v - 0.5;
+    int intU = floor(u_tmp), intV = floor(v_tmp);
+    double c1 = (1.0 - (u_tmp - intU)) * (v_tmp - intV), c2 = (u_tmp - intU) * (v_tmp - intV),
+            c3 = (u_tmp - intU) * (1.0 - (v_tmp - intV)), c4 =
+            (1.0 - (u_tmp - intU)) * (1.0 - (v_tmp - intV));
+    const unsigned int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+
+
+        atomicAdd(&devSino[intU + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n], c1 * devVoxel[idxVoxel]);
+        atomicAdd(&devSino[(intU+1) + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n], c2 * devVoxel[idxVoxel]);
+        atomicAdd(&devSino[(intU+1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * devVoxel[idxVoxel]);
+        atomicAdd(&devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * devVoxel[idxVoxel]);
+    }
+
+
+    /*
+    devSino[intU + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n] += c1 * devVoxel[idxVoxel];
+    devSino[(intU+1) + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n] += c2 * devVoxel[idxVoxel];
+    devSino[(intU+1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] += c3 * devVoxel[idxVoxel];
+    devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] += c4 * devVoxel[idxVoxel];
+    */
+}
+
 __device__ void backwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], const float *devSino, float* devVoxel, const GeometryCUDA& geom) {
 
     // sourceとvoxel座標間の関係からdetのu, vを算出
@@ -122,7 +181,7 @@ __device__ void backwardProj(const int coord[4], const int sizeD[3], const int s
     const int n = coord[3];
     const double theta = 2.0 * M_PI * n / sizeD[2];
 
-    double offset[3] = {0.0, 0.0, 0.0};
+    double offset[3] = {INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]};
     double vecSod[3] = {sin(theta) * geom.sod + offset[0], -cos(theta) * geom.sod + offset[1], 0};
 
     // Source to voxel center

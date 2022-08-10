@@ -5,6 +5,7 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
+inline constexpr int NUM_BASIS_VECTOR = 3;
 // params on yuki
 /*
 inline constexpr double SRC_OBJ_DISTANCE = 455.849;

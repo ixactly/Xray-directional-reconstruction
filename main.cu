@@ -35,12 +35,14 @@ int main() {
     // main function
 
     // if u load ct, turn off initializing of fill 1.0
-    // ct.forEach([](float value) -> float { return 1.0; });
 
+    ct.forEach([](float value) -> float { return 1.0; });
+    /*
     std::string loadfilePath =
             "../volume_bin/cf_at_vol_epoch5-" + std::to_string(NUM_VOXEL) + "x" +
             std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
     ct.load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    */
 
     bool rotate = true;
     reconstruct(sinogram, ct, geom, 1, 18, rotate);
@@ -58,7 +60,7 @@ int main() {
     */
 
     std::string savefilePath =
-            "../volume_bin/cf_at_vol_epoch_tmp-" + std::to_string(NUM_VOXEL) + "x" +
+            "../volume_bin/cf_at_vol_epoch-" + std::to_string(NUM_VOXEL) + "x" +
             std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
     ct.save(savefilePath);
 

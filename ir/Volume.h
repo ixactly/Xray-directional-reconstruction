@@ -30,7 +30,7 @@ public :
     }
 
     Volume(const Volume &v)
-            : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
+            : Volume(v.sizeX, v.sizeY, v.sizeZ) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
         std::memcpy(data.get(), v.data.get(), size * sizeof(T));
     }
@@ -76,7 +76,7 @@ public :
         cv::waitKey(0);
     } */
 
-    T* getPtr() {
+    T *getPtr() {
         return data.get();
     }
 
@@ -119,9 +119,11 @@ public :
     int x() const {
         return sizeX;
     }
+
     int y() const {
         return sizeY;
     }
+
     int z() const {
         return sizeZ;
     }
@@ -130,4 +132,64 @@ private :
     int sizeX, sizeY, sizeZ;
     std::unique_ptr<T[]> data = nullptr;
 };
+
+
+template<typename T>
+class SimpleVolume {
+public:
+    SimpleVolume() = default;
+
+    explicit SimpleVolume(int sizeX, int sizeY, int sizeZ) : sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {
+        data = new T[sizeX * sizeY * sizeZ];
+    }
+
+    SimpleVolume(const SimpleVolume<T> &v) : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
+        const int size = v.sizeX * v.sizeY * v.sizeZ;
+        data = new T[sizeX * sizeY * sizeZ];
+        memcpy(data, v.data, size * sizeof(T));
+    }
+
+    SimpleVolume &operator=(const SimpleVolume<T> &v) {
+        const int size = v.sizeX * v.sizeY * v.sizeZ;
+        data = new T[sizeX * sizeY * sizeZ];
+        memcpy(data, v.data, size * sizeof(T));
+
+        return *this;
+    }
+
+    SimpleVolume(SimpleVolume<T> &&v) noexcept: sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ), data(v.data) {
+        v.sizeX = 0, v.sizeY = 0, v.sizeZ = 0;
+        v.data = nullptr;
+    }
+
+    SimpleVolume &operator=(SimpleVolume<T> &&v) noexcept {
+        sizeX = v.sizeX, sizeY = v.sizeY, sizeZ = v.sizeZ;
+        data = v.data;
+
+        v.sizeX = 0, v.sizeY = 0, v.sizeZ = 0;
+        v.data = nullptr;
+
+        return *this;
+    }
+
+    ~SimpleVolume() {
+        delete[] data;
+    }
+
+    T &operator()(int x, int y, int z) {
+        return data[z * (sizeX * sizeY) + y * (sizeX) + x];
+    }
+
+    T operator()(int x, int y, int z) const {
+        return data[z * (sizeX * sizeY) + y * (sizeX) + x];
+    }
+
+private:
+    int sizeX;
+    int sizeY;
+    int sizeZ;
+
+    T *data = nullptr;
+};
+
 #endif //CUDA_EXAMPLE_VOLUME_H
