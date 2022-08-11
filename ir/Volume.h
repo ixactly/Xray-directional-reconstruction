@@ -176,12 +176,18 @@ public:
         delete[] data;
     }
 
-    T &operator()(int x, int y, int z) {
+    __device__ __host__ T &operator()(int x, int y, int z) {
         return data[z * (sizeX * sizeY) + y * (sizeX) + x];
     }
 
-    T operator()(int x, int y, int z) const {
+    __device__ __host__ T operator()(int x, int y, int z) const {
         return data[z * (sizeX * sizeY) + y * (sizeX) + x];
+    }
+
+    __device__ __host__ void getSize(int size[3]) const {
+        size[0] = sizeX;
+        size[1] = sizeY;
+        size[2] = sizeZ;
     }
 
 private:

@@ -6,6 +6,7 @@
 #include <random>
 #include "Pbar.h"
 #include "Params.h"
+#include "Volume.h"
 
 template <typename T>
 __device__ __host__ int sign(T val) {
@@ -116,11 +117,15 @@ __device__ void forwardProj(const int coord[4], const int sizeD[3], const int si
     */
 }
 
-__device__ void forwardProjSC(const int coord[4], const int sizeD[3], const int sizeV[3], float devSino[], const float devVoxel[], const GeometryCUDA& geom, BasisVector base[]) {
+__device__ void forwardProjSC(const int coord[4], SimpleVolume<float> &devSino, const SimpleVolume<float> devVoxel[], const GeometryCUDA& geom, BasisVector base[]
+) {
 
     // sourceとvoxel座標間の関係からdetのu, vを算出
     // detectorの中心 と 再構成領域の中心 と 光源 のz座標は一致していると仮定
     const int n = coord[3];
+    int sizeV[3], sizeD[3];
+    devSino.getSize(sizeD);
+    devVoxel[0].getSize(sizeV);
 
     const double theta = 2.0 * M_PI * n / sizeD[2];
 
@@ -157,12 +162,10 @@ __device__ void forwardProjSC(const int coord[4], const int sizeD[3], const int 
     const unsigned int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-
-
-        atomicAdd(&devSino[intU + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n], c1 * devVoxel[idxVoxel]);
-        atomicAdd(&devSino[(intU+1) + sizeD[0] * (intV+1) + sizeD[0] * sizeD[1] * n], c2 * devVoxel[idxVoxel]);
-        atomicAdd(&devSino[(intU+1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * devVoxel[idxVoxel]);
-        atomicAdd(&devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * devVoxel[idxVoxel]);
+        atomicAdd(&devSino(intU, intV+1, n), c1 * devVoxel[i](coord[0], coord[1], coord[2]));
+        atomicAdd(&devSino(intU+1, intV+1, n), c2 * devVoxel[i](coord[0], coord[1], coord[2]));
+        atomicAdd(&devSino(intU+1, intV, n), c3 * devVoxel[i](coord[0], coord[1], coord[2]));
+        atomicAdd(&devSino(intU, intV, n), c4 * devVoxel[i](coord[0], coord[1], coord[2]));
     }
 
 
