@@ -45,7 +45,7 @@ int main() {
     */
 
     bool rotate = true;
-    reconstruct(sinogram, ct, geom, 1, 18, rotate);
+    reconstructDebugHost(sinogram, ct, geom, 1, 18, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -62,7 +62,7 @@ int main() {
     std::string savefilePath =
             "../volume_bin/cf_at_vol_epoch-" + std::to_string(NUM_VOXEL) + "x" +
             std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-    ct.save(savefilePath);
+    // ct.save(savefilePath);
 
     return 0;
 }

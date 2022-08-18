@@ -123,8 +123,9 @@ forwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], float *d
     */
 }
 
-__device__ __host__ void forwardProjSC(const int coord[4], SimpleVolume<float> &devSino, const SimpleVolume<float> devVoxel[],
-                              const GeometryCUDA &geom
+__host__ void
+forwardProjSC(const int coord[4], SimpleVolume<float> &devSino, const SimpleVolume<float> devVoxel[],
+              const GeometryCUDA &geom
 ) {
     // sourceとvoxel座標間の関係からdetのu, vを算出
     // detectorの中心 と 再構成領域の中心 と 光源 のz座標は一致していると仮定
@@ -157,11 +158,14 @@ __device__ __host__ void forwardProjSC(const int coord[4], SimpleVolume<float> &
 
     // src2voxel and plane that have vecSod norm vector
     // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
-    double t = -(vecSod * src2cent) / (src2voxel * vecSod);
+    double t = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
     Vector3d p = vecSod + t * src2voxel;
+    Vector3d tmp = 10 * src2voxel;
 
-    double u = (p * (Rotate * base1)) * (geom.detSize / geom.voxSize) + static_cast<double>(sizeD[0]) * 0.5;
-    double v = (p * (Rotate * base2)) * (geom.detSize / geom.voxSize) + static_cast<double>(sizeD[0]) * 0.5;
+    Matrix3d R = Rotate * Rotate;
+
+    double u = (p * (Rotate * base1)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[0]);
+    double v = (p * (Rotate * base2)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[1]);
 
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
@@ -384,5 +388,46 @@ void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCU
 
     cudaFree(devV);
     cudaFree(devD);
+}
+
+__host__ void
+reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCUDA &geom, const int epoch,
+                     const int batch, bool dir) {
+
+    printf("pass");
+    SimpleVolume<float> sino(sinogram);
+    SimpleVolume<float> vox(voxel);
+
+    int sizeV[3] = {voxel.x(), voxel.y(), voxel.z()};
+    int sizeD[3] = {sinogram.x(), sinogram.y(), sinogram.z()};
+    int nProj = sizeD[2];
+
+
+    // forward, divide, backward proj
+    int subsetSize = (nProj + batch - 1) / batch;
+    std::vector<int> subsetOrder(batch);
+    for (int i = 0; i < batch; i++) {
+        subsetOrder[i] = i;
+    }
+
+    std::mt19937_64 get_rand_mt; // fixed seed
+    std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
+
+    // main routine
+    for (int ep = 0; ep < epoch; ep++) {
+        // forward
+        for (int n = 0; n < nProj; n++) {
+
+            // forward
+            for (int x = 0; x < sizeV[0]; x++) {
+                for (int y = 0; y < sizeV[1]; y++) {
+                    for (int z = 0; z < sizeV[2]; z++) {
+                        int coord[4] = {x, y, z, n};
+                        forwardProjSC(coord, sino, &vox, geom);
+                    }
+                }
+            }
+        }
+    }
 }
 

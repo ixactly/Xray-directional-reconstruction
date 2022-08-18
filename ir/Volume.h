@@ -30,7 +30,7 @@ public :
     }
 
     Volume(const Volume &v)
-            : Volume(v.sizeX, v.sizeY, v.sizeZ) {
+            : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
         std::memcpy(data.get(), v.data.get(), size * sizeof(T));
     }
@@ -76,7 +76,7 @@ public :
         cv::waitKey(0);
     } */
 
-    T *getPtr() {
+    T *getPtr() const {
         return data.get();
     }
 
@@ -151,10 +151,22 @@ public:
 
     SimpleVolume &operator=(const SimpleVolume<T> &v) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
+        sizeX = v.sizeX;
+        sizeY = v.sizeY;
+        sizeZ = v.sizeZ;
+
         data = new T[sizeX * sizeY * sizeZ];
         memcpy(data, v.data, size * sizeof(T));
 
         return *this;
+    }
+
+    explicit SimpleVolume(const Volume<T> &v) {
+        sizeX = v.x();
+        sizeY = v.y();
+        sizeZ = v.z();
+
+        data = v.getPtr();
     }
 
     SimpleVolume(SimpleVolume<T> &&v) noexcept: sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ), data(v.data) {

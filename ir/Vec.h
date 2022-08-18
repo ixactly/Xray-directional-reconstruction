@@ -27,7 +27,7 @@ public:
 
     __both__ Vector3X operator+(const Vector3X &rhv) const {
         Vector3X w;
-        w.x = this->x + rhv.y;
+        w.x = this->x + rhv.x;
         w.y = this->y + rhv.y;
         w.z = this->z + rhv.z;
         return w;
@@ -62,7 +62,11 @@ public:
     }
 
     __both__ friend Vector3X operator*(const T t, const Vector3X &vec) {
-        Vector3X w(t * vec.x, t * vec.y, t * vec.z);
+        Vector3X w(0, 0, 0);
+        w.x = t * vec.x;
+        w.y = t * vec.y;
+        w.z = t * vec.z;
+
         return w;
     }
 
@@ -87,12 +91,13 @@ public:
     __both__ explicit Matrix3X(T a, T b, T c, T d, T e, T f, T g, T h, T i) : a(a), b(b), c(c), d(d), e(e), f(f), g(g),
                                                                               h(h), i(i) {}
 
-    __both__ Matrix3X &operator=(const Matrix3X mat) {
+    __both__ Matrix3X &operator=(const Matrix3X& mat) {
         for (int i = 0; i < 9; i++) {
             this->val[i] = mat.val[i];
         }
         return *this;
     }
+
 
     ~Matrix3X() = default;
 
@@ -104,37 +109,37 @@ public:
         return val[3 * i + j];
     }
 
-    __both__ Matrix3X operator+(const Matrix3X &rhv) {
-        Matrix3X w;
+    __both__ Matrix3X operator+(const Matrix3X &rhv) const {
+        Matrix3X w(0, 0, 0, 0, 0, 0, 0, 0, 0);
         for (int i = 0; i < 9; i++) {
-            w.val[i] = this->val[i] + rhv[i];
+            w.val[i] = this->val[i] + rhv.val[i];
         }
         return w;
     }
 
     __both__ Matrix3X operator-() {
         for (int i = 0; i < 9; i++) {
-            this->val[i] = -this->val[i];
+            val[i] = -val[i];
         }
     }
 
-    __both__ Vector3X<T> operator*(const Vector3X<T> &rhv) {
-        Vector3X<T> w;
+    __both__ Matrix3X operator*(const Matrix3X &rhv) const {
+        Matrix3X<T> w(0, 0, 0, 0, 0, 0, 0, 0, 0);
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                w(i) += val[3 * i + j] * rhv(j);
+                for (int k = 0; k < 3; k++) {
+                    w.val[3 * i + j] += this->val[3 * i + k] * rhv.val[3 * k + j];
+                }
             }
         }
         return w;
     }
 
-    __both__ Matrix3X operator*(const Matrix3X &rhv) {
-        Matrix3X<T> w;
+    __both__ Vector3X<T> operator*(const Vector3X<T> &rhv) const {
+        Vector3X<T> w(0, 0, 0);
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                for (int k = 0; k < 3; k++) {
-                    w.val[3 * i + j] = val[3 * i + k] * rhv.val[3 * k + j];
-                }
+                w(i) += val[3 * i + j] * rhv(j);
             }
         }
         return w;

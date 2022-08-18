@@ -19,5 +19,6 @@ __global__ void xzPlaneBackward(const int* sizeD, const int* sizeV, const float 
 
 void reconstruct(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCUDA &geom, const int epoch,
                  const int batch, bool dir);
-
+__host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const GeometryCUDA &geom, const int epoch,
+                                   const int batch, bool dir);
 #endif //INC_3DRECONGPU_MLEM_CUH
