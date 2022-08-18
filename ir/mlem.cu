@@ -145,6 +145,8 @@ forwardProjSC(const int coord[4], SimpleVolume<float> &devSino, const SimpleVolu
     Vector3d base1(1.0, 0.0, 0.0);
     Vector3d base2(0.0, 0.0, 1.0);
 
+    vecSod = Rotate * vecSod;
+
     Vector3d vecVoxel((2.0 * coord[0] - sizeV[0] + 1) * 0.5f * geom.voxSize, // -R * offset
                       (2.0 * coord[1] - sizeV[1] + 1) * 0.5f * geom.voxSize,
                       (2.0 * coord[2] - sizeV[2] + 1) * 0.5f * geom.voxSize);
@@ -161,8 +163,6 @@ forwardProjSC(const int coord[4], SimpleVolume<float> &devSino, const SimpleVolu
     double t = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
     Vector3d p = vecSod + t * src2voxel;
     Vector3d tmp = 10 * src2voxel;
-
-    Matrix3d R = Rotate * Rotate;
 
     double u = (p * (Rotate * base1)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[0]);
     double v = (p * (Rotate * base2)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[1]);
@@ -183,12 +183,11 @@ forwardProjSC(const int coord[4], SimpleVolume<float> &devSino, const SimpleVolu
         // S->scattering base vector
         // G->grating sensivity vector
 
-        /*
         atomicAdd(&devSino(intU, intV + 1, n), c1 * devVoxel[i](coord[0], coord[1], coord[2]));
         atomicAdd(&devSino(intU + 1, intV + 1, n), c2 * devVoxel[i](coord[0], coord[1], coord[2]));
         atomicAdd(&devSino(intU + 1, intV, n), c3 * devVoxel[i](coord[0], coord[1], coord[2]));
         atomicAdd(&devSino(intU, intV, n), c4 * devVoxel[i](coord[0], coord[1], coord[2]));
-         */
+
     }
 
 
@@ -416,7 +415,7 @@ reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geomet
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
         // forward
-        for (int n = 0; n < nProj; n++) {
+        for (int n = 15; n < nProj; n++) {
 
             // forward
             for (int x = 0; x < sizeV[0]; x++) {
