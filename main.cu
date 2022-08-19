@@ -36,7 +36,7 @@ int main() {
 
     // if u load ct, turn off initializing of fill 1.0
 
-    ct.forEach([](float value) -> float { return 1.0; });
+    // ct.forEach([](float value) -> float { return 1.0; });
     /*
     std::string loadfilePath =
             "../volume_bin/cf_at_vol_epoch5-" + std::to_string(NUM_VOXEL) + "x" +

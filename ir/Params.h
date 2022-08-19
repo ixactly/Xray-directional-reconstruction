@@ -33,7 +33,11 @@ inline constexpr int NUM_VOXEL = 100;
 
 inline constexpr double INIT_OFFSET[3] = {0.0, 0.0, 0.0};
 
+inline constexpr double elemR[9] = {1.0, 0.0, 0.0,
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
 
+inline constexpr double elemT[3] = {0.0, 0.0, 0.0};
 
 // cfrp
 /*
