@@ -188,7 +188,7 @@ __global__ void printKernel() {
 
 __global__ void
 xzPlaneForward(CudaVolume<float> *devSino, CudaVolume<float> **devVoxel, Geometry *geom,
-               const int y, const int n, const Matrix3d* condR, const Vector3d* condT) {
+               const int y, const int n, const Matrix3d *condR, const Vector3d *condT) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -298,6 +298,7 @@ forwardProjSC(const int coord[4], CudaVolume<float> *devSino, CudaVolume<float> 
         atomicAdd(&(*devSino)(intU, intV, n), c4 * (*devVoxel[i])(coord[0], coord[1], coord[2]));
 
     }
+    printf("sino: %f", (*devSino)(intU, intV + 1, n));
 }
 
 void reconstructSC(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
@@ -307,32 +308,42 @@ void reconstructSC(Volume<float> &sinogram, Volume<float> &voxel, const Geometry
     int nProj = sizeD[2];
 
     // cudaMalloc
-    auto devSino = new CudaVolume<float> *[NUM_PROJ_COND];
-    auto devProj = new CudaVolume<float> *[NUM_PROJ_COND];
-    auto devVoxel = new CudaVolume<float> *[NUM_BASIS_VECTOR];
-    auto condR = new Matrix3d *[NUM_PROJ_COND];
-    auto condT = new Vector3d *[NUM_PROJ_COND];
 
-    cudaMalloc(&devSino, sizeof(CudaVolume<float> *));
-    cudaMalloc(&devProj, sizeof(CudaVolume<float> *));
-    cudaMalloc(&devVoxel, sizeof(CudaVolume<float> *));
+    CudaVolume<float> hostSino[NUM_PROJ_COND];
+    CudaVolume<float> hostProj[NUM_PROJ_COND];
+    CudaVolume<float> hostVoxel[NUM_BASIS_VECTOR];
+    Matrix3d condR[NUM_PROJ_COND];
+    Vector3d condT[NUM_PROJ_COND];
+
+    CudaVolume<float>** devSino, **devProj, **devVoxel;
+    Matrix3d** devCondR;
+    Vector3d** devCondT;
+
+    cudaMalloc(reinterpret_cast<void **>(&devSino), sizeof(CudaVolume<float> *));
+    cudaMalloc(reinterpret_cast<void **>(&devProj), sizeof(CudaVolume<float> *));
+    cudaMalloc(reinterpret_cast<void **>(&devVoxel), sizeof(CudaVolume<float> *));
+    cudaMemcpy(*devSino, &hostSino, sizeof(CudaVolume<float>), cudaMemcpyHostToDevice);
+    cudaMemcpy(*devProj, &hostProj, sizeof(CudaVolume<float>), cudaMemcpyHostToDevice);
+    cudaMemcpy(*devSino, &hostSino, sizeof(CudaVolume<float>), cudaMemcpyHostToDevice);
 
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        devSino[i] = new CudaVolume<float>(sizeD[0], sizeD[1], sizeD[2]);
-        devProj[i] = new CudaVolume<float>(sinogram);
+        hostSino[i] = CudaVolume<float>(sizeD[0], sizeD[1], sizeD[2]);
+        hostProj[i] = CudaVolume<float>(sinogram);
 
         // need modify to specific Rotation matrix
-        condR[i] = new Matrix3d(1, 0, 0,
-                                0, 1, 0,
-                                0, 0, 1);
-        cudaMalloc(&condR[i], sizeof(Matrix3d));
-        condT[i] = new Vector3d(0, 0, 0);
-        cudaMalloc(&condT[i], sizeof(Vector3d));
+        condR[i] = Matrix3d(1, 0, 0,
+                            0, 1, 0,
+                            0, 0, 1);
+        // cudaMalloc(&condR[i], sizeof(Matrix3d));
+        condT[i] = Vector3d(0, 0, 0);
+        // cudaMalloc(&condT[i], sizeof(Vector3d));
     }
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        devVoxel[i] = new CudaVolume<float>(voxel);
+        hostVoxel[i] = CudaVolume<float>(voxel);
     }
+
+
 
     Geometry *devGeom;
     cudaMalloc(&devGeom, sizeof(Geometry));
@@ -370,7 +381,7 @@ void reconstructSC(Volume<float> &sinogram, Volume<float> &voxel, const Geometry
                 // forward
                 for (int i = 0; i < NUM_PROJ_COND; i++) {
                     for (int y = 0; y < sizeV[1]; y++) {
-                        xzPlaneForward<<<gridV, blockV>>>(devProj[i], devVoxel, devGeom, y, n, condR[i], condT[i]);
+                        xzPlaneForward<<<gridV, blockV>>>(devProj[i], devVoxel, devGeom, y, n, devCondR[i], devCondT[i]);
                         cudaDeviceSynchronize();
                     }
                 }

@@ -147,13 +147,13 @@ public:
         cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
     }
 
-    __both__ CudaVolume(const CudaVolume<T> &v) : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
+    __host__ CudaVolume(const CudaVolume<T> &v) : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
         cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
         cudaMemcpy(data, v.data, size * sizeof(T), cudaMemcpyDeviceToDevice);
     }
 
-    __both__ CudaVolume &operator=(const CudaVolume<T> &v) {
+    __host__ CudaVolume &operator=(const CudaVolume<T> &v) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
         sizeX = v.sizeX;
         sizeY = v.sizeY;
@@ -165,7 +165,7 @@ public:
         return *this;
     }
 
-    __both__ explicit CudaVolume(const Volume<T> &v) {
+    __host__ explicit CudaVolume(const Volume<T> &v) {
         sizeX = v.x();
         sizeY = v.y();
         sizeZ = v.z();
