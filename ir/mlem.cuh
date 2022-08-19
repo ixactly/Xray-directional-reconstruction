@@ -36,7 +36,7 @@ __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel
                                    const int batch, bool dir);
 
 __device__ void
-forwardProjSC(const int coord[4], CudaVolume<float> *devSino, CudaVolume<float> **devVoxel,
+forwardProjSC(const int coord[4], CudaVolume<float> *devSino, CudaVolume<float> *devVoxel,
               const Geometry &geom, const Matrix3d &R, const Vector3d &t);
 
 #endif //INC_3DRECONGPU_MLEM_CUH

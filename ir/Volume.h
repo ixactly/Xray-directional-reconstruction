@@ -194,11 +194,11 @@ public:
         size[2] = sizeZ;
     }
 
-    __both__ void copyToHostData(T *dstPtr) const {
+    __host__ void copyToHostData(T *dstPtr) const {
         cudaMemcpy(dstPtr, data, sizeof(T) * sizeX * sizeY * sizeZ, cudaMemcpyDeviceToHost);
     }
 
-    __both__ void resetData() {
+    __host__ void resetData() {
         cudaMemset(data, 0, sizeof(T) * sizeX * sizeY * sizeZ);
     }
 
