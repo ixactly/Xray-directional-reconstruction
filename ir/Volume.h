@@ -5,6 +5,8 @@
 #ifndef CUDA_EXAMPLE_VOLUME_H
 #define CUDA_EXAMPLE_VOLUME_H
 
+#include <cuda.h>
+#include <cuda_runtime.h>
 #include <memory>
 #include <array>
 #include <string>
@@ -12,6 +14,8 @@
 #include <functional>
 #include <iostream>
 #include <cstring>
+
+#define __both__ __device__ __host__
 
 template<typename T>
 class Volume {
@@ -135,58 +139,46 @@ private :
 
 
 template<typename T>
-class SimpleVolume {
+class CudaVolume {
 public:
-    SimpleVolume() = default;
+    CudaVolume() = default;
 
-    explicit SimpleVolume(int sizeX, int sizeY, int sizeZ) : sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {
-        data = new T[sizeX * sizeY * sizeZ];
+    __host__ explicit CudaVolume(int sizeX, int sizeY, int sizeZ) : sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {
+        cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
     }
 
-    SimpleVolume(const SimpleVolume<T> &v) : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
+    __both__ CudaVolume(const CudaVolume<T> &v) : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
-        data = new T[sizeX * sizeY * sizeZ];
-        memcpy(data, v.data, size * sizeof(T));
+        cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
+        cudaMemcpy(data, v.data, size * sizeof(T), cudaMemcpyDeviceToDevice);
     }
 
-    SimpleVolume &operator=(const SimpleVolume<T> &v) {
+    __both__ CudaVolume &operator=(const CudaVolume<T> &v) {
         const int size = v.sizeX * v.sizeY * v.sizeZ;
         sizeX = v.sizeX;
         sizeY = v.sizeY;
         sizeZ = v.sizeZ;
 
-        data = new T[sizeX * sizeY * sizeZ];
-        memcpy(data, v.data, size * sizeof(T));
+        cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
+        cudaMemcpy(data, v.data, size * sizeof(T), cudaMemcpyDeviceToDevice);
 
         return *this;
     }
 
-    explicit SimpleVolume(const Volume<T> &v) {
+    __both__ explicit CudaVolume(const Volume<T> &v) {
         sizeX = v.x();
         sizeY = v.y();
         sizeZ = v.z();
 
-        data = v.getPtr();
+        const int size = sizeX * sizeY * sizeZ;
+        cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
+        cudaMemcpy(data, v.getPtr(), size * sizeof(T), cudaMemcpyHostToDevice);
     }
 
-    SimpleVolume(SimpleVolume<T> &&v) noexcept: sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ), data(v.data) {
-        v.sizeX = 0, v.sizeY = 0, v.sizeZ = 0;
-        v.data = nullptr;
+    ~CudaVolume() {
+        cudaFree(data);
     }
 
-    SimpleVolume &operator=(SimpleVolume<T> &&v) noexcept {
-        sizeX = v.sizeX, sizeY = v.sizeY, sizeZ = v.sizeZ;
-        data = v.data;
-
-        v.sizeX = 0, v.sizeY = 0, v.sizeZ = 0;
-        v.data = nullptr;
-
-        return *this;
-    }
-
-    ~SimpleVolume() {
-        delete[] data;
-    }
 
     __device__ __host__ T &operator()(int x, int y, int z) {
         return data[z * (sizeX * sizeY) + y * (sizeX) + x];
@@ -200,6 +192,14 @@ public:
         size[0] = sizeX;
         size[1] = sizeY;
         size[2] = sizeZ;
+    }
+
+    __both__ void copyToHostData(T *dstPtr) const {
+        cudaMemcpy(dstPtr, data, sizeof(T) * sizeX * sizeY * sizeZ, cudaMemcpyDeviceToHost);
+    }
+
+    __both__ void resetData() {
+        cudaMemset(data, 0, sizeof(T) * sizeX * sizeY * sizeZ);
     }
 
 private:

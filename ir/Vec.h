@@ -5,8 +5,6 @@
 #ifndef INC_3DRECONGPU_VEC_H
 #define INC_3DRECONGPU_VEC_H
 
-#define __both__ __host__ __device__
-
 template<typename T>
 class Vector3X {
 public:
@@ -118,8 +116,8 @@ public:
     }
 
     __both__ Matrix3X operator-() {
-        for (int i = 0; i < 9; i++) {
-            val[i] = -val[i];
+        for (auto & e : val) {
+            e = -e;
         }
     }
 

@@ -14,11 +14,11 @@ int main() {
     Volume<float> sinogram(NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
     // ground truth
     Volume<float> ct(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-    GeometryCUDA geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE);
+    Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
     // sinogram.load("../volume_bin/cube_proj_phantom-500x500x500.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-    sinogram.load("../volume_bin/cfrp/ATstack_1000x1000x360.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+    // sinogram.load("../volume_bin/cfrp/ATstack_1000x1000x360.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
     sinogram.forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value;});
-    /*
+
     for (int i = NUM_VOXEL / 3; i < NUM_VOXEL * 2 / 3 + 1; i++) {
         for (int j = NUM_VOXEL / 3; j < NUM_VOXEL * 2 / 3 + 1; j++) {
             for (int k = NUM_VOXEL / 3; k < NUM_VOXEL * 2 / 3 + 1; k++) {
@@ -26,7 +26,7 @@ int main() {
             }
         }
     }
-    */
+
 
     // measure clock
     std::chrono::system_clock::time_point start, end;
@@ -45,19 +45,19 @@ int main() {
     */
 
     bool rotate = true;
-    reconstructDebugHost(sinogram, ct, geom, 1, 18, rotate);
+    reconstructSC(sinogram, ct, geom, 1, 20, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
                                       (1000.0 * 1000.0));
     std::cout << "\n time: " << time << " (s)" << std::endl;
 
-    /*
+
     std::string savefilePath1 =
-            "../volume_bin/cube_proj_cube_epoch_one-" + std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
+            "../volume_bin/new_geom_cube-" + std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
             std::to_string(NUM_PROJ) + ".raw";
     sinogram.save(savefilePath1);
-    */
+
 
     std::string savefilePath =
             "../volume_bin/cf_at_vol_epoch-" + std::to_string(NUM_VOXEL) + "x" +

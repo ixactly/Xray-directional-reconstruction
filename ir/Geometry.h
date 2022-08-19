@@ -5,10 +5,11 @@
 #ifndef INC_3DRECONGPU_GEOMETRY_H
 #define INC_3DRECONGPU_GEOMETRY_H
 
-class GeometryCUDA {
+class Geometry {
 
 public:
-    GeometryCUDA(double sdd, double sod, double detSize) : sdd(sdd), sod(sod), detSize(detSize) {
+    Geometry(double sdd, double sod, double detSize, int voxel, int detect, int nProj) :
+            sdd(sdd), sod(sod), detSize(detSize), voxel(voxel), detect(detect), nProj(nProj) {
         voxSize = sod * detSize / sdd;
     }
 
@@ -18,6 +19,9 @@ public:
     double voxSize; // voxel size
     double detSize; // detector size
 
+    int voxel;
+    int detect;
+    int nProj;
 };
 
 class BasisVector {
@@ -34,7 +38,7 @@ public:
         vec[2] = rot[6] * x + rot[7] * y + rot[8] * z;
     }
 
-    const int* getVec() const {
+    const int *getVec() const {
         return vec;
     }
 
