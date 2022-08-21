@@ -5,7 +5,7 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 1;
+inline constexpr int NUM_BASIS_VECTOR = 3;
 inline constexpr int NUM_PROJ_COND = 1;
 // params on yuki
 /*
@@ -19,7 +19,7 @@ inline constexpr int NUM_VOXEL = 1024; // 1024
 */
 
 // cube
-
+/*
 inline constexpr double SRC_OBJ_DISTANCE = 500.0;
 inline constexpr double SRC_DETECT_DISTANCE = 1000.0;
 
@@ -30,6 +30,16 @@ inline constexpr int NUM_DETECT_V = 100;
 
 inline constexpr double DETECTOR_SIZE = 0.1;
 inline constexpr int NUM_VOXEL = 100;
+*/
+
+//yoji cube
+inline constexpr double SRC_OBJ_DISTANCE = 1003;
+inline constexpr double SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 180;
+inline constexpr int NUM_DETECT_U = 672;
+inline constexpr int NUM_DETECT_V = 672;
+inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0;
+inline constexpr int NUM_VOXEL = 672;
 
 inline constexpr double INIT_OFFSET[3] = {0.0, 0.0, 0.0};
 
@@ -39,6 +49,9 @@ inline constexpr double elemR[9] = {1.0, 0.0, 0.0,
 
 inline constexpr double elemT[3] = {0.0, 0.0, 0.0};
 
+inline constexpr double BASIS_VECTOR[9] = {1.0, 0.0, 0.0,
+                                           0.0, 1.0, 0.0,
+                                           0.0, 0.0, 1.0};
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;

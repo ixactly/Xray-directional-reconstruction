@@ -23,13 +23,13 @@ __device__ void
 backwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], const float *devSino, float *devVoxel,
              const Geometry &geom);
 
-__global__ void projRatio(const int sizeD[3], float *devProj, const float *devSino, int n);
+__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
 
 __global__ void
-xzPlaneBackward(const int *sizeD, const int *sizeV, const float *devSino, float *devVoxel, Geometry *geom,
+xzPlaneBackward(float *devSino, float *devVoxel, Geometry *geom,
                 const int y, const int n);
 
-void reconstructSC(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
+void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, const int epoch,
                    const int batch, bool dir);
 
 __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
@@ -38,5 +38,9 @@ __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel
 __device__ void
 forwardProjSC(const int coord[4], float *devSino, float *devVoxel,
               const Geometry &geom);
+
+__device__ void
+backwardProjSC(const int coord[4], float *devSino, float *devVoxel,
+               const Geometry &geom);
 
 #endif //INC_3DRECONGPU_MLEM_CUH

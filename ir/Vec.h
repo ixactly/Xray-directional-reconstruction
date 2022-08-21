@@ -12,7 +12,7 @@ public:
 
     __both__ Vector3X(T x, T y, T z) : x(x), y(y), z(z) {}
 
-    __both__ Vector3X(const Vector3X &v) : Vector3X(v.x, v.x, v.x) {}
+    __both__ Vector3X(const Vector3X &v) : Vector3X(v.x, v.y, v.z) {}
 
     __both__ Vector3X &operator=(const Vector3X &v) {
         this->x = v.x;
@@ -70,6 +70,26 @@ public:
 
     __both__ T dot(const Vector3X &rhv) const {
         return this->x * rhv.x + this->y * rhv.y + this->z * rhv.z;
+    }
+
+    __both__ Vector3X cross(const Vector3X &rhv) const {
+        Vector3X w(0, 0, 0);
+        w.x = this->y * rhv.z - this->z * rhv.y;
+        w.y = this->z * rhv.x - this->x * rhv.z;
+        w.z = this->x * rhv.y - this->y * rhv.x;
+
+        return w;
+    }
+
+    __both__ void normalize() {
+        T value = sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
+        this->x /= value;
+        this->y /= value;
+        this->z /= value;
+    }
+    __both__ T norm2() {
+        return sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
+
     }
 
 private:
@@ -142,6 +162,7 @@ public:
         }
         return w;
     }
+
 
 private:
     union {
