@@ -187,7 +187,7 @@ __global__ void printKernel() {
 }
 
 __global__ void
-xzPlaneForward(float *devSino, float *devVoxel, Geometry *geom,
+xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom,
                const int y, const int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
@@ -195,7 +195,7 @@ xzPlaneForward(float *devSino, float *devVoxel, Geometry *geom,
 
     const int coord[4] = {x, y, z, n};
     // printf("%d %d %d\n", x,y,z);
-    forwardProjSC(coord, devSino, devVoxel, *geom);
+    forwardProjSC(coord, devProj, devVoxel, *geom);
 }
 
 __global__ void
@@ -237,7 +237,7 @@ __global__ void voxelOne(const int *sizeD, const int *sizeV, float *devSino, flo
 }
 
 __device__ void
-forwardProjSC(const int coord[4], float *devSino, float *devVoxel,
+forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
               const Geometry &geom) {
     // sourceとvoxel座標間の関係からdetのu, vを算出
     // detectorの中心 と 再構成領域の中心 と 光源 のz座標は一致していると仮定
@@ -281,8 +281,7 @@ forwardProjSC(const int coord[4], float *devSino, float *devVoxel,
 
     double u = (p * (Rotate * base1)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[0]);
     double v = (p * (Rotate * base2)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[1]);
-    printf("u, v: %lf %lf\n", u, v);
-    printf("src2voxel: %lf %lf %lf\n", src2voxel[0], src2voxel[1], src2voxel[2]);
+
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
 
@@ -293,7 +292,7 @@ forwardProjSC(const int coord[4], float *devSino, float *devVoxel,
             (1.0 - (u_tmp - intU)) * (1.0 - (v_tmp - intV));
 
     Vector3d B = src2voxel;
-    // B.normalize();
+    B.normalize();
     double basisVector[9] = {1.0, 0.0, 0.0,
                              0.0, 1.0, 0.0,
                              0.0, 0.0, 1.0};
@@ -303,24 +302,24 @@ forwardProjSC(const int coord[4], float *devSino, float *devVoxel,
         // B->beam direction unit vector (src2voxel)
         // S->scattering base vector
         // G->grating sensivity vector
-        Vector3d G(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
-        Vector3d S = Rotate * base1;
+        Vector3d S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        Vector3d G = Rotate * base1;
         double vkm = B.cross(S).norm2() * (S * G);
-        // printf("vkm: %lf\n", vkm);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
-        atomicAdd(&devSino[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+        atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
                   vkm * vkm * c1 * devVoxel[idxVoxel]);
-        atomicAdd(&devSino[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+        atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
                   vkm * vkm * c2 * devVoxel[idxVoxel]);
-        atomicAdd(&devSino[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+        atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
                   vkm * vkm * c3 * devVoxel[idxVoxel]);
-        atomicAdd(&devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], vkm * vkm * c4 * devVoxel[idxVoxel]);
+        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], vkm * vkm * c4 * devVoxel[idxVoxel]);
+        // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
     }
 }
 
 __device__ void
-backwardProjSC(const int coord[4], float *devSino, float *devVoxel,
+backwardProjSC(const int coord[4], const float *devSino, float *devVoxel,
                const Geometry &geom) {
     const int n = coord[3];
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
@@ -384,9 +383,9 @@ backwardProjSC(const int coord[4], float *devSino, float *devVoxel,
         // S->scattering base vector
         // G->grating sensivity vector
         // v_km = (|B_m x S_k|<S_k*G>)^2
-        double a = BASIS_VECTOR[0];
-        Vector3d G(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
-        Vector3d S = Rotate * base1;
+
+        Vector3d S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        Vector3d G = Rotate * base1;
         double vkm = B.cross(S).norm2() * (S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
@@ -405,7 +404,6 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     int nProj = sizeD[2];
 
     // cudaMalloc
-
     float *devSino, *devProj, *devVoxel;
     const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
     const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
@@ -414,9 +412,8 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND);
     cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
 
-    // loop
     for (int i = 0; i < NUM_PROJ_COND; i++)
-        cudaMemcpy(&devProj[i * lenD], sinogram[i].getPtr(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
+        cudaMemcpy(&devSino[i * lenD], sinogram[i].getPtr(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
         cudaMemcpy(&devVoxel[i * lenV], voxel[i].getPtr(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
@@ -446,9 +443,9 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
+        cudaMemset(devProj, 0, sizeof(float) * lenD * NUM_PROJ_COND);
         for (int &sub: subsetOrder) {
             // forward
-            cudaMemset(devSino, 0, sizeof(float) * lenD * NUM_PROJ_COND);
             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                 pbar.update();
                 int n = (sub + batch * subOrder) % nProj;
@@ -462,8 +459,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                 }
 
                 // ratio
-
-                projRatio<<<gridD, blockD>>>(devProj, devSino, &geom, n);
+                projRatio<<<gridD, blockD>>>(devProj, devSino, devGeom, n);
                 cudaDeviceSynchronize();
 
                 // backward
@@ -471,6 +467,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                     xzPlaneBackward<<<gridV, blockV>>>(devProj, devVoxel, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
+
             }
         }
     }
@@ -480,10 +477,11 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(sinogram[i].getPtr(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
 
+
+    cudaFree(devProj);
     cudaFree(devSino);
     cudaFree(devVoxel);
     cudaFree(devGeom);
-    cudaFree(devProj);
 }
 
 /*

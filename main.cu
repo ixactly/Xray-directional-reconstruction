@@ -55,13 +55,8 @@ int main() {
     */
 
     bool rotate = true;
-    Vector3d A(1, 2, 3);
-    Vector3d B = A;
-    Vector3d C;
-    C = A;
 
-    std::cout << B[0] << " " << B[1] << " " << B[2] << std::endl;
-    // reconstructSC(sinogram, ct, geom, 1, 10, rotate);
+    reconstructSC(sinogram, ct, geom, 1, 15, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -69,13 +64,11 @@ int main() {
     std::cout << "\n time: " << time << " (s)" << std::endl;
 
 
-    for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string savefilePath1 =
-                "../volume_bin/new_geom_cube_axis" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
-                std::to_string(NUM_DETECT_V) + "x" +
-                std::to_string(NUM_PROJ) + ".raw";
-        // sinogram[i].save(savefilePath1);
-    }
+    std::string savefilePath1 =
+            "../volume_bin/yoji_proj_" + std::to_string(NUM_DETECT_U) + "x" +
+            std::to_string(NUM_DETECT_V) + "x" +
+            std::to_string(NUM_PROJ) + ".raw";
+    sinogram[0].save(savefilePath1);
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePath =

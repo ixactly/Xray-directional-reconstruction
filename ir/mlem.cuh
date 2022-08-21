@@ -26,6 +26,9 @@ backwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], const f
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
 
 __global__ void
+xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom, const int y, const int n);
+
+__global__ void
 xzPlaneBackward(float *devSino, float *devVoxel, Geometry *geom,
                 const int y, const int n);
 
@@ -36,11 +39,11 @@ __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel
                                    const int batch, bool dir);
 
 __device__ void
-forwardProjSC(const int coord[4], float *devSino, float *devVoxel,
+forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
               const Geometry &geom);
 
 __device__ void
-backwardProjSC(const int coord[4], float *devSino, float *devVoxel,
+backwardProjSC(const int coord[4], const float *devSino, float *devVoxel,
                const Geometry &geom);
 
 #endif //INC_3DRECONGPU_MLEM_CUH

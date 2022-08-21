@@ -5,8 +5,7 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 1;
+
 // params on yuki
 /*
 inline constexpr double SRC_OBJ_DISTANCE = 455.849;
@@ -33,6 +32,9 @@ inline constexpr int NUM_VOXEL = 100;
 */
 
 //yoji cube
+inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_PROJ_COND = 1;
+
 inline constexpr double SRC_OBJ_DISTANCE = 1003;
 inline constexpr double SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 180;
