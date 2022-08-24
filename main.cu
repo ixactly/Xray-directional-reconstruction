@@ -22,8 +22,7 @@ int main() {
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
     // sinogram.load("../volume_bin/cube_proj_phantom-500x500x500.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-    sinogram[0].load("../volume_bin/yoji_AXIS1/SC/raw/sc_axis1_stack_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V,
-                     NUM_PROJ);
+    sinogram[0].load("../volume_bin/yoji_AXIS3/AT/raw/at_axis3_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
     sinogram[0].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
 
     /*
@@ -45,38 +44,38 @@ int main() {
     // main function
 
     // if u load ct, turn off initializing of fill 1.0
+
     for (auto &e: ct)
-        e.forEach([](float value) -> float { return 1.0; });
+        e.forEach([](float value) -> float { return 0.001; });
+
     /*
     std::string loadfilePath =
-            "../volume_bin/cf_at_vol_epoch5-" + std::to_string(NUM_VOXEL) + "x" +
-            std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-    ct.load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-    */
+                "../volume_bin/yojiAT_vol_denoise_22_" + std::to_string(NUM_VOXEL) + "x" +
+                std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+    ct[0].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+     */
+
 
     bool rotate = true;
-
-    reconstructSC(sinogram, ct, geom, 1, 15, rotate);
+    reconstructSC(sinogram, ct, geom, 5, 12, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
                                       (1000.0 * 1000.0));
     std::cout << "\n time: " << time << " (s)" << std::endl;
 
-
     std::string savefilePath1 =
-            "../volume_bin/yoji_proj_" + std::to_string(NUM_DETECT_U) + "x" +
+            "../volume_bin/yojiAT_proj_" + std::to_string(NUM_DETECT_U) + "x" +
             std::to_string(NUM_DETECT_V) + "x" +
             std::to_string(NUM_PROJ) + ".raw";
     sinogram[0].save(savefilePath1);
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePath =
-                "../volume_bin/yoji_vol_base" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/yojiAT_vol_denoise_3_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }
-
     return 0;
 }
 

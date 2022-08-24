@@ -45,7 +45,7 @@ forwardProjhost(const int coord[4], const int sizeD[3], const int sizeV[3], floa
     double u = tan(signU * beta) * geom.sdd / geom.detSize + (float) sizeD[0] * 0.5;
     double v = tan(gamma) * geom.sdd / cos(beta) / geom.detSize + (float) sizeD[1] * 0.5; // normalization
 
-    if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
+    if (!(1.0 < u && u < sizeD[0] - 1.0 && 1.0 < v && v < sizeD[1] - 1.0))
         return;
 
     double u_tmp = u - 0.5, v_tmp = v - 0.5;
@@ -83,9 +83,9 @@ forwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], float *d
     // Source to voxel center
     double src2cent[3] = {-vecSod[0], -vecSod[1], -vecSod[2]};
     // Source to voxel
-    double src2voxel[3] = {(2.0 * coord[0] - sizeV[0] + 1) * 0.5f * geom.voxSize + src2cent[0],
-                           (2.0 * coord[1] - sizeV[1] + 1) * 0.5f * geom.voxSize + src2cent[1],
-                           (2.0 * coord[2] - sizeV[2] + 1) * 0.5f * geom.voxSize + src2cent[2]};
+    double src2voxel[3] = {(2.0 * coord[0] - sizeV[0] + 1) * 0.5 * geom.voxSize + src2cent[0],
+                           (2.0 * coord[1] - sizeV[1] + 1) * 0.5 * geom.voxSize + src2cent[1],
+                           (2.0 * coord[2] - sizeV[2] + 1) * 0.5 * geom.voxSize + src2cent[2]};
 
     const double beta = acos((src2cent[0] * src2voxel[0] + src2cent[1] * src2voxel[1]) /
                              (sqrt(src2cent[0] * src2cent[0] + src2cent[1] * src2cent[1]) *
@@ -100,7 +100,7 @@ forwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], float *d
     double v = (src2voxel[2] / sqrt(src2voxel[0] * src2voxel[0] + src2voxel[1] * src2voxel[1])) * geom.sdd / cos(beta) /
                geom.detSize + (float) sizeD[1] * 0.5; // normalization
 
-    if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
+    if (!(1.0 < u && u < sizeD[0] - 1.0 && 1.0 < v && v < sizeD[1] - 1.0))
         return;
 
     double u_tmp = u - 0.5, v_tmp = v - 0.5;
@@ -156,7 +156,7 @@ backwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], const f
     double v = (src2voxel[2] / sqrt(src2voxel[0] * src2voxel[0] + src2voxel[1] * src2voxel[1])) * geom.sdd / cos(beta) /
                geom.detSize + (float) sizeD[1] * 0.5; // normalization
 
-    if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
+    if (!(1.0 < u && u < sizeD[0] - 1.0 && 1.0 < v && v < sizeD[1] - 1.0))
         return;
 
     double u_tmp = u - 0.5, v_tmp = v - 0.5;
@@ -199,14 +199,15 @@ xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom,
 }
 
 __global__ void
-xzPlaneBackward(float *devSino, float *devVoxel, Geometry *geom,
+xzPlaneBackward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom,
                 const int y, const int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    backwardProjSC(coord, devSino, devVoxel, *geom);
+
+    backwardProjSC(coord, devProj, devVoxelTmp, devVoxelFactor, *geom);
 }
 
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n) {
@@ -217,7 +218,25 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         const int idx = u + geom->detect * v + geom->detect * geom->detect * n +
                         i * (geom->detect * geom->detect * geom->nProj);
-        devProj[idx] = devSino[idx] / (devProj[idx] + 1e-7f);
+        devProj[idx] = devSino[idx] / devProj[idx];
+    }
+}
+
+__global__ void
+voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFactor, const Geometry *geom,
+             const int y) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    for (int i = 0; i < NUM_PROJ_COND; i++) {
+        const int idxVoxel =
+                x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
+        const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
+        if (devVoxelFactor[idxOnPlane] < 1e-7)
+            devVoxel[idxVoxel] = 0.0;
+        devVoxel[idxVoxel] = devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
+        // printf("Tmp: %lf\n", devVoxelTmp[idxOnPlane]);
     }
 }
 
@@ -304,7 +323,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
         // G->grating sensivity vector
         Vector3d S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3d G = Rotate * base1;
-        double vkm = B.cross(S).norm2() * (S * G);
+        double vkm = 1.0; // = B.cross(S).norm2() * (S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -319,7 +338,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
 }
 
 __device__ void
-backwardProjSC(const int coord[4], const float *devSino, float *devVoxel,
+backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
                const Geometry &geom) {
     const int n = coord[3];
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
@@ -386,14 +405,16 @@ backwardProjSC(const int coord[4], const float *devSino, float *devVoxel,
 
         Vector3d S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3d G = Rotate * base1;
-        double vkm = B.cross(S).norm2() * (S * G);
-        const int idxVoxel =
-                coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
-        const float factor = vkm * vkm * c1 * devSino[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                             vkm * vkm * c2 * devSino[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                             vkm * vkm * c3 * devSino[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
-                             vkm * vkm * c4 * devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
-        devVoxel[idxVoxel] *= factor;
+        float vkm = 1.0;// B.cross(S).norm2() * (S * G);
+        const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
+        const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                                  vkm * vkm * c2 *
+                                  devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                                  vkm * vkm * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
+                                  vkm * vkm * c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
+
+        devVoxelFactor[idxVoxel] += (vkm * vkm);
+        devVoxelTmp[idxVoxel] += backForward;
     }
 }
 
@@ -404,13 +425,15 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     int nProj = sizeD[2];
 
     // cudaMalloc
-    float *devSino, *devProj, *devVoxel;
+    float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
     const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
     const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
     cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
     cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND);
     cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
+    cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+    cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(&devSino[i * lenD], sinogram[i].getPtr(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
@@ -422,7 +445,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
     // define blocksize
-    const int blockSize = 8;
+    const int blockSize = 16;
     dim3 blockV(blockSize, blockSize, 1);
     dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
     dim3 blockD(blockSize, blockSize, 1);
@@ -435,53 +458,62 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
         subsetOrder[i] = i;
     }
 
-    std::mt19937_64 get_rand_mt; // fixed seed
-    std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-
     // progress bar
-    progressbar pbar(epoch * subsetSize * batch);
+    progressbar pbar(epoch * (nProj * sizeV[0]) * 2);
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
+        std::mt19937_64 get_rand_mt; // fixed seed
+        std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
+
         cudaMemset(devProj, 0, sizeof(float) * lenD * NUM_PROJ_COND);
+
         for (int &sub: subsetOrder) {
-            // forward
+            // forward and ratio
             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                pbar.update();
                 int n = (sub + batch * subOrder) % nProj;
-                // judge from vecSod which plane we chose
-                // forward
+                // !!care!! judge from vecSod which plane we chose
+                // forward process
                 for (int i = 0; i < NUM_PROJ_COND; i++) {
                     for (int y = 0; y < sizeV[1]; y++) {
+                        pbar.update();
                         xzPlaneForward<<<gridV, blockV>>>(devProj, devVoxel, devGeom, y, n);
                         cudaDeviceSynchronize();
                     }
                 }
-
-                // ratio
+                // ratio process
                 projRatio<<<gridD, blockD>>>(devProj, devSino, devGeom, n);
                 cudaDeviceSynchronize();
+            }
 
-                // backward
-                for (int y = 0; y < sizeV[1]; y++) {
-                    xzPlaneBackward<<<gridV, blockV>>>(devProj, devVoxel, devGeom, y, n);
+            // backward process
+            for (int y = 0; y < sizeV[1]; y++) {
+                cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                    pbar.update();
+                    int n = (sub + batch * subOrder) % nProj;
+
+                    xzPlaneBackward<<<gridV, blockV>>>(devProj, devVoxelTmp, devVoxelFactor, devGeom, y, n);
                     cudaDeviceSynchronize();
                 }
-
+                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
             }
         }
     }
 
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(voxel[i].getPtr(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(sinogram[i].getPtr(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
-
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+        cudaMemcpy(voxel[i].getPtr(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
     cudaFree(devProj);
     cudaFree(devSino);
     cudaFree(devVoxel);
     cudaFree(devGeom);
+    cudaFree(devVoxelFactor);
+    cudaFree(devVoxelTmp);
+
 }
 
 /*

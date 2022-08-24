@@ -29,7 +29,7 @@ __global__ void
 xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom, const int y, const int n);
 
 __global__ void
-xzPlaneBackward(float *devSino, float *devVoxel, Geometry *geom,
+xzPlaneBackward(float *devSino, float *devVoxelTmp, float* devVoxelFactor, Geometry *geom,
                 const int y, const int n);
 
 void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, const int epoch,
@@ -43,7 +43,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
               const Geometry &geom);
 
 __device__ void
-backwardProjSC(const int coord[4], const float *devSino, float *devVoxel,
+backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, float* devVoxelFactor,
                const Geometry &geom);
 
 #endif //INC_3DRECONGPU_MLEM_CUH
