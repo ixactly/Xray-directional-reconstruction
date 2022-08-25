@@ -46,14 +46,28 @@ inline constexpr int NUM_VOXEL = 672;
 
 inline constexpr double INIT_OFFSET[3] = {0.0, 0.0, 0.0};
 
-inline constexpr double elemR[9] = {1.0, 0.0, 0.0,
-                                    0.0, 1.0, 0.0,
-                                    0.0, 0.0, 1.0};
+inline constexpr double elemR[27] = {1.0, 0.0, 0.0,
+                                     0.0, 1.0, 0.0,
+                                     0.0, 0.0, 1.0,
 
-inline constexpr double elemT[3] = {0.0, 0.0, 0.0};
+                                     1.0, 0.0, 0.0,
+                                     0.0, 1.0, 0.0,
+                                     0.0, 0.0, 1.0,
+
+                                     1.0, 0.0, 0.0,
+                                     0.0, 1.0, 0.0,
+                                     0.0, 0.0, 1.0};
+
+inline constexpr double elemT[9] = {0.0, 0.0, 0.0,
+
+                                    0.0, 0.0, 0.0,
+
+                                    0.0, 0.0, 0.0};
 
 inline constexpr double BASIS_VECTOR[9] = {1.0, 0.0, 0.0,
+
                                            0.0, 1.0, 0.0,
+
                                            0.0, 0.0, 1.0};
 // cfrp
 /*

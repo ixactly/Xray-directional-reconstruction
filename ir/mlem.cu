@@ -350,6 +350,12 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
     Matrix3d Rotate(cos(theta), -sin(theta), 0, sin(theta), cos(theta), 0, 0, 0, 1);
+    /*
+    Matrix3d condR(matTrans[0], matTrans[1], matTrans[2],
+                   matTrans[3], matTrans[4], matTrans[5],
+                   matTrans[6], matTrans[7], matTrans[8]);
+    Vector3d t(vecTrans[0], vecTrans[1], vecTrans[2]);
+    */
     Matrix3d condR(elemR[0], elemR[1], elemR[2],
                    elemR[3], elemR[4], elemR[5],
                    elemR[6], elemR[7], elemR[8]);
@@ -397,6 +403,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     Vector3d B = src2voxel;
     B.normalize();
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        // calculate immutable geometry
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
         // S->scattering base vector
@@ -470,34 +477,37 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
 
         for (int &sub: subsetOrder) {
             // forward and ratio
-            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                int n = (sub + batch * subOrder) % nProj;
-                // !!care!! judge from vecSod which plane we chose
-                // forward process
-                for (int i = 0; i < NUM_PROJ_COND; i++) {
+            for (int i = 0; i < NUM_PROJ_COND; i++) {
+                for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                    int n = (sub + batch * subOrder) % nProj;
+                    // !!care!! judge from vecSod which plane we chose
+
+                    // forward process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        xzPlaneForward<<<gridV, blockV>>>(devProj, devVoxel, devGeom, y, n);
+                        xzPlaneForward<<<gridV, blockV>>>(&devProj[lenD*i], devVoxel, devGeom, y, n);
                         cudaDeviceSynchronize();
                     }
+                    // ratio process
+                    projRatio<<<gridD, blockD>>>(devProj, devSino, devGeom, n);
+                    cudaDeviceSynchronize();
                 }
-                // ratio process
-                projRatio<<<gridD, blockD>>>(devProj, devSino, devGeom, n);
-                cudaDeviceSynchronize();
             }
 
             // backward process
-            for (int y = 0; y < sizeV[1]; y++) {
-                cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                    pbar.update();
-                    int n = (sub + batch * subOrder) % nProj;
+            for (int i = 0; i < NUM_PROJ_COND; i++) {
+                for (int y = 0; y < sizeV[1]; y++) {
+                    cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                    cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                    for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                        pbar.update();
+                        int n = (sub + batch * subOrder) % nProj;
 
-                    xzPlaneBackward<<<gridV, blockV>>>(devProj, devVoxelTmp, devVoxelFactor, devGeom, y, n);
-                    cudaDeviceSynchronize();
+                        xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, y, n);
+                        cudaDeviceSynchronize();
+                    }
+                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                 }
-                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
             }
         }
     }
