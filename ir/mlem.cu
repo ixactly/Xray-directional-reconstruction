@@ -257,6 +257,9 @@ __global__ void voxelOne(const int *sizeD, const int *sizeV, float *devSino, flo
     // printf("pass\n");
 }
 
+__device__ inline void calcHitDetector(float &u, float &v, const int coord[4], const Geometry& geom) {
+}
+
 __device__ void
 forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
               const Geometry &geom) {
@@ -266,66 +269,74 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    const double theta = 2.0 * M_PI * n / sizeD[2];
-    Vector3d offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
+    const float theta = 2.0f * M_PI * n / sizeD[2];
+    Vector3f offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
 
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
-    Matrix3d Rotate(cos(theta), -sin(theta), 0, sin(theta), cos(theta), 0, 0, 0, 1);
-    Matrix3d condR(elemR[0], elemR[1], elemR[2],
+    Matrix3f Rotate(cosf(theta), -sinf(theta), 0, sinf(theta), cosf(theta), 0, 0, 0, 1);
+    Matrix3f condR(elemR[0], elemR[1], elemR[2],
                    elemR[3], elemR[4], elemR[5],
                    elemR[6], elemR[7], elemR[8]);
-    Vector3d t(elemT[0], elemT[1], elemT[2]);
+    /*
+    Matrix3d condR(matTrans[0], matTrans[1], matTrans[2],
+                   matTrans[3], matTrans[4], matTrans[5],
+                   matTrans[6], matTrans[7], matTrans[8]);
+    Vector3d t(vecTrans[0], vecTrans[1], vecTrans[2]);
+    */
+    Vector3f t(elemT[0], elemT[1], elemT[2]);
     Rotate = condR * Rotate;
     offset = condR * offset;
-    Vector3d vecSod(0.0, -geom.sod, 0.0);
-    Vector3d base1(1.0, 0.0, 0.0);
-    Vector3d base2(0.0, 0.0, 1.0);
+    Vector3f vecSod(0.0, -geom.sod, 0.0);
+    Vector3f base1(1.0, 0.0, 0.0);
+    Vector3f base2(0.0, 0.0, 1.0);
 
     vecSod = Rotate * vecSod;
 
-    Vector3d vecVoxel((2.0 * coord[0] - sizeV[0] + 1) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
-                      (2.0 * coord[1] - sizeV[1] + 1) * 0.5f * geom.voxSize - offset[1] - t[1],
-                      (2.0 * coord[2] - sizeV[2] + 1) * 0.5f * geom.voxSize - offset[2] - t[2]);
+    Vector3f vecVoxel(
+            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
+            (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
+            (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
 
     // Source to voxel center
-    Vector3d src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
+    Vector3f src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
     // Source to voxel
-    Vector3d src2voxel(vecVoxel[0] + src2cent[0],
+    Vector3f src2voxel(vecVoxel[0] + src2cent[0],
                        vecVoxel[1] + src2cent[1],
                        vecVoxel[2] + src2cent[2]);
 
     // src2voxel and plane that have vecSod norm vector
     // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
-    const double coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
-    Vector3d p = vecSod + coeff * src2voxel;
+    const float coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
+    Vector3f p = vecSod + coeff * src2voxel;
 
-    double u = (p * (Rotate * base1)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[0]);
-    double v = (p * (Rotate * base2)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[1]);
+    float u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
+    float v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
 
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
 
-    double u_tmp = u - 0.5, v_tmp = v - 0.5;
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
-    double c1 = (1.0 - (u_tmp - intU)) * (v_tmp - intV), c2 = (u_tmp - intU) * (v_tmp - intV),
-            c3 = (u_tmp - intU) * (1.0 - (v_tmp - intV)), c4 =
-            (1.0 - (u_tmp - intU)) * (1.0 - (v_tmp - intV));
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV), c2 =
+            (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
+            (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    Vector3d B = src2voxel;
+    Vector3f B = src2voxel;
     B.normalize();
-    double basisVector[9] = {1.0, 0.0, 0.0,
-                             0.0, 1.0, 0.0,
-                             0.0, 0.0, 1.0};
+    float basisVector[9] = {1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0,
+                            0.0, 0.0, 1.0};
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
         // S->scattering base vector
         // G->grating sensivity vector
-        Vector3d S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
-        Vector3d G = Rotate * base1;
-        double vkm = 1.0; // = B.cross(S).norm2() * (S * G);
+        Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        Vector3f G = Rotate * base1;
+        float vkm = 1.0; // = B.cross(S).norm2() * (S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -346,64 +357,67 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    const double theta = 2.0 * M_PI * n / sizeD[2];
-    Vector3d offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
+    const float theta = 2.0f * M_PI * n / sizeD[2];
+    Vector3f offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
 
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
-    Matrix3d Rotate(cos(theta), -sin(theta), 0, sin(theta), cos(theta), 0, 0, 0, 1);
+    Matrix3f Rotate(cosf(theta), -sinf(theta), 0, sinf(theta), cosf(theta), 0, 0, 0, 1);
+    Matrix3f condR(elemR[0], elemR[1], elemR[2],
+                   elemR[3], elemR[4], elemR[5],
+                   elemR[6], elemR[7], elemR[8]);
     /*
     Matrix3d condR(matTrans[0], matTrans[1], matTrans[2],
                    matTrans[3], matTrans[4], matTrans[5],
                    matTrans[6], matTrans[7], matTrans[8]);
     Vector3d t(vecTrans[0], vecTrans[1], vecTrans[2]);
     */
-    Matrix3d condR(elemR[0], elemR[1], elemR[2],
-                   elemR[3], elemR[4], elemR[5],
-                   elemR[6], elemR[7], elemR[8]);
-    Vector3d t(elemT[0], elemT[1], elemT[2]);
+    Vector3f t(elemT[0], elemT[1], elemT[2]);
     Rotate = condR * Rotate;
     offset = condR * offset;
-    Vector3d vecSod(0.0, -geom.sod, 0.0);
-    Vector3d base1(1.0, 0.0, 0.0);
-    Vector3d base2(0.0, 0.0, 1.0);
+    Vector3f vecSod(0.0, -geom.sod, 0.0);
+    Vector3f base1(1.0, 0.0, 0.0);
+    Vector3f base2(0.0, 0.0, 1.0);
 
     vecSod = Rotate * vecSod;
 
-    Vector3d vecVoxel((2.0 * coord[0] - sizeV[0] + 1) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
-                      (2.0 * coord[1] - sizeV[1] + 1) * 0.5f * geom.voxSize - offset[1] - t[1],
-                      (2.0 * coord[2] - sizeV[2] + 1) * 0.5f * geom.voxSize - offset[2] - t[2]);
+    Vector3f vecVoxel(
+            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
+            (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
+            (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
 
     // Source to voxel center
-    Vector3d src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
+    Vector3f src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
     // Source to voxel
-    Vector3d src2voxel(vecVoxel[0] + src2cent[0],
+    Vector3f src2voxel(vecVoxel[0] + src2cent[0],
                        vecVoxel[1] + src2cent[1],
                        vecVoxel[2] + src2cent[2]);
 
     // src2voxel and plane that have vecSod norm vector
     // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
-    const double coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
-    Vector3d p = vecSod + coeff * src2voxel;
+    const float coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
+    Vector3f p = vecSod + coeff * src2voxel;
 
-    double u = (p * (Rotate * base1)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[0]);
-    double v = (p * (Rotate * base2)) / geom.voxSize + 0.5 * static_cast<double>(sizeD[1]);
+    float u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
+    float v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
 
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
 
-    double u_tmp = u - 0.5, v_tmp = v - 0.5;
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
-    double c1 = (1.0 - (u_tmp - intU)) * (v_tmp - intV), c2 = (u_tmp - intU) * (v_tmp - intV),
-            c3 = (u_tmp - intU) * (1.0 - (v_tmp - intV)), c4 =
-            (1.0 - (u_tmp - intU)) * (1.0 - (v_tmp - intV));
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV), c2 =
+            (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
+            (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    double basisVector[9] = {1.0, 0.0, 0.0,
-                             0.0, 1.0, 0.0,
-                             0.0, 0.0, 1.0};
+    float basisVector[9] = {1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0,
+                            0.0, 0.0, 1.0};
 
-    Vector3d B = src2voxel;
+    Vector3f B = src2voxel;
     B.normalize();
+
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // calculate immutable geometry
         // add scattering coefficient (read paper)
@@ -412,8 +426,8 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
         // G->grating sensivity vector
         // v_km = (|B_m x S_k|<S_k*G>)^2
 
-        Vector3d S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
-        Vector3d G = Rotate * base1;
+        Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        Vector3f G = Rotate * base1;
         float vkm = 1.0;// B.cross(S).norm2() * (S * G);
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +

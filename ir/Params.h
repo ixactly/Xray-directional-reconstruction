@@ -35,16 +35,16 @@ inline constexpr int NUM_VOXEL = 100;
 inline constexpr int NUM_BASIS_VECTOR = 1;
 inline constexpr int NUM_PROJ_COND = 1;
 
-inline constexpr double SRC_OBJ_DISTANCE = 1003;
-inline constexpr double SRC_DETECT_DISTANCE = 1458;
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 180;
 inline constexpr int NUM_DETECT_U = 672;
 inline constexpr int NUM_DETECT_V = 672;
-inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
 inline constexpr int NUM_VOXEL = 672;
 
-inline constexpr double INIT_OFFSET[3] = {0.0, 0.0, 0.0};
+inline constexpr float INIT_OFFSET[3] = {0.0, 0.0, 0.0};
 /* 変換の逆行列(rotated->raw)
 axis2
  0.018775       -0.999823        -0.001327
@@ -53,42 +53,54 @@ axis2
 
  0.124573        0.558674        0.330740
 
+raw->rotated
  0.018775	-0.003632	0.999817
 -0.999823	0.001259	0.018780
 -0.001327	-0.999993	-0.003608
 -0.330990	0.117636	0.560028
 
 axis3
+ rotated->raw
 -0.008569        0.001514        0.999962
 -0.998949       -0.045040       -0.008492
  0.045025       -0.998984        0.001899
 
- -0.549382      -0.502355        0.199911
+-0.549382      -0.502355        0.199911
+
+ raw->rotated
+-0.008569	-0.998949	0.045025
+ 0.001514	-0.045040	-0.998984
+ 0.999962	-0.008492	0.001899
+
+-0.515536	0.177914	0.544715
  */
 
-inline constexpr double elemR[27] = {0.018775, -0.003632, 0.999817,
-                                     -0.999823, 0.001259, 0.018780,
-                                     -0.001327, -0.999993, -0.003608,
-
-                                     1.0, 0.0, 0.0,
+inline constexpr float elemR[27] = {1.0, 0.0, 0.0,
                                      0.0, 1.0, 0.0,
                                      0.0, 0.0, 1.0,
 
-                                     1.0, 0.0, 0.0,
-                                     0.0, 1.0, 0.0,
-                                     0.0, 0.0, 1.0};
+                                     0.018775, -0.003632, 0.999817,
+                                     -0.999823, 0.001259, 0.018780,
+                                     -0.001327, -0.999993, -0.003608,
 
-inline constexpr double elemT[9] = {-0.330990, 0.117636, 0.560028,
+                                     -0.008569, -0.998949, 0.045025,
+                                     0.001514, -0.045040, -0.998984,
+                                     0.999962, -0.008492, 0.001899,
+};
 
-        0.0, 0.0, 0.0,
+inline constexpr float elemT[9] = {0.0, 0.0, 0.0,
 
-        0.0, 0.0, 0.0};
+                                    -0.330990, 0.117636, 0.560028,
 
-inline constexpr double BASIS_VECTOR[9] = {1.0, 0.0, 0.0,
+                                    -0.515536, 0.177914, 0.544715,
+};
+
+inline constexpr float BASIS_VECTOR[9] = {1.0, 0.0, 0.0,
 
                                            0.0, 1.0, 0.0,
 
                                            0.0, 0.0, 1.0};
+
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;

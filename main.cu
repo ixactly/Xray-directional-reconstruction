@@ -22,7 +22,7 @@ int main() {
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
     // sinogram.load("../volume_bin/cube_proj_phantom-500x500x500.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-    sinogram[0].load("../volume_bin/yoji_AXIS3/AT/raw/at_axis3_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+    sinogram[0].load("../volume_bin/yoji_AXIS1/AT/raw/at_axis1_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
     sinogram[0].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
 
     /*
@@ -58,7 +58,7 @@ int main() {
 
     bool rotate = true;
     reconstructSC(sinogram, ct, geom,
-                  5, 9, rotate);
+                  20, 6, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -73,7 +73,7 @@ int main() {
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePath =
-                "../volume_bin/yojiAT_vol2_rotated_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/yojiAT_vol1_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }

@@ -177,4 +177,7 @@ private:
 using Matrix3d = Matrix3X<double>;
 using Vector3d = Vector3X<double>;
 
+using Matrix3f = Matrix3X<float>;
+using Vector3f = Vector3X<float>;
+
 #endif //INC_3DRECONGPU_VEC_H

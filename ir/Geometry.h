@@ -8,16 +8,16 @@
 class Geometry {
 
 public:
-    Geometry(double sdd, double sod, double detSize, int voxel, int detect, int nProj) :
+    Geometry(float sdd, float sod, float detSize, int voxel, int detect, int nProj) :
             sdd(sdd), sod(sod), detSize(detSize), voxel(voxel), detect(detect), nProj(nProj) {
         voxSize = sod * detSize / sdd;
     }
 
-    double sdd; // Object-Detector Distance
-    double sod; // Source-Object Distance
+    float sdd; // Object-Detector Distance
+    float sod; // Source-Object Distance
 
-    double voxSize; // voxel size
-    double detSize; // detector size
+    float voxSize; // voxel size
+    float detSize; // detector size
 
     int voxel;
     int detect;
