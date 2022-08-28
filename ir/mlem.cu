@@ -218,7 +218,8 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         const int idx = u + geom->detect * v + geom->detect * geom->detect * n +
                         i * (geom->detect * geom->detect * geom->nProj);
-        devProj[idx] = devSino[idx] / devProj[idx];
+        if (devProj[idx] >= 1e-8f)
+            devProj[idx] = devSino[idx] / devProj[idx];
     }
 }
 
@@ -235,7 +236,8 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
         const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
         if (devVoxelFactor[idxOnPlane] < 1e-7)
             devVoxel[idxVoxel] = 0.0;
-        devVoxel[idxVoxel] = devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
+        else
+            devVoxel[idxVoxel] = devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
         // printf("Tmp: %lf\n", devVoxelTmp[idxOnPlane]);
     }
 }
@@ -485,7 +487,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                     // forward process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        xzPlaneForward<<<gridV, blockV>>>(&devProj[lenD*i], devVoxel, devGeom, y, n);
+                        xzPlaneForward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, y, n);
                         cudaDeviceSynchronize();
                     }
                     // ratio process
@@ -503,7 +505,8 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                         pbar.update();
                         int n = (sub + batch * subOrder) % nProj;
 
-                        xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, y, n);
+                        xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, y,
+                                                           n);
                         cudaDeviceSynchronize();
                     }
                     voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);

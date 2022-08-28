@@ -57,7 +57,8 @@ int main() {
 
 
     bool rotate = true;
-    reconstructSC(sinogram, ct, geom, 5, 12, rotate);
+    reconstructSC(sinogram, ct, geom,
+                  5, 9, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -72,7 +73,7 @@ int main() {
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePath =
-                "../volume_bin/yojiAT_vol_denoise_3_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/yojiAT_vol2_rotated_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }
