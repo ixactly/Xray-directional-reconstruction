@@ -4,10 +4,7 @@
 #include "Geometry.h"
 #include "mlem.cuh"
 #include <random>
-#include <memory>
-#include "Pbar.h"
 #include "Params.h"
-#include "Volume.h"
 #include "Vec.h"
 
 template<typename T>
@@ -187,7 +184,7 @@ __global__ void printKernel() {
 }
 
 __global__ void
-xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom,
+xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom, float *devMatTrans,
                const int y, const int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
@@ -195,11 +192,11 @@ xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom,
 
     const int coord[4] = {x, y, z, n};
     // printf("%d %d %d\n", x,y,z);
-    forwardProjSC(coord, devProj, devVoxel, *geom);
+    forwardProjSC(coord, devProj, devVoxel, *geom, devMatTrans);
 }
 
 __global__ void
-xzPlaneBackward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom,
+xzPlaneBackward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float *devMatTrans,
                 const int y, const int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
@@ -207,7 +204,7 @@ xzPlaneBackward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geome
 
     const int coord[4] = {x, y, z, n};
 
-    backwardProjSC(coord, devProj, devVoxelTmp, devVoxelFactor, *geom);
+    backwardProjSC(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, devMatTrans);
 }
 
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n) {
@@ -215,12 +212,9 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
-    for (int i = 0; i < NUM_PROJ_COND; i++) {
-        const int idx = u + geom->detect * v + geom->detect * geom->detect * n +
-                        i * (geom->detect * geom->detect * geom->nProj);
-        if (devProj[idx] >= 1e-8f)
-            devProj[idx] = devSino[idx] / devProj[idx];
-    }
+    const int idx = u + geom->detect * v + geom->detect * geom->detect * n;
+    if (devProj[idx] >= 1e-7f)
+        devProj[idx] = devSino[idx] / devProj[idx];
 }
 
 __global__ void
@@ -242,27 +236,12 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
     }
 }
 
-__global__ void voxelOne(const int *sizeD, const int *sizeV, float *devSino, float *devVoxel, Geometry *geom,
-                         const int y, const int n) {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int z = blockIdx.y * blockDim.y + threadIdx.y;
-
-    const int coord[4] = {x, y, z, n};
-    if (x >= sizeV[0] || y >= sizeV[1] || z >= sizeV[2]) {
-        return;
-    }
-    // printf("%d %d %d\n", x, y, z);
-    if (x <= sizeV[0] / 3 && y <= sizeV[1] / 3 && z <= sizeV[2])
-        devVoxel[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = 1.0f;
-    // printf("pass\n");
-}
-
-__device__ inline void calcHitDetector(float &u, float &v, const int coord[4], const Geometry& geom) {
+__device__ inline void calcHitDetector(float &u, float &v, const int coord[4], const Geometry &geom) {
 }
 
 __device__ void
 forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
-              const Geometry &geom) {
+              const Geometry &geom, const float *matTrans) {
     // sourceとvoxel座標間の関係からdetのu, vを算出
     // detectorの中心 と 再構成領域の中心 と 光源 のz座標は一致していると仮定
     const int n = coord[3];
@@ -275,16 +254,12 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
     Matrix3f Rotate(cosf(theta), -sinf(theta), 0, sinf(theta), cosf(theta), 0, 0, 0, 1);
-    Matrix3f condR(elemR[0], elemR[1], elemR[2],
-                   elemR[3], elemR[4], elemR[5],
-                   elemR[6], elemR[7], elemR[8]);
-    /*
-    Matrix3d condR(matTrans[0], matTrans[1], matTrans[2],
+
+    Matrix3f condR(matTrans[0], matTrans[1], matTrans[2],
                    matTrans[3], matTrans[4], matTrans[5],
                    matTrans[6], matTrans[7], matTrans[8]);
-    Vector3d t(vecTrans[0], vecTrans[1], vecTrans[2]);
-    */
-    Vector3f t(elemT[0], elemT[1], elemT[2]);
+    Vector3f t(matTrans[9], matTrans[10], matTrans[11]);
+
     Rotate = condR * Rotate;
     offset = condR * offset;
     Vector3f vecSod(0.0, -geom.sod, 0.0);
@@ -336,7 +311,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
         // G->grating sensivity vector
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3f G = Rotate * base1;
-        float vkm = 1.0; // = B.cross(S).norm2() * (S * G);
+        float vkm = B.cross(S).norm2() * (S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -346,13 +321,14 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
         atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
                   vkm * vkm * c3 * devVoxel[idxVoxel]);
         atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], vkm * vkm * c4 * devVoxel[idxVoxel]);
+        // printf("%d: %lf\n", i+1, vkm);
         // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
     }
 }
 
 __device__ void
 backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-               const Geometry &geom) {
+               const Geometry &geom, const float *matTrans) {
     const int n = coord[3];
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
@@ -363,16 +339,12 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
     Matrix3f Rotate(cosf(theta), -sinf(theta), 0, sinf(theta), cosf(theta), 0, 0, 0, 1);
-    Matrix3f condR(elemR[0], elemR[1], elemR[2],
-                   elemR[3], elemR[4], elemR[5],
-                   elemR[6], elemR[7], elemR[8]);
-    /*
-    Matrix3d condR(matTrans[0], matTrans[1], matTrans[2],
+
+    Matrix3f condR(matTrans[0], matTrans[1], matTrans[2],
                    matTrans[3], matTrans[4], matTrans[5],
                    matTrans[6], matTrans[7], matTrans[8]);
-    Vector3d t(vecTrans[0], vecTrans[1], vecTrans[2]);
-    */
-    Vector3f t(elemT[0], elemT[1], elemT[2]);
+    Vector3f t(matTrans[9], matTrans[10], matTrans[11]);
+
     Rotate = condR * Rotate;
     offset = condR * offset;
     Vector3f vecSod(0.0, -geom.sod, 0.0);
@@ -428,7 +400,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
 
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3f G = Rotate * base1;
-        float vkm = 1.0;// B.cross(S).norm2() * (S * G);
+        float vkm = B.cross(S).norm2() * (S * G);
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *
@@ -441,148 +413,4 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     }
 }
 
-void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, const int epoch,
-                   const int batch, bool dir) {
-    int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-    int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
-    int nProj = sizeD[2];
-
-    // cudaMalloc
-    float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
-    const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
-    const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
-
-    cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
-    cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND);
-    cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
-    cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-    cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-
-    for (int i = 0; i < NUM_PROJ_COND; i++)
-        cudaMemcpy(&devSino[i * lenD], sinogram[i].getPtr(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(&devVoxel[i * lenV], voxel[i].getPtr(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-
-    Geometry *devGeom;
-    cudaMalloc(&devGeom, sizeof(Geometry));
-    cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
-
-    // define blocksize
-    const int blockSize = 16;
-    dim3 blockV(blockSize, blockSize, 1);
-    dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-    dim3 blockD(blockSize, blockSize, 1);
-    dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
-
-    // forward, divide, backward proj
-    int subsetSize = (nProj + batch - 1) / batch;
-    std::vector<int> subsetOrder(batch);
-    for (int i = 0; i < batch; i++) {
-        subsetOrder[i] = i;
-    }
-
-    // progress bar
-    progressbar pbar(epoch * (nProj * sizeV[0]) * 2);
-
-    // main routine
-    for (int ep = 0; ep < epoch; ep++) {
-        std::mt19937_64 get_rand_mt; // fixed seed
-        std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-
-        cudaMemset(devProj, 0, sizeof(float) * lenD * NUM_PROJ_COND);
-
-        for (int &sub: subsetOrder) {
-            // forward and ratio
-            for (int i = 0; i < NUM_PROJ_COND; i++) {
-                for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                    int n = (sub + batch * subOrder) % nProj;
-                    // !!care!! judge from vecSod which plane we chose
-
-                    // forward process
-                    for (int y = 0; y < sizeV[1]; y++) {
-                        pbar.update();
-                        xzPlaneForward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, y, n);
-                        cudaDeviceSynchronize();
-                    }
-                    // ratio process
-                    projRatio<<<gridD, blockD>>>(devProj, devSino, devGeom, n);
-                    cudaDeviceSynchronize();
-                }
-            }
-
-            // backward process
-            for (int i = 0; i < NUM_PROJ_COND; i++) {
-                for (int y = 0; y < sizeV[1]; y++) {
-                    cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                    cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                    for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                        pbar.update();
-                        int n = (sub + batch * subOrder) % nProj;
-
-                        xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, y,
-                                                           n);
-                        cudaDeviceSynchronize();
-                    }
-                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < NUM_PROJ_COND; i++)
-        cudaMemcpy(sinogram[i].getPtr(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(voxel[i].getPtr(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-
-    cudaFree(devProj);
-    cudaFree(devSino);
-    cudaFree(devVoxel);
-    cudaFree(devGeom);
-    cudaFree(devVoxelFactor);
-    cudaFree(devVoxelTmp);
-
-}
-
-/*
-__host__ void
-reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
-                     const int batch, bool dir) {
-
-    printf("pass");
-    CudaVolume<float> sino(sinogram);
-    CudaVolume<float> vox(voxel);
-
-    int sizeV[3] = {voxel.x(), voxel.y(), voxel.z()};
-    int sizeD[3] = {sinogram.x(), sinogram.y(), sinogram.z()};
-    int nProj = sizeD[2];
-
-
-    // forward, divide, backward proj
-    int subsetSize = (nProj + batch - 1) / batch;
-    std::vector<int> subsetOrder(batch);
-    for (int i = 0; i < batch; i++) {
-        subsetOrder[i] = i;
-    }
-
-    std::mt19937_64 get_rand_mt; // fixed seed
-    std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-
-    // main routine
-    for (int ep = 0; ep < epoch; ep++) {
-        // forward
-        for (int n = 15; n < nProj; n++) {
-
-            // forward
-            for (int x = 0; x < sizeV[0]; x++) {
-                for (int y = 0; y < sizeV[1]; y++) {
-                    for (int z = 0; z < sizeV[2]; z++) {
-                        int coord[4] = {x, y, z, n};
-                        forwardProjSC(coord, sino, &vox, geom);
-                    }
-                }
-            }
-        }
-    }
-}
- */
 
