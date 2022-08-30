@@ -50,7 +50,7 @@ int main() {
 
     bool rotate = true;
     reconstructSC(sinogram, ct, geom,
-                  1, 6, rotate);
+                  5, 6, rotate);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /

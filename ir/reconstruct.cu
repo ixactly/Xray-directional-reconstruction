@@ -87,18 +87,19 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
 
             // backward process
             for (int y = 0; y < sizeV[1]; y++) {
+                cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+
                 for (int i = 0; i < NUM_PROJ_COND; i++) {
-                    cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                    cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                         pbar.update();
                         int n = (sub + batch * subOrder) % nProj;
 
-                        // xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, &devMatTrans[12*i], y, n);
+                        xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, &devMatTrans[12*i], y, n);
                         cudaDeviceSynchronize();
                     }
                 }
-                // voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                 cudaDeviceSynchronize();
 
             }

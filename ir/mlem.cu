@@ -310,7 +310,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
         // S->scattering base vector
         // G->grating sensivity vector
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
-        Vector3f G = Rotate * base1;
+        Vector3f G = Rotate * Vector3f(1.0, 0.0, 0.0);
         float vkm = B.cross(S).norm2() * (S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
@@ -326,6 +326,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
     }
 }
 
+// change to class
 __device__ void
 backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
                const Geometry &geom, const float *matTrans) {
@@ -399,7 +400,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
         // v_km = (|B_m x S_k|<S_k*G>)^2
 
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
-        Vector3f G = Rotate * base1;
+        Vector3f G = Rotate * Vector3f(1.0, 0.0, 0.0);
         float vkm = B.cross(S).norm2() * (S * G);
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
