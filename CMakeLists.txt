@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.22)
 project(3dReconGPU CUDA)
 
 set(CMAKE_CUDA_STANDARD 17)
-
 if (debug)
     add_compile_options(-G -g)
 endif()

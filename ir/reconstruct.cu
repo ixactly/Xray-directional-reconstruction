@@ -8,8 +8,7 @@
 #include "Pbar.h"
 #include "Params.h"
 #include "Volume.h"
-#include "Vec.h"
-#include "mlem.cuh"
+#include "omp.h"
 
 void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, const int epoch,
                    const int batch, bool dir) {
@@ -121,6 +120,27 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
 
 }
 
+void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom) {
+    for (int i = 0; i < geom.voxel; i++) {
+        for (int j = 0; j < geom.voxel; j++) {
+            for (int k = 0; k < geom.voxel; k++) {
+                float min = voxel[0](i, j, k);
+                int idx = 0;
+                for (int n = 1; n < NUM_BASIS_VECTOR; n++) {
+                    if (min > voxel[n](i, j, k)) {
+                        min = voxel[n](i, j, k);
+                        idx = n;
+                    }
+                }
+                for (int n = 0; n < NUM_BASIS_VECTOR; n++) {
+                    if (n != idx) {
+                        voxel[n](i, j, k) = 0.0f;
+                    }
+                }
+            }
+        }
+    }
+}
 /*
 __host__ void
 reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
