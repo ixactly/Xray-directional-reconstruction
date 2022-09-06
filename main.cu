@@ -47,6 +47,7 @@ int main() {
         ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
+
     bool rotate = true;
     reconstructSC(sinogram, ct, geom, 20, 6, rotate);
     // calcurate main direction
