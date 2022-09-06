@@ -48,9 +48,17 @@ int main() {
     }
 
     bool rotate = true;
-    // reconstructSC(sinogram, ct, geom, 5, 6, rotate);
+    reconstructSC(sinogram, ct, geom, 20, 6, rotate);
     // calcurate main direction
     compareXYZTensorVolume(ct, geom);
+    // thresholdProcess
+    for (auto &e: ct) {
+        const float thresh = 0.1;
+        e.forEach([&thresh](float value) -> float {
+            float tmp = (value < thresh) ? value : 0.0f;
+            return tmp;
+        });
+    }
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
                                       (1000.0 * 1000.0));
