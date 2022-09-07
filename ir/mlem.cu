@@ -262,7 +262,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
 
     Rotate = condR * Rotate;
     offset = condR * offset;
-    Vector3f vecSod(0.0, -geom.sod, 0.0);
+    Vector3f vecSod(0.0, geom.sod, 0.0);
     Vector3f base1(1.0, 0.0, 0.0);
     Vector3f base2(0.0, 0.0, 1.0);
 
@@ -286,7 +286,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
     Vector3f p = vecSod + coeff * src2voxel;
 
     float u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
-    float v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
+    float v = -(p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float)sizeD[1] - 0.5f))
         return;
@@ -321,7 +321,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
         // G->grating sensivity vector
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3f G = Rotate * Vector3f(0.0, 0.0, 1.0);
-        float vkm = B.cross(S).norm2() * abs(S * G);
+        float vkm = 1.0; // B.cross(S).norm2() * abs(S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -358,7 +358,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
 
     Rotate = condR * Rotate;
     offset = condR * offset;
-    Vector3f vecSod(0.0, -geom.sod, 0.0);
+    Vector3f vecSod(0.0, geom.sod, 0.0);
     Vector3f base1(1.0, 0.0, 0.0);
     Vector3f base2(0.0, 0.0, 1.0);
 
@@ -382,7 +382,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     Vector3f p = vecSod + coeff * src2voxel;
 
     float u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
-    float v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
+    float v = -(p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
 
     if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
         return;
@@ -415,7 +415,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
 
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3f G = Rotate * Vector3f(0.0, 0.0, 1.0);
-        float vkm = B.cross(S).norm2() * abs(S * G);
+        float vkm = 1.0;// B.cross(S).norm2() * abs(S * G);
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *

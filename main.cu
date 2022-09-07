@@ -48,7 +48,7 @@ int main() {
     }
 
     bool rotate = false;
-    reconstructSC(sinogram, ct, geom, 20, 6, rotate);
+    reconstructSC(sinogram, ct, geom, 1, 6, rotate);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
