@@ -37,29 +37,32 @@ int main() {
     // if you load ct, turn off initialization of filling 1.0
 
     for (auto &e: ct) {
-        // e.forEach([](float value) -> float { return 0.01; });
+        e.forEach([](float value) -> float { return 0.01; });
     }
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string loadfilePath =
                 "../volume_bin/yojiSC_vol" + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-
-    bool rotate = true;
+    bool rotate = false;
     reconstructSC(sinogram, ct, geom, 20, 6, rotate);
     // calcurate main direction
-    compareXYZTensorVolume(ct, geom);
+    // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
+
     for (auto &e: ct) {
+        /*
         const float thresh = 0.1;
         e.forEach([&thresh](float value) -> float {
             float tmp = (value < thresh) ? value : 0.0f;
             return tmp;
         });
+         */
     }
+
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
                                       (1000.0 * 1000.0));
@@ -81,7 +84,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/yojiSC_vol_min" + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/yojiSC_vol" + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }

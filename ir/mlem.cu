@@ -224,7 +224,7 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    for (int i = 0; i < NUM_PROJ_COND; i++) {
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
@@ -248,7 +248,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    const float theta = 2.0f * M_PI * n / sizeD[2];
+    const float theta = 2.0f * (float) M_PI * n / sizeD[2];
     Vector3f offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
 
     // need to modify
@@ -288,7 +288,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
     float u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
     float v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
 
-    if (!(0.5 < u && u < sizeD[0] - 0.5 && 0.5 < v && v < sizeD[1] - 0.5))
+    if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float)sizeD[1] - 0.5f))
         return;
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
@@ -300,9 +300,19 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
 
     Vector3f B = src2voxel;
     B.normalize();
-    float basisVector[9] = {1.0, 0.0, 0.0,
-                            0.0, 1.0, 0.0,
-                            0.0, 0.0, 1.0};
+    /*
+    float basisVector[12] = {1.0f, 0.0f, 0.0f,
+                             0.0f, 1.0f, 0.0f,
+                             0.0f, 0.0f, 1.0f,
+                             1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f)};
+    */
+    float basisVector[3*7] = {1.0f, 0.0f, 0.0f,
+                             0.0f, 1.0f, 0.0f,
+                             0.0f, 0.0f, 1.0f,
+                             1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f),
+                             -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f),
+                             -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f),
+                             1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f)};
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
@@ -311,7 +321,7 @@ forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
         // G->grating sensivity vector
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3f G = Rotate * Vector3f(0.0, 0.0, 1.0);
-        float vkm = B.cross(S).norm2() * (S * G);
+        float vkm = B.cross(S).norm2() * abs(S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -334,7 +344,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    const float theta = 2.0f * M_PI * n / sizeD[2];
+    const float theta = 2.0f * (float) M_PI * n / sizeD[2];
     Vector3f offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
 
     // need to modify
@@ -384,9 +394,13 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
             (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    float basisVector[9] = {1.0, 0.0, 0.0,
-                            0.0, 1.0, 0.0,
-                            0.0, 0.0, 1.0};
+    float basisVector[3*7] = {1.0f, 0.0f, 0.0f,
+                              0.0f, 1.0f, 0.0f,
+                              0.0f, 0.0f, 1.0f,
+                              1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f),
+                              -1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f),
+                              -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f),
+                              1.0f / sqrt(3.0f), -1.0f / sqrt(3.0f), 1.0f / sqrt(3.0f)};
 
     Vector3f B = src2voxel;
     B.normalize();
@@ -401,7 +415,7 @@ backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, flo
 
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         Vector3f G = Rotate * Vector3f(0.0, 0.0, 1.0);
-        float vkm = B.cross(S).norm2() * (S * G);
+        float vkm = B.cross(S).norm2() * abs(S * G);
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *
