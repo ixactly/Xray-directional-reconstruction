@@ -45,13 +45,4 @@ __device__ void
 backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
                const Geometry &geom, const float* matTrans);
 
-class MLEM {
-public:
-
-private:
-    float u, v;
-    bool collision;
-
-
-};
 #endif //INC_3DRECONGPU_MLEM_CUH
