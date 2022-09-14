@@ -95,12 +95,13 @@ inline constexpr float elemT[9] = {0.0, 0.0, 0.0,
                                     -0.515536, 0.177914, 0.544715,
 };
 
-inline constexpr float BASIS_VECTOR[9] = {1.0, 0.0, 0.0,
-
-                                           0.0, 1.0, 0.0,
-
-                                           0.0, 0.0, 1.0};
-
+__constant__ float basisVector[21] = {1.0f, 0.0f, 0.0f,
+                          0.0f, 1.0f, 0.0f,
+                          0.0f, 0.0f, 1.0f,
+                          0.57735f, 0.57735f, 0.57735f,
+                          -0.57735f, -0.57735f, 0.57735f,
+                          -0.57735, 0.57735, 0.57735f,
+                          0.57735, -0.57735, 0.57735f}; // 1 / sqrt(3.0)
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;

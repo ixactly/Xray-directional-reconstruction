@@ -80,7 +80,7 @@ public :
         cv::waitKey(0);
     } */
 
-    T *getPtr() const {
+    T *get() const {
         return data.get();
     }
 
@@ -172,7 +172,7 @@ public:
 
         const int size = sizeX * sizeY * sizeZ;
         cudaMalloc(&data, sizeof(T) * sizeX * sizeY * sizeZ);
-        cudaMemcpy(data, v.getPtr(), size * sizeof(T), cudaMemcpyHostToDevice);
+        cudaMemcpy(data, v.get(), size * sizeof(T), cudaMemcpyHostToDevice);
     }
 
     ~CudaVolume() {

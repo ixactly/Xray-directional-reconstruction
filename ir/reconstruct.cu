@@ -29,9 +29,9 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     cudaMalloc(&devMatTrans, sizeof(float) * 12 * NUM_PROJ_COND);
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
-        cudaMemcpy(&devSino[i * lenD], sinogram[i].getPtr(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
+        cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(&devVoxel[i * lenV], voxel[i].getPtr(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+        cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         cudaMemcpy(&devMatTrans[12 * i], &elemR[9 * i], sizeof(float) * 9, cudaMemcpyHostToDevice);
         cudaMemcpy(&devMatTrans[12 * i + 9], &elemT[3 * i], sizeof(float) * 3, cudaMemcpyHostToDevice);
@@ -64,7 +64,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
         std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
 
         cudaMemset(devProj, 0, sizeof(float) * lenD * NUM_PROJ_COND);
-
+        auto forward = backwardXTT;
         for (int &sub: subsetOrder) {
             // forward and ratio
             for (int i = 0; i < NUM_PROJ_COND; i++) {
@@ -75,7 +75,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                     // forward process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        xzPlaneForward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, &devMatTrans[12*i], y, n);
+                        forwardXTT<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, &devMatTrans[12 * i], y, n);
                         cudaDeviceSynchronize();
                     }
                     // ratio process
@@ -94,7 +94,8 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                         pbar.update();
                         int n = (sub + batch * subOrder) % nProj;
 
-                        xzPlaneBackward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, &devMatTrans[12*i], y, n);
+                        backwardXTT<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom,
+                                                       &devMatTrans[12 * i], y, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -106,9 +107,9 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     }
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
-        cudaMemcpy(sinogram[i].getPtr(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+        cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(voxel[i].getPtr(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+        cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
     cudaFree(devProj);
     cudaFree(devSino);
@@ -176,7 +177,7 @@ reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geomet
                 for (int y = 0; y < sizeV[1]; y++) {
                     for (int z = 0; z < sizeV[2]; z++) {
                         int coord[4] = {x, y, z, n};
-                        forwardProjSC(coord, sino, &vox, geom);
+                        forwardXTTonDevice(coord, sino, &vox, geom);
                     }
                 }
             }

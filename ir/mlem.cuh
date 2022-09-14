@@ -11,18 +11,6 @@
 template<typename T>
 __device__ __host__ int sign(T val);
 
-__host__ void
-forwardProjhost(const int coord[4], const int sizeD[3], const int sizeV[3], float *devSino, const float *devVoxel,
-                const Geometry &geom);
-
-__device__ void
-forwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], float *devSino, const float *devVoxel,
-            const Geometry &geom);
-
-__device__ void
-backwardProj(const int coord[4], const int sizeD[3], const int sizeV[3], const float *devSino, float *devVoxel,
-             const Geometry &geom);
-
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
 
 __global__ void
@@ -30,19 +18,39 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
              const int y);
 
 __global__ void
-xzPlaneForward(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
-               const int y, const int n);
+forwardXTT(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
+           const int y, const int n);
 
 __global__ void
-xzPlaneBackward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
-                const int y, const int n);
+backwardXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+            const int y, const int n);
 
 __device__ void
-forwardProjSC(const int coord[4], float *devProj, const float *devVoxel,
-              const Geometry &geom, const float* matTrans);
+forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
+                   const Geometry &geom, const float* matTrans);
 
 __device__ void
-backwardProjSC(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-               const Geometry &geom, const float* matTrans);
+backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
+                    const Geometry &geom, const float* matTrans);
+
+__global__ void
+forward(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
+           const int y, const int n);
+
+__global__ void
+backward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+            const int y, const int n);
+
+__device__ void
+forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
+                   const Geometry &geom, const float* matTrans);
+
+__device__ void
+backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
+                    const Geometry &geom, const float* matTrans);
+
+__device__ void
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *matTrans, const int coord[4],
+           const Geometry &geom);
 
 #endif //INC_3DRECONGPU_MLEM_CUH
