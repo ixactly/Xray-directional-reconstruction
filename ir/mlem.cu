@@ -7,15 +7,6 @@
 #include "Params.h"
 #include "Vec.h"
 
-
-__constant__ float basisVector[21] = {1.0f, 0.0f, 0.0f,
-                                      0.0f, 1.0f, 0.0f,
-                                      0.0f, 0.0f, 1.0f,
-                                      0.57735f, 0.57735f, 0.57735f,
-                                      -0.57735f, -0.57735f, 0.57735f,
-                                      -0.57735, 0.57735, 0.57735f,
-                                      0.57735, -0.57735, 0.57735f}; // 1 / sqrt(3.0)
-
 template<typename T>
 __device__ __host__ int sign(T val) {
     return (val > T(0)) - (val < T(0));
@@ -44,8 +35,7 @@ backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geome
 }
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, float *devMatTrans,
-            int y, int n) {
+forwardProj(float *devProj, float *devVoxel, Geometry *geom, float *devMatTrans, int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -110,10 +100,10 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
-    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV), c2 =
-            (u_tmp - (float) intU) * (v_tmp - (float) intV),
-            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
-            (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
+            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
+            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
@@ -177,10 +167,10 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
-    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV), c2 =
-            (u_tmp - (float) intU) * (v_tmp - (float) intV),
-            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
-            (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
+            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
+            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
@@ -265,7 +255,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *matTrans, 
                    matTrans[6], matTrans[7], matTrans[8]);
     Vector3f t(matTrans[9], matTrans[10], matTrans[11]);
 
-    Rotate = condR * Rotate;
+    Rotate = condR * Rotate; // no need
     offset = condR * offset;
     Vector3f vecSod(0.0, geom.sod, 0.0);
     Vector3f base1(1.0, 0.0, 0.0);
