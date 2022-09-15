@@ -34,23 +34,25 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
                     const Geometry &geom, const float* matTrans);
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
+forwardProj(float *devProj, float *devVoxel, Geometry *geom, float* elements,
             int y, int n);
 
 __global__ void
-backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* elements,
              int y, int n);
 
 __device__ void
 forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                   const Geometry &geom, const float* matTrans);
+                   const Geometry &geom, const float* elements);
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-                    const Geometry &geom, const float* matTrans);
+                    const Geometry &geom, const float* elements);
+
+__host__ void geomRotation(float elements[9], int i, int n);
 
 __device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *matTrans, const int coord[4],
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *elements, const int coord[4],
            const Geometry &geom);
 
 #endif //INC_3DRECONGPU_MLEM_CUH

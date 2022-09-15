@@ -46,8 +46,24 @@ inline constexpr int NUM_VOXEL = 672;
 
 inline constexpr float INIT_OFFSET[3] = {0.0, 0.0, 0.0};
 
-extern __constant__ float elemR[27];
-extern __constant__ float elemT[9];
+inline constexpr float elemR[27] = {1.0, 0.0, 0.0,
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0,
+
+                                    0.018775, -0.003632, 0.999817,
+                                    -0.999823, 0.001259, 0.018780,
+                                    -0.001327, -0.999993, -0.003608,
+
+                                    -0.008569, -0.998949, 0.045025,
+                                    0.001514, -0.045040, -0.998984,
+                                    0.999962, -0.008492, 0.001899};
+
+inline constexpr float elemT[9] = {0.0, 0.0, 0.0,
+
+                                   -0.330990, 0.117636, 0.560028,
+
+                                   -0.515536, 0.177914, 0.544715};
+
 extern __constant__ float basisVector[21];
 // cfrp
 /*
