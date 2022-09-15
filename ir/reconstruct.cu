@@ -21,7 +21,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     int nProj = sizeD[2];
 
     // cudaMalloc
-    float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *geomElements;
+    float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devMatTrans;
     const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
     const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
@@ -30,12 +30,16 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
     cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
     cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-    cudaMallocManaged(&geomElements, sizeof(float) * 9);
+    cudaMalloc(&devMatTrans, sizeof(float) * 12 * NUM_PROJ_COND);
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
         cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+    for (int i = 0; i < NUM_PROJ_COND; i++) {
+        cudaMemcpy(&devMatTrans[12 * i], &elemR[9 * i], sizeof(float) * 9, cudaMemcpyHostToDevice);
+        cudaMemcpy(&devMatTrans[12 * i + 9], &elemT[3 * i], sizeof(float) * 3, cudaMemcpyHostToDevice);
+    }
 
     Geometry *devGeom;
     cudaMalloc(&devGeom, sizeof(Geometry));
@@ -69,13 +73,12 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
             for (int i = 0; i < NUM_PROJ_COND; i++) {
                 for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                     int n = (sub + batch * subOrder) % nProj;
-                    geomRotation(geomElements, i, n);
                     // !!care!! judge from vecSod which plane we chose
 
                     // forwardProj process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, geomElements,
+                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, &devMatTrans[12 * i],
                                                    y, n);
                         cudaDeviceSynchronize();
                     }
@@ -94,9 +97,8 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                         pbar.update();
                         int n = (sub + batch * subOrder) % nProj;
-                        geomRotation(geomElements, i, n);
                         backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
-                                                    devVoxelFactor, devGeom, geomElements, y, n);
+                                                    devVoxelFactor, devGeom, &devMatTrans[12 * i], y, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -118,7 +120,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     cudaFree(devGeom);
     cudaFree(devVoxelFactor);
     cudaFree(devVoxelTmp);
-    cudaFree(geomElements);
+    cudaFree(devMatTrans);
 
 }
 

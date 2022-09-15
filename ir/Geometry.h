@@ -22,7 +22,6 @@ public:
     int voxel;
     int detect;
     int nProj;
-
 };
 
 class BasisVector {
