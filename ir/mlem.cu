@@ -13,46 +13,46 @@ __device__ __host__ int sign(T val) {
 }
 
 __global__ void
-forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, float *devMatTrans,
-               const int y, const int n) {
+forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
+               int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    forwardXTTonDevice(coord, devProj, devVoxel, *geom, devMatTrans);
+    forwardXTTonDevice(coord, devProj, devVoxel, *geom, cond);
 }
 
 __global__ void
-backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float *devMatTrans,
+backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
                 const int y, const int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    backwardXTTonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, devMatTrans);
+    backwardXTTonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
 }
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, float *devMatTrans, int y, int n) {
+forwardProj(float *devProj, float *devVoxel, Geometry *geom, int cond, int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    forwardonDevice(coord, devProj, devVoxel, *geom, devMatTrans);
+    forwardonDevice(coord, devProj, devVoxel, *geom, cond);
 }
 
 __global__ void
-backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float *devMatTrans,
+backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
              int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    backwardonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, devMatTrans);
+    backwardonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
 }
 
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n) {
@@ -86,14 +86,14 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
 
 __device__ void
 forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                const Geometry &geom, const float *matTrans) {
-    const int n = coord[3];
+                const Geometry &geom, int cond) {
+
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     float u, v;
     Vector3f B, G;
-    rayCasting(u, v, B, G, matTrans, coord, geom);
+    rayCasting(u, v, B, G, cond, coord, geom);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
         return;
@@ -105,6 +105,7 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
             c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
+    const int n = abs(coord[3]);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
@@ -120,17 +121,19 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-                 const Geometry &geom, const float *matTrans) {
-    const int n = coord[3];
+                 const Geometry &geom, int cond) {
+
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     float u, v;
     Vector3f B, G;
-    rayCasting(u, v, B, G, matTrans, coord, geom);
+    rayCasting(u, v, B, G, cond, coord, geom);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
         return;
+
+    const int n = abs(coord[3]);
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
@@ -153,17 +156,19 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
 
 __device__ void
 forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                   const Geometry &geom, const float *matTrans) {
-    const int n = coord[3];
+                   const Geometry &geom, int cond) {
+
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     float u, v;
     Vector3f B, G;
-    rayCasting(u, v, B, G, matTrans, coord, geom);
+    rayCasting(u, v, B, G, cond, coord, geom);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
         return;
+
+    const int n = abs(coord[3]);
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
@@ -196,18 +201,19 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
 // change to class
 __device__ void
 backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-                    const Geometry &geom, const float *matTrans) {
-    const int n = coord[3];
+                    const Geometry &geom, int cond) {
+
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     float u, v;
     Vector3f B, G;
-    rayCasting(u, v, B, G, matTrans, coord, geom);
+    rayCasting(u, v, B, G, cond, coord, geom);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
         return;
 
+    const int n = abs(coord[3]);
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
     int intU = floor(u_tmp), intV = floor(v_tmp);
     float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV), c2 =
@@ -237,29 +243,30 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
 }
 
 __device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *matTrans, const int coord[4],
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
            const Geometry &geom) {
+
     const int n = coord[3];
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    const float theta = 2.0f * (float) M_PI * n / sizeD[2];
+    const float theta = 2.0f * (float) M_PI * (float) n / (float) sizeD[2];
     Vector3f offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
 
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
-    Matrix3f Rotate(cosf(theta), -sinf(theta), 0, sinf(theta), cosf(theta), 0, 0, 0, 1);
+    Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
 
-    Matrix3f condR(matTrans[0], matTrans[1], matTrans[2],
-                   matTrans[3], matTrans[4], matTrans[5],
-                   matTrans[6], matTrans[7], matTrans[8]);
-    Vector3f t(matTrans[9], matTrans[10], matTrans[11]);
+    Matrix3f condR(elemR[3 * cond + 0], elemR[3 * cond + 1], elemR[3 * cond + 2],
+                   elemR[3 * cond + 3], elemR[3 * cond + 4], elemR[3 * cond + 5],
+                   elemR[3 * cond + 6], elemR[3 * cond + 7], elemR[3 * cond + 8]);
+    Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
 
     Rotate = condR * Rotate; // no need
     offset = condR * offset;
-    Vector3f vecSod(0.0, geom.sod, 0.0);
-    Vector3f base1(1.0, 0.0, 0.0);
-    Vector3f base2(0.0, 0.0, 1.0);
+    Vector3f vecSod(0.0f, geom.sod, 0.0f);
+    Vector3f base1(1.0f, 0.0f, 0.0f);
+    Vector3f base2(0.0f, 0.0f, 1.0f);
 
     vecSod = Rotate * vecSod;
 
@@ -284,7 +291,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *matTrans, 
     v = -(p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
     B = src2voxel;
     B.normalize();
-    G = Rotate * Vector3f(0.0, 0.0, 1.0);
+    G = Rotate * Vector3f(0.0f, 0.0f, 1.0f);
 
 }
 

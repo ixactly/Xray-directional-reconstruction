@@ -18,39 +18,39 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
              const int y);
 
 __global__ void
-forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
-               const int y, const int n);
+forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
+               int y, int n);
 
 __global__ void
-backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
                 const int y, const int n);
 
 __device__ void
 forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                   const Geometry &geom, const float* matTrans);
+                   const Geometry &geom, int cond);
 
 __device__ void
 backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-                    const Geometry &geom, const float* matTrans);
+                    const Geometry &geom, int cond);
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
+forwardProj(float *devProj, float *devVoxel, Geometry *geom, int cond,
             int y, int n);
 
 __global__ void
-backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
              int y, int n);
 
 __device__ void
 forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                   const Geometry &geom, const float* matTrans);
+                const Geometry &geom, int cond);
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-                    const Geometry &geom, const float* matTrans);
+                 const Geometry &geom, int cond);
 
 __device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, const float *matTrans, const int coord[4],
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
            const Geometry &geom);
 
 #endif //INC_3DRECONGPU_MLEM_CUH

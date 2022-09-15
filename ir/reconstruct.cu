@@ -11,17 +11,18 @@
 #include "omp.h"
 #include "reconstruct.cuh"
 
-void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, bool dir,
+void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                  IR method) {
     auto forward = (method == IR::MLEM) ? forwardProj : forwardProjXTT;
     auto backward = (method == IR::MLEM) ? backwardProj : backwardProjXTT;
+    int rotation = (dir == Rotate::CW) ? 1 : -1;
 
     int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
     int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
     int nProj = sizeD[2];
 
     // cudaMalloc
-    float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devMatTrans;
+    float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
     const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
     const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
@@ -30,16 +31,11 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
     cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
     cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-    cudaMalloc(&devMatTrans, sizeof(float) * 12 * NUM_PROJ_COND);
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
         cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-    for (int i = 0; i < NUM_PROJ_COND; i++) {
-        cudaMemcpy(&devMatTrans[12 * i], &elemR[9 * i], sizeof(float) * 9, cudaMemcpyHostToDevice);
-        cudaMemcpy(&devMatTrans[12 * i + 9], &elemT[3 * i], sizeof(float) * 3, cudaMemcpyHostToDevice);
-    }
 
     Geometry *devGeom;
     cudaMalloc(&devGeom, sizeof(Geometry));
@@ -72,13 +68,13 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
             // forwardProj and ratio
             for (int i = 0; i < NUM_PROJ_COND; i++) {
                 for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                    int n = (sub + batch * subOrder) % nProj;
+                    int n = rotation * ((sub + batch * subOrder) % nProj);
                     // !!care!! judge from vecSod which plane we chose
 
                     // forwardProj process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, &devMatTrans[12 * i],
+                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, i,
                                                    y, n);
                         cudaDeviceSynchronize();
                     }
@@ -96,9 +92,9 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                 for (int i = 0; i < NUM_PROJ_COND; i++) {
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                         pbar.update();
-                        int n = (sub + batch * subOrder) % nProj;
+                        int n = rotation * ((sub + batch * subOrder) % nProj);
                         backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
-                                                    devVoxelFactor, devGeom, &devMatTrans[12 * i], y, n);
+                                                    devVoxelFactor, devGeom, i, y, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -120,7 +116,6 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     cudaFree(devGeom);
     cudaFree(devVoxelFactor);
     cudaFree(devVoxelTmp);
-    cudaFree(devMatTrans);
 
 }
 

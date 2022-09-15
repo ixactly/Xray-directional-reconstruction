@@ -49,6 +49,7 @@ inline constexpr float INIT_OFFSET[3] = {0.0, 0.0, 0.0};
 extern __constant__ float elemR[27];
 extern __constant__ float elemT[9];
 extern __constant__ float basisVector[21];
+
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;

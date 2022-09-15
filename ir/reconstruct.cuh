@@ -18,7 +18,7 @@ enum class Rotate {
     CCW
 };
 
-void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, bool dir,
+void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                  IR method);
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
