@@ -60,7 +60,7 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
-    const int idx = u + geom->detect * v + geom->detect * geom->detect * n;
+    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     if (devProj[idx] >= 1e-7f)
         devProj[idx] = devSino[idx] / devProj[idx];
 }
