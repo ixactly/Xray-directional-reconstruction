@@ -13,46 +13,51 @@ __device__ __host__ int sign(T val) {
 }
 
 __global__ void
-forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
-               int y, int n) {
+forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, const int *voxelInfo) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    const int coord[4] = {x, y, z, n};
-    forwardXTTonDevice(coord, devProj, devVoxel, *geom, cond);
+    int tmp[3] = {x, voxelInfo[5], z};
+    int coord[4] = {tmp[voxelInfo[0]], tmp[voxelInfo[1]], tmp[voxelInfo[2]], voxelInfo[3]};
+
+    forwardXTTonDevice(coord, devProj, devVoxel, *geom, voxelInfo[4]);
 }
 
 __global__ void
-backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
-                const int y, const int n) {
+backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, const int *voxelInfo) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    const int coord[4] = {x, y, z, n};
-    backwardXTTonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
+    int tmp[3] = {x, voxelInfo[5], z};
+    int coord[4] = {tmp[voxelInfo[0]], tmp[voxelInfo[1]], tmp[voxelInfo[2]], voxelInfo[3]};
+
+    backwardXTTonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, voxelInfo[4]);
 }
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, int cond, int y, int n) {
+forwardProj(float *devProj, float *devVoxel, Geometry *geom, const int *voxelInfo) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    const int coord[4] = {x, y, z, n};
-    forwardonDevice(coord, devProj, devVoxel, *geom, cond);
+    int tmp[3] = {x, voxelInfo[5], z};
+    int coord[4] = {tmp[voxelInfo[0]], tmp[voxelInfo[1]], tmp[voxelInfo[2]], voxelInfo[3]};
+
+    forwardonDevice(coord, devProj, devVoxel, *geom, voxelInfo[4]);
 }
 
 __global__ void
-backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
-             int y, int n) {
+backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, const int *voxelInfo) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    const int coord[4] = {x, y, z, n};
-    backwardonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
+    int tmp[3] = {x, voxelInfo[5], z};
+    int coord[4] = {tmp[voxelInfo[0]], tmp[voxelInfo[1]], tmp[voxelInfo[2]], voxelInfo[3]};
+
+    backwardonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, voxelInfo[4]);
 }
 
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n) {
@@ -240,6 +245,43 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
         devVoxelFactor[idxVoxel] += (vkm * vkm);
         devVoxelTmp[idxVoxel] += backForward;
     }
+}
+
+__host__ void geomRotation(int i, int n, int *voxelInfo) {
+    const double theta = 2.0 * M_PI * n / NUM_PROJ;
+    Matrix3d Rotate(std::cos(theta), -std::sin(theta), 0.0f, std::sin(theta), std::cos(theta), 0.0f, 0.0f, 0.0f, 1.0f);
+
+    Matrix3d condR(hostElemR[9 * i + 0], hostElemR[9 * i + 1], hostElemR[9 * i + 2],
+                   hostElemR[9 * i + 3], hostElemR[9 * i + 4], hostElemR[9 * i + 5],
+                   hostElemR[9 * i + 6], hostElemR[9 * i + 7], hostElemR[9 * i + 8]);
+
+    Rotate = condR * Rotate;
+    Vector3d vecSod(0.0, SRC_OBJ_DISTANCE, 0.0);
+
+    vecSod = Rotate * vecSod;
+
+    int idx = vecSod.maxIdx();
+    switch (idx) {
+        case 0:
+            voxelInfo[0] = 1;
+            voxelInfo[1] = 0;
+            voxelInfo[2] = 2;
+            break;
+        case 1:
+            voxelInfo[0] = 0;
+            voxelInfo[1] = 1;
+            voxelInfo[2] = 2;
+            break;
+        case 2:
+            voxelInfo[0] = 0;
+            voxelInfo[1] = 2;
+            voxelInfo[2] = 1;
+            break;
+        default:
+            break;
+    }
+    voxelInfo[3] = n;
+    voxelInfo[4] = i;
 }
 
 __device__ void

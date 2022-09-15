@@ -50,6 +50,17 @@ extern __constant__ float elemR[27];
 extern __constant__ float elemT[9];
 extern __constant__ float basisVector[21];
 
+inline constexpr double hostElemR[27] = {1.0, 0.0, 0.0,
+                                0.0, 1.0, 0.0,
+                                0.0, 0.0, 1.0,
+
+                                0.018775, -0.003632, 0.999817,
+                                -0.999823, 0.001259, 0.018780,
+                                -0.001327, -0.999993, -0.003608,
+
+                                -0.008569, -0.998949, 0.045025,
+                                0.001514, -0.045040, -0.998984,
+                                0.999962, -0.008492, 0.001899};
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;
