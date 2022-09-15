@@ -18,12 +18,12 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
              const int y);
 
 __global__ void
-forwardXTT(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
-           const int y, const int n);
+forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
+               const int y, const int n);
 
 __global__ void
-backwardXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
-            const int y, const int n);
+backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+                const int y, const int n);
 
 __device__ void
 forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
@@ -34,12 +34,12 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
                     const Geometry &geom, const float* matTrans);
 
 __global__ void
-forward(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
-           const int y, const int n);
+forwardProj(float *devProj, float *devVoxel, Geometry *geom, float* devMatTrans,
+            int y, int n);
 
 __global__ void
-backward(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
-            const int y, const int n);
+backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, float* devMatTrans,
+             int y, int n);
 
 __device__ void
 forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,

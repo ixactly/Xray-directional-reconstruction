@@ -32,8 +32,8 @@ inline constexpr int NUM_VOXEL = 100;
 */
 
 //yoji cube
-inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 3;
+inline constexpr int NUM_BASIS_VECTOR = 1;
+inline constexpr int NUM_PROJ_COND = 1;
 
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
@@ -95,13 +95,6 @@ inline constexpr float elemT[9] = {0.0, 0.0, 0.0,
                                     -0.515536, 0.177914, 0.544715,
 };
 
-__constant__ float basisVector[21] = {1.0f, 0.0f, 0.0f,
-                          0.0f, 1.0f, 0.0f,
-                          0.0f, 0.0f, 1.0f,
-                          0.57735f, 0.57735f, 0.57735f,
-                          -0.57735f, -0.57735f, 0.57735f,
-                          -0.57735, 0.57735, 0.57735f,
-                          0.57735, -0.57735, 0.57735f}; // 1 / sqrt(3.0)
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;

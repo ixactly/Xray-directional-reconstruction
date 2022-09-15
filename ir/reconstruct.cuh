@@ -8,15 +8,22 @@
 #include "Vec.h"
 #include "Geometry.h"
 
-void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, const int epoch,
-                   const int batch, bool dir);
+enum class IR {
+    XTT,
+    MLEM
+};
+
+enum class Rotate {
+    CW,
+    CCW
+};
+
+void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, bool dir,
+                 IR method);
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
 
 __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
                                    const int batch, bool dir);
-enum class IR {
-    XTT,
-    MLEM
-};
+
 #endif //INC_3DRECONGPU_RECONSTRUCT_CUH

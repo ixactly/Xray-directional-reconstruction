@@ -9,9 +9,13 @@
 #include "Params.h"
 #include "Volume.h"
 #include "omp.h"
+#include "reconstruct.cuh"
 
-void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, const int epoch,
-                   const int batch, bool dir) {
+void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, bool dir,
+                 IR method) {
+    auto forward = (method == IR::MLEM) ? forwardProj : forwardProjXTT;
+    auto backward = (method == IR::MLEM) ? backwardProj : backwardProjXTT;
+
     int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
     int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
     int nProj = sizeD[2];
@@ -48,7 +52,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
     dim3 blockD(blockSize, blockSize, 1);
     dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
 
-    // forward, divide, backward proj
+    // forwardProj, divide, backwardProj proj
     int subsetSize = (nProj + batch - 1) / batch;
     std::vector<int> subsetOrder(batch);
     for (int i = 0; i < batch; i++) {
@@ -64,18 +68,18 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
         std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
 
         cudaMemset(devProj, 0, sizeof(float) * lenD * NUM_PROJ_COND);
-        auto forward = backwardXTT;
         for (int &sub: subsetOrder) {
-            // forward and ratio
+            // forwardProj and ratio
             for (int i = 0; i < NUM_PROJ_COND; i++) {
                 for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                     int n = (sub + batch * subOrder) % nProj;
                     // !!care!! judge from vecSod which plane we chose
 
-                    // forward process
+                    // forwardProj process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        forwardXTT<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, &devMatTrans[12 * i], y, n);
+                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, &devMatTrans[12 * i],
+                                                   y, n);
                         cudaDeviceSynchronize();
                     }
                     // ratio process
@@ -84,7 +88,7 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                 }
             }
 
-            // backward process
+            // backwardProj process
             for (int y = 0; y < sizeV[1]; y++) {
                 cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
                 cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
@@ -93,9 +97,8 @@ void reconstructSC(Volume<float> *sinogram, Volume<float> *voxel, const Geometry
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                         pbar.update();
                         int n = (sub + batch * subOrder) % nProj;
-
-                        backwardXTT<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom,
-                                                       &devMatTrans[12 * i], y, n);
+                        backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
+                                                    devVoxelFactor, devGeom, &devMatTrans[12 * i], y, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -157,7 +160,7 @@ reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geomet
     int nProj = sizeD[2];
 
 
-    // forward, divide, backward proj
+    // forward, divide, backwardProj proj
     int subsetSize = (nProj + batch - 1) / batch;
     std::vector<int> subsetOrder(batch);
     for (int i = 0; i < batch; i++) {
@@ -172,7 +175,7 @@ reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geomet
         // forward
         for (int n = 15; n < nProj; n++) {
 
-            // forward
+            // forwardProj
             for (int x = 0; x < sizeV[0]; x++) {
                 for (int y = 0; y < sizeV[1]; y++) {
                     for (int z = 0; z < sizeV[2]; z++) {
