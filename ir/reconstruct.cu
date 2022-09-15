@@ -41,9 +41,6 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     cudaMalloc(&devGeom, sizeof(Geometry));
     cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
-    int *voxelInfo;
-    cudaMallocManaged(&voxelInfo, sizeof(voxelInfo) * 6);
-
     // define blocksize
     const int blockSize = 16;
     dim3 blockV(blockSize, blockSize, 1);
@@ -72,15 +69,13 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
             for (int i = 0; i < NUM_PROJ_COND; i++) {
                 for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                     int n = rotation * ((sub + batch * subOrder) % nProj);
-
-                    std::memset(voxelInfo, 0, sizeof(int) * 6);
-                    geomRotation(i, n, voxelInfo);
+                    // !!care!! judge from vecSod which plane we chose
 
                     // forwardProj process
-                    for (int plane = 0; plane < NUM_VOXEL; plane++) {
+                    for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        voxelInfo[5] = plane;
-                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, voxelInfo);
+                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, i,
+                                                   y, n);
                         cudaDeviceSynchronize();
                     }
                     // ratio process
@@ -90,7 +85,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
             }
 
             // backwardProj process
-            for (int planeIdx = 0; planeIdx < NUM_VOXEL; planeIdx++) {
+            for (int y = 0; y < sizeV[1]; y++) {
                 cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
                 cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
 
@@ -98,11 +93,12 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                         pbar.update();
                         int n = rotation * ((sub + batch * subOrder) % nProj);
-                        backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp, devVoxelFactor, devGeom, voxelInfo);
+                        backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
+                                                    devVoxelFactor, devGeom, i, y, n);
                         cudaDeviceSynchronize();
                     }
                 }
-                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, planeIdx);
+                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                 cudaDeviceSynchronize();
 
             }

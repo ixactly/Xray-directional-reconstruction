@@ -87,21 +87,9 @@ public:
         this->y /= value;
         this->z /= value;
     }
-
     __both__ T norm2() {
         return sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
-    }
 
-    __host__ int maxIdx() {
-        int x_tmp = std::abs(x);
-        int y_tmp = std::abs(y);
-        int z_tmp = std::abs(z);
-
-        if (x_tmp > y_tmp && x_tmp > z_tmp) {
-            return 0;
-        } else if (y_tmp > z_tmp) {
-            return 1;
-        } else return 2;
     }
 
 private:
@@ -121,7 +109,7 @@ public:
     __both__ explicit Matrix3X(T a, T b, T c, T d, T e, T f, T g, T h, T i) : a(a), b(b), c(c), d(d), e(e), f(f), g(g),
                                                                               h(h), i(i) {}
 
-    __both__ Matrix3X &operator=(const Matrix3X &mat) {
+    __both__ Matrix3X &operator=(const Matrix3X& mat) {
         for (int i = 0; i < 9; i++) {
             this->val[i] = mat.val[i];
         }
@@ -148,7 +136,7 @@ public:
     }
 
     __both__ Matrix3X operator-() {
-        for (auto &e: val) {
+        for (auto & e : val) {
             e = -e;
         }
     }
