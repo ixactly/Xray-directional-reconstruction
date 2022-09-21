@@ -47,7 +47,7 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 1, 6, Rotate::CW, IR::MLEM);
+    reconstruct(sinogram, ct, geom, 10, 6, Rotate::CW, IR::XTT);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess

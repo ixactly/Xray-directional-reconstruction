@@ -74,11 +74,11 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                     // forwardProj process
                     for (int y = 0; y < sizeV[1]; y++) {
                         pbar.update();
-                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, 2, y, n);
+                        forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, i, y, n);
                         cudaDeviceSynchronize();
                     }
                     // ratio process
-                    // projRatio<<<gridD, blockD>>>(&devProj[lenD * i], &devSino[lenD * i], devGeom, n);
+                    projRatio<<<gridD, blockD>>>(&devProj[lenD * i], &devSino[lenD * i], devGeom, n);
                     cudaDeviceSynchronize();
                 }
             }
@@ -92,12 +92,12 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                         pbar.update();
                         int n = rotation * ((sub + batch * subOrder) % nProj);
-                        //backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
-                        //                            devVoxelFactor, devGeom, i, y, n);
+                        backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
+                                                    devVoxelFactor, devGeom, i, y, n);
                         cudaDeviceSynchronize();
                     }
                 }
-                // voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                 cudaDeviceSynchronize();
 
             }

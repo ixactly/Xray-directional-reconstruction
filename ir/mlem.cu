@@ -264,7 +264,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
 
     Rotate = condR * Rotate; // no need
     offset = condR * offset;
-    Vector3f vecSod(0.0f, geom.sod, 0.0f);
+    Vector3f vecSod(0.0f, -geom.sod, 0.0f);
     Vector3f base1(1.0f, 0.0f, 0.0f);
     Vector3f base2(0.0f, 0.0f, 1.0f);
 
