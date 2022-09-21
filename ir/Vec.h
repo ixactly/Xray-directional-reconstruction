@@ -87,10 +87,11 @@ public:
         this->y /= value;
         this->z /= value;
     }
+
     __both__ T norm2() {
         return sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
-
     }
+
 
 private:
     union {
@@ -109,7 +110,7 @@ public:
     __both__ explicit Matrix3X(T a, T b, T c, T d, T e, T f, T g, T h, T i) : a(a), b(b), c(c), d(d), e(e), f(f), g(g),
                                                                               h(h), i(i) {}
 
-    __both__ Matrix3X &operator=(const Matrix3X& mat) {
+    __both__ Matrix3X &operator=(const Matrix3X &mat) {
         for (int i = 0; i < 9; i++) {
             this->val[i] = mat.val[i];
         }
@@ -136,7 +137,7 @@ public:
     }
 
     __both__ Matrix3X operator-() {
-        for (auto & e : val) {
+        for (auto &e: val) {
             e = -e;
         }
     }
@@ -163,6 +164,11 @@ public:
         return w;
     }
 
+    __device__ void print() {
+        for (int i = 0; i < 3; i++) {
+            printf("%d: %f, %d: %f, %d: %f\n",3 * i + 0, val[3 * i + 0], 3 * i + 1, val[3 * i + 1], 3 * i + 2, val[3 * i + 2]);
+        }
+    }
 
 private:
     union {

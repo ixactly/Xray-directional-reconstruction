@@ -47,7 +47,7 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 5, 6, Rotate::CW, IR::MLEM);
+    reconstruct(sinogram, ct, geom, 1, 6, Rotate::CW, IR::MLEM);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
@@ -56,8 +56,7 @@ int main() {
         /*
         const float thresh = 0.1;
         e.forEach([&thresh](float value) -> float {
-            float tmp = (value < thresh) ? value : 0.0f;
-            return tmp;
+            return (value < thresh) ? value : 0.0f;
         });
          */
     }
@@ -69,10 +68,10 @@ int main() {
 
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePath1 =
-                "../volume_bin/yojiAT_proj" + std::to_string(i) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/yojiAT_proj" + std::to_string(i+1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" +
                 std::to_string(NUM_PROJ) + ".raw";
-        sinogram[i].forEach([](float value) -> float { if (value > 3.0) return 0.0; else return value; });
+        // sinogram[i].forEach([](float value) -> float { if (value > 3.0) return 0.0; else return value; });
         sinogram[i].save(savefilePath1);
     }
 
@@ -83,7 +82,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/yojiSC_vol" + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/yojiSC_vol" + std::to_string(i+1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }

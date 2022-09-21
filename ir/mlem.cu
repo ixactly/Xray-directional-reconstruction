@@ -161,8 +161,8 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    float u, v;
-    Vector3f B, G;
+    float u = 0.0f, v = 0.0f;
+    Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
     rayCasting(u, v, B, G, cond, coord, geom);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
@@ -206,8 +206,8 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
-    float u, v;
-    Vector3f B, G;
+    float u = 0.0f, v = 0.0f;
+    Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
     rayCasting(u, v, B, G, cond, coord, geom);
 
     if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
@@ -257,9 +257,9 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
     Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
 
-    Matrix3f condR(elemR[3 * cond + 0], elemR[3 * cond + 1], elemR[3 * cond + 2],
-                   elemR[3 * cond + 3], elemR[3 * cond + 4], elemR[3 * cond + 5],
-                   elemR[3 * cond + 6], elemR[3 * cond + 7], elemR[3 * cond + 8]);
+    Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
+                   elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
+                   elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);
     Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
 
     Rotate = condR * Rotate; // no need
@@ -288,7 +288,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     Vector3f p = vecSod + coeff * src2voxel;
 
     u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
-    v = -(p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
+    v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
     B = src2voxel;
     B.normalize();
     G = Rotate * Vector3f(0.0f, 0.0f, 1.0f);
