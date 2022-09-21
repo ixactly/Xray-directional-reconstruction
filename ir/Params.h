@@ -32,8 +32,8 @@ inline constexpr int NUM_VOXEL = 100;
 */
 
 //yoji cube
-inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 3;
+inline constexpr int NUM_BASIS_VECTOR = 1;
+inline constexpr int NUM_PROJ_COND = 1;
 
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
