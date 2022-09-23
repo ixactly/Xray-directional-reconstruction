@@ -56,7 +56,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     }
 
     // progress bar
-    progressbar pbar(epoch * (nProj * sizeV[0]) * 2 * NUM_PROJ_COND);
+    progressbar pbar(epoch * batch * (NUM_PROJ_COND * subsetSize + sizeV[1]));
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
@@ -70,10 +70,10 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                 for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                     int n = rotation * ((sub + batch * subOrder) % nProj);
                     // !!care!! judge from vecSod which plane we chose
+                    pbar.update();
 
                     // forwardProj process
                     for (int y = 0; y < sizeV[1]; y++) {
-                        pbar.update();
                         forward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxel, devGeom, i, y, n);
                         cudaDeviceSynchronize();
                     }
@@ -87,10 +87,9 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
             for (int y = 0; y < sizeV[1]; y++) {
                 cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
                 cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-
+                pbar.update();
                 for (int i = 0; i < NUM_PROJ_COND; i++) {
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                        pbar.update();
                         int n = rotation * ((sub + batch * subOrder) % nProj);
                         backward<<<gridV, blockV>>>(&devProj[lenD * i], devVoxelTmp,
                                                     devVoxelFactor, devGeom, i, y, n);

@@ -24,8 +24,12 @@ int main() {
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
     // sinogram.load("../volume_bin/cube_proj_phantom-500x500x500.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
     for (int i = 0; i < NUM_PROJ_COND; i++) {
+        /*
         sinogram[i].load("../volume_bin/yoji_AXIS" + std::to_string(i + 1) + "/SC/raw/sc_axis" + std::to_string(i + 1) +
                          "_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+        */
+        sinogram[i].load("../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "/AT/raw/CFRP_XYZ3_AXIS" +
+                         std::to_string(i + 1) + "_256x256x1080.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
     }
 
@@ -42,12 +46,12 @@ int main() {
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string loadfilePath =
-                "../volume_bin/yojiSC_vol" + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 10, 6, Rotate::CW, IR::XTT);
+    reconstruct(sinogram, ct, geom, 50, 10, Rotate::CW, IR::MLEM);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
@@ -68,7 +72,7 @@ int main() {
 
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePath1 =
-                "../volume_bin/yojiAT_proj" + std::to_string(i+1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" +
                 std::to_string(NUM_PROJ) + ".raw";
         // sinogram[i].forEach([](float value) -> float { if (value > 3.0) return 0.0; else return value; });
@@ -82,7 +86,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/yojiSC_vol" + std::to_string(i+1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }

@@ -61,7 +61,7 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     if (u >= geom->detect || v >= geom->detect) return;
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
-    if (devProj[idx] >= 1e-7f)
+    if (devProj[idx] >= 1e-8f)
         devProj[idx] = devSino[idx] / devProj[idx];
 }
 
@@ -76,7 +76,7 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
-        if (devVoxelFactor[idxOnPlane] < 1e-7)
+        if (devVoxelFactor[idxOnPlane] < 1e-8f)
             devVoxel[idxVoxel] = 0.0;
         else
             devVoxel[idxVoxel] = devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
@@ -264,9 +264,9 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
 
     Rotate = condR * Rotate; // no need
     offset = condR * offset;
-    Vector3f vecSod(0.0f, -geom.sod, 0.0f);
+    Vector3f vecSod(0.0f, geom.sod, 0.0f);
     Vector3f base1(1.0f, 0.0f, 0.0f);
-    Vector3f base2(0.0f, 0.0f, 1.0f);
+    Vector3f base2(0.0f, 0.0f, -1.0f);
 
     vecSod = Rotate * vecSod;
 

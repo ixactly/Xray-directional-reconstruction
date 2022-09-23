@@ -35,6 +35,11 @@ inline constexpr int NUM_VOXEL = 100;
 inline constexpr int NUM_BASIS_VECTOR = 1;
 inline constexpr int NUM_PROJ_COND = 1;
 
+extern __constant__ float elemR[27];
+extern __constant__ float elemT[9];
+extern __constant__ float basisVector[21];
+
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 180;
@@ -45,11 +50,20 @@ inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 inline constexpr int NUM_VOXEL = 672;
 
 inline constexpr float INIT_OFFSET[3] = {0.0, 0.0, 0.0};
+*/
 
-extern __constant__ float elemR[27];
-extern __constant__ float elemT[9];
-extern __constant__ float basisVector[21];
+// cfrp_xyz3 params
 
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 1080;
+inline constexpr int NUM_DETECT_U = 256;
+inline constexpr int NUM_DETECT_V = 256;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 256;
+
+inline constexpr float INIT_OFFSET[3] = {0.0, 3.05 * (100.5312 / 1344.0) * (1458.0 / 1003.0), 0.0};
 // cfrp
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1069.0;
