@@ -55,15 +55,18 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
         subsetOrder[i] = i;
     }
 
+    std::vector<float> losses(epoch);
+
     // progress bar
     progressbar pbar(epoch * batch * (NUM_PROJ_COND * subsetSize + sizeV[1]));
 
     // main routine
+
     for (int ep = 0; ep < epoch; ep++) {
         std::mt19937_64 get_rand_mt; // fixed seed
         std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-
-        cudaMemset(devProj, 0, sizeof(float) * lenD * NUM_PROJ_COND);
+        cudaMemset(&loss, 0.0, sizeof(float));
+        cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
         for (int &sub: subsetOrder) {
             // forwardProj and ratio
             for (int i = 0; i < NUM_PROJ_COND; i++) {
@@ -98,9 +101,10 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
                 }
                 voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                 cudaDeviceSynchronize();
-
             }
         }
+        loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
+        cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
     }
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -115,6 +119,9 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     cudaFree(devVoxelFactor);
     cudaFree(devVoxelTmp);
 
+    std::ofstream ofs("../python/loss.csv");
+    for (auto &e: losses)
+        ofs << e << ", ";
 }
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom) {

@@ -41,7 +41,7 @@ int main() {
     // if you load ct, turn off initialization of filling 1.0
 
     for (auto &e: ct) {
-        e.forEach([](float value) -> float { return 0.01; });
+        e.forEach([](float value) -> float { return 0.001; });
     }
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {

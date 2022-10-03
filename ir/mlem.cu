@@ -61,8 +61,11 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     if (u >= geom->detect || v >= geom->detect) return;
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
     if (devProj[idx] >= 1e-8f)
         devProj[idx] = devSino[idx] / devProj[idx];
+
+
 }
 
 __global__ void
@@ -263,7 +266,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
 
     Rotate = condR * Rotate; // no need
-    offset = condR * offset;
+    offset = Rotate * offset;
     Vector3f vecSod(0.0f, geom.sod, 0.0f);
     Vector3f base1(1.0f, 0.0f, 0.0f);
     Vector3f base2(0.0f, 0.0f, -1.0f);
