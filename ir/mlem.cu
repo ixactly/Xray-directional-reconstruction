@@ -254,7 +254,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     const float theta = 2.0f * (float) M_PI * (float) n / (float) sizeD[2];
-    Vector3f offset(INIT_OFFSET[0], INIT_OFFSET[1], INIT_OFFSET[2]);
+    Vector3f offset(INIT_OFFSET[3 * cond + 0], INIT_OFFSET[3 * cond + 1], INIT_OFFSET[3 * cond + 2]);
 
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod

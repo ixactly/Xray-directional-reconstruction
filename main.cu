@@ -28,8 +28,8 @@ int main() {
         sinogram[i].load("../volume_bin/yoji_AXIS" + std::to_string(i + 1) + "/SC/raw/sc_axis" + std::to_string(i + 1) +
                          "_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         */
-        sinogram[i].load("../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "/AT/raw/CFRP_XYZ3_AXIS" +
-                         std::to_string(i + 1) + "_256x256x1080.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+        sinogram[i].load("../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(3) + "/AT/raw/CFRP_XYZ3_AXIS" +
+                         std::to_string(3) + "_256x256x1080.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
     }
 
@@ -86,7 +86,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(3) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }
