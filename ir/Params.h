@@ -32,8 +32,8 @@ inline constexpr int NUM_VOXEL = 100;
 */
 
 //yoji cube
-inline constexpr int NUM_BASIS_VECTOR = 1;
-inline constexpr int NUM_PROJ_COND = 1;
+inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_PROJ_COND = 3;
 
 extern __constant__ float elemR[27];
 extern __constant__ float elemT[9];

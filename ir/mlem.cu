@@ -109,17 +109,16 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
             c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
     const int n = abs(coord[3]);
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        const int idxVoxel =
-                coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
-        atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  c1 * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  c2 * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-                  c3 * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * devVoxel[idxVoxel]);
-    }
+    const int idxVoxel =
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + cond * (sizeV[0] * sizeV[1] * sizeV[2]);
+    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c1 * devVoxel[idxVoxel]);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c2 * devVoxel[idxVoxel]);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c3 * devVoxel[idxVoxel]);
+    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * devVoxel[idxVoxel]);
+
 }
 
 __device__ void
@@ -145,16 +144,15 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
             (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
-        const float backForward = c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                                  c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                                  c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
-                                  c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
+    const int idxVoxel = coord[0] + sizeV[0] * coord[2] + cond * (sizeV[0] * sizeV[1]);
+    const float numBack = c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                          c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                          c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
+                          c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
 
-        devVoxelFactor[idxVoxel] += 1.0f;
-        devVoxelTmp[idxVoxel] += backForward;
-    }
+    devVoxelFactor[idxVoxel] += 1.0f;
+    devVoxelTmp[idxVoxel] += numBack;
+
 }
 
 __device__ void
