@@ -87,53 +87,43 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
 
             // backwardProj process
 
-            switch (method) {
-                case IR::XTT:
-                    for (int y = 0; y < sizeV[1]; y++) {
-                        cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                            pbar.update();
-                            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                                int n = rotation * ((sub + batch * subOrder) % nProj);
-                                backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
-                                                            cond, y, n);
-                                cudaDeviceSynchronize();
-                            }
-                        }
-                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+            for (int y = 0; y < sizeV[1]; y++) {
+                cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+                    pbar.update();
+                    for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                        int n = rotation * ((sub + batch * subOrder) % nProj);
+                        backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
+                                                    cond, y, n);
                         cudaDeviceSynchronize();
                     }
-                    break;
-
-                case IR::MLEM:
-
-                    for (int y = 0; y < sizeV[1]; y++) {
-                        cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                            pbar.update();
-
-                            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                                int n = rotation * ((sub + batch * subOrder) % nProj);
-                                backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
-                                                            cond, y, n);
-                                cudaDeviceSynchronize();
-                            }
-                        }
-                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
-                        cudaDeviceSynchronize();
-                    }
-                    break;
+                }
+                voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                cudaDeviceSynchronize();
             }
-
         }
 
         loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
         cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
     }
 
-    for (int i = 0; i < NUM_PROJ_COND; i++)
+    /*
+    for (int &sub: subsetOrder) {
+        // forwardProj and ratio
+        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                int n = rotation * ((sub + batch * subOrder) % nProj);
+                // forwardProj process
+                for (int y = 0; y < sizeV[1]; y++) {
+                    forward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
+                    cudaDeviceSynchronize();
+                }
+            }
+        }
+    }
+    */
+     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
         cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);

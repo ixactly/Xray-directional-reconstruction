@@ -62,10 +62,8 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
-    if (devProj[idx] >= 1e-8f)
+    if (devProj[idx] != 0.0f)
         devProj[idx] = devSino[idx] / devProj[idx];
-
-
 }
 
 __global__ void
@@ -79,11 +77,7 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
-        if (devVoxelFactor[idxOnPlane] < 1e-8f)
-            devVoxel[idxVoxel] = 0.0;
-        else
-            devVoxel[idxVoxel] = devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
-        // printf("Tmp: %lf\n", devVoxelTmp[idxOnPlane]);
+        devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 0.0f : devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
     }
 }
 
@@ -98,7 +92,7 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
     Vector3f B, G;
     rayCasting(u, v, B, G, cond, coord, geom);
 
-    if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
         return;
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
@@ -132,7 +126,7 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
     Vector3f B, G;
     rayCasting(u, v, B, G, cond, coord, geom);
 
-    if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
         return;
 
     const int n = abs(coord[3]);
@@ -166,7 +160,7 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
     Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
     rayCasting(u, v, B, G, cond, coord, geom);
 
-    if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
         return;
 
     const int n = abs(coord[3]);
@@ -211,7 +205,7 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
     Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
     rayCasting(u, v, B, G, cond, coord, geom);
 
-    if (!(0.5f < u && u < (float) sizeD[0] - 0.5f && 0.5f < v && v < (float) sizeD[1] - 0.5f))
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
         return;
 
     const int n = abs(coord[3]);
@@ -288,8 +282,9 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     const float coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
     Vector3f p = vecSod + coeff * src2voxel;
 
-    u = (p * (Rotate * base1)) / geom.voxSize + 0.5f * (float) (sizeD[0]);
-    v = (p * (Rotate * base2)) / geom.voxSize + 0.5f * (float) (sizeD[1]);
+    u = (p * (Rotate * base1)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[0]);
+    v = (p * (Rotate * base2)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[1]);
+
     B = src2voxel;
     B.normalize();
     G = Rotate * Vector3f(0.0f, 0.0f, 1.0f);
