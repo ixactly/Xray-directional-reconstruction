@@ -51,7 +51,7 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, IR::MLEM);
+    reconstruct(sinogram, ct, geom, 20, 10, Rotate::CW, IR::MLEM);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
@@ -72,7 +72,7 @@ int main() {
 
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePath1 =
-                "../volume_bin/CFRP_XYZ3AT_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" +
                 std::to_string(NUM_PROJ) + ".raw";
         // sinogram[i].forEach([](float value) -> float { if (value > 3.0) return 0.0; else return value; });
@@ -86,7 +86,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/CF_XYZ3AT_AX" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/CF_XYZ3TMP_AX" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }
