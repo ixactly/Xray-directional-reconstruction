@@ -7,11 +7,6 @@
 #include "Params.h"
 #include "Vec.h"
 
-template<typename T>
-__device__ __host__ int sign(T val) {
-    return (val > T(0)) - (val < T(0));
-}
-
 __global__ void
 forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
                int y, int n) {

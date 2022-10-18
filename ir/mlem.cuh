@@ -8,14 +8,14 @@
 #include "Volume.h"
 #include "Vec.h"
 
-template<typename T>
-__device__ __host__ int sign(T val);
 inline __host__ void setScatterDirecOnXY(float angle, float* vec) {
     vec[0] = std::cos(angle);
     vec[1] = std::sin(angle);
+    vec[2] = 0.0f;
 
     vec[3] = -std::sin(angle);
     vec[4] = std::cos(angle);
+    vec[5] = 0.0f;
 }
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
 

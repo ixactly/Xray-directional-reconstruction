@@ -61,8 +61,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     progressbar pbar(epoch * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
     // set scattering vector direction
-    float angle = -10.0f;
-    setScatterDirecOnXY(angle / (2.0f * M_PI), basisVector);
+    setScatterDirecOnXY(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
@@ -147,7 +146,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
 
     std::ofstream ofs("../python/loss.csv");
     for (auto &e: losses)
-        ofs << e << ", ";
+        ofs << e << ",";
 }
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom) {

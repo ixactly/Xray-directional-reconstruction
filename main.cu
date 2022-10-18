@@ -51,7 +51,7 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 10, 10, Rotate::CW, IR::XTT);
+    reconstruct(sinogram, ct, geom, 30, 10, Rotate::CW, IR::XTT);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
@@ -86,7 +86,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/cfrp_xyz3/CF_XYZ3TMP_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/cfrp_xyz3/CF_XYZ3XTT_angle" + std::to_string((int) (scatter_angle_xy)) + "_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }
