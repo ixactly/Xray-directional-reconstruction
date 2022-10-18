@@ -60,6 +60,10 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     // progress bar
     progressbar pbar(epoch * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
+    // set scattering vector direction
+    float angle = -10.0f;
+    setScatterDirecOnXY(angle / (2.0f * M_PI), basisVector);
+
     // main routine
     for (int ep = 0; ep < epoch; ep++) {
         std::mt19937_64 get_rand_mt; // fixed seed
@@ -123,6 +127,12 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
         }
     }
     */
+    if (method == IR::XTT) {
+        for (int y = 0; y < sizeV[1]; y++) {
+            sqrtVoxel<<<gridV, blockV>>>(devVoxel, devGeom, y);
+            cudaDeviceSynchronize();
+        }
+    }
      for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)

@@ -109,6 +109,20 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
     }
 }
 
+__global__ void sqrtVoxel(float *devVoxel, const Geometry *geom, const int y) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        const int idxVoxel =
+                x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
+
+        devVoxel[idxVoxel] = sqrt(devVoxel[idxVoxel]);
+
+    }
+}
+
 __device__ void
 forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
                 const Geometry &geom, int cond) {
@@ -131,6 +145,7 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
             c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
     const int n = abs(coord[3]);
+
     const int idxVoxel =
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + cond * (sizeV[0] * sizeV[1] * sizeV[2]);
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],

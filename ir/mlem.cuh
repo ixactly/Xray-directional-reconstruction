@@ -10,12 +10,20 @@
 
 template<typename T>
 __device__ __host__ int sign(T val);
+inline __host__ void setScatterDirecOnXY(float angle, float* vec) {
+    vec[0] = std::cos(angle);
+    vec[1] = std::sin(angle);
 
+    vec[3] = -std::sin(angle);
+    vec[4] = std::cos(angle);
+}
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
 
 __global__ void
 voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFactor, const Geometry *geom,
              const int y);
+
+__global__ void sqrtVoxel(float *devVoxel, const Geometry *geom, const int y);
 
 __global__ void
 forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,

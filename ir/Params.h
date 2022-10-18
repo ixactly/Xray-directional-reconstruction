@@ -37,7 +37,7 @@ inline constexpr int NUM_PROJ_COND = 3;
 
 extern __constant__ float elemR[27];
 extern __constant__ float elemT[9];
-extern __constant__ float basisVector[21];
+extern __managed__ float basisVector[21];
 extern __managed__ float loss;
 extern __constant__ float INIT_OFFSET[9];
 
