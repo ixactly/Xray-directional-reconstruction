@@ -32,14 +32,14 @@ inline constexpr int NUM_VOXEL = 100;
 */
 
 //yoji cube
-inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_BASIS_VECTOR = 7;
 inline constexpr int NUM_PROJ_COND = 3;
 
 extern __constant__ float elemR[27];
 extern __constant__ float elemT[9];
 extern __managed__ float basisVector[21];
 
-inline constexpr float scatter_angle_xy = 50.0f;
+inline constexpr float scatter_angle_xy = 0.0f;
 extern __managed__ float loss;
 extern __constant__ float INIT_OFFSET[9];
 

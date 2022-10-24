@@ -61,7 +61,7 @@ void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &
     progressbar pbar(epoch * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
     // set scattering vector direction
-    setScatterDirecOnXY(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
+    // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
 
     // main routine
     for (int ep = 0; ep < epoch; ep++) {

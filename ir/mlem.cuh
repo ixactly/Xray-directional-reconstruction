@@ -16,7 +16,34 @@ inline __host__ void setScatterDirecOnXY(float angle, float* vec) {
     vec[3] = -std::sin(angle);
     vec[4] = std::cos(angle);
     vec[5] = 0.0f;
+
+    vec[6] = 0.0f;
+    vec[7] = 0.0f;
+    vec[8] = 1.0f;
 }
+
+inline __host__ void setScatterDirecOn4D(float angle, float* vec) {
+    vec[0] = std::cos(angle);
+    vec[1] = std::sin(angle);
+    vec[2] = 0.0f;
+
+    vec[3] = std::cos(angle + 2.0f * (float) M_PI * 45.0f / 360.0f);
+    vec[4] = std::sin(angle + 2.0f * (float) M_PI * 45.0f / 360.0f);
+    vec[5] = 0.0f;
+
+    vec[6] = std::cos(angle + 2.0f * (float) M_PI * 90.0f / 360.0f);
+    vec[7] = std::sin(angle + 2.0f * (float) M_PI * 90.0f / 360.0f);
+    vec[8] = 0.0f;
+
+    vec[9] = std::cos(angle + 2.0f * (float) M_PI * 135.0f / 360.0f);
+    vec[10] = std::sin(angle + 2.0f * (float) M_PI * 135.0f / 360.0f);
+    vec[11] = 0.0f;
+
+    vec[12] = 0.0f;
+    vec[13] = 0.0f;
+    vec[14] = 1.0f;
+}
+
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
 
 __global__ void
