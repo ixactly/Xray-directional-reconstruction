@@ -1,20 +1,21 @@
 //
 // Created by tomokimori on 22/08/30.
 //
-#include "Geometry.h"
-#include "mlem.cuh"
+#include <Geometry.h>
+#include <mlem.cuh>
 #include <random>
 #include <memory>
-#include "Pbar.h"
-#include "Params.h"
-#include "Volume.h"
+#include <Pbar.h>
+#include <Params.h>
+#include <Volume.h>
 #include "omp.h"
-#include "reconstruct.cuh"
+#include <reconstruct.cuh>
 
 void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                  IR method) {
     auto forward = (method == IR::MLEM) ? forwardProj : forwardProjXTT;
     auto backward = (method == IR::MLEM) ? backwardProj : backwardProjXTT;
+    // int rotation = (dir == Rotate::CW) ? -1 : 1;
     int rotation = (dir == Rotate::CW) ? 1 : -1;
 
     int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};

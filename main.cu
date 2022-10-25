@@ -3,12 +3,12 @@
 #include <cuda_runtime.h>
 #include <random>
 #include <chrono>
-#include "ir/Volume.h"
-#include "ir/Params.h"
-#include "ir/Geometry.h"
-#include "ir/mlem.cuh"
-#include "ir/Vec.h"
-#include "ir/reconstruct.cuh"
+#include "ir/include/Volume.h"
+#include "ir/include/Params.h"
+#include "ir/include/Geometry.h"
+#include "ir/include/mlem.cuh"
+#include "ir/include/Vec.h"
+#include "ir/include/reconstruct.cuh"
 
 int main() {
 
@@ -28,7 +28,7 @@ int main() {
         sinogram[i].load("../volume_bin/yoji_AXIS" + std::to_string(i + 1) + "/SC/raw/sc_axis" + std::to_string(i + 1) +
                          "_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         */
-        sinogram[i].load("../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "/SC/raw/CFRP_XYZ3_AXIS" +
+        sinogram[i].load("../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "/AT/raw/CFRP_XYZ3_AXIS" +
                          std::to_string(i + 1) + "_256x256x1080.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
     }
@@ -51,7 +51,7 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 50, 10, Rotate::CW, IR::XTT);
+    reconstruct(sinogram, ct, geom, 10, 10, Rotate::CW, IR::XTT);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess
@@ -86,7 +86,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/cfrp_xyz3/CF_XYZ3XTT_4D_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/cfrp_xyz3/CF_XYZ3AT_TMP_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }

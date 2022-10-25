@@ -1,11 +1,10 @@
 //
 // Created by tomokimori on 22/07/20.
 //
-#include "Geometry.h"
-#include "mlem.cuh"
+#include <Geometry.h>
+#include <mlem.cuh>
 #include <random>
-#include "Params.h"
-#include "Vec.h"
+#include <Params.h>
 
 __global__ void
 forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,

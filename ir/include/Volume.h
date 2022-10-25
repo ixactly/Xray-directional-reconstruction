@@ -5,8 +5,6 @@
 #ifndef CUDA_EXAMPLE_VOLUME_H
 #define CUDA_EXAMPLE_VOLUME_H
 
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include <memory>
 #include <array>
 #include <string>
@@ -137,7 +135,7 @@ private :
     std::unique_ptr<T[]> data = nullptr;
 };
 
-
+/*
 template<typename T>
 class CudaVolume {
 public:
@@ -209,5 +207,5 @@ private:
 
     T *data = nullptr;
 };
-
+*/
 #endif //CUDA_EXAMPLE_VOLUME_H
