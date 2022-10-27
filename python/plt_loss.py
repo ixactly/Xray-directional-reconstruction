@@ -10,4 +10,5 @@ with open(csv_path) as f:
     rows = [row for row in reader]
 data = [float(x) for x in rows[0][1:-1]]
 plt.plot(data)
-plt.savefig('loss.png')
+# plt.savefig('loss.png')
+plt.show()
