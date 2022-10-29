@@ -184,7 +184,6 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
 
     devVoxelFactor[idxVoxel] += 1.0f * geom.voxSize;
     devVoxelTmp[idxVoxel] += numBack;
-
 }
 
 __device__ void

@@ -5,9 +5,9 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_BASIS_VECTOR = 7;
 inline constexpr int NUM_PROJ_COND = 3;
-/*
+
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -27,8 +27,8 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
 
                                 0.313176, -0.734379, -0.728910,
 };
- */
 
+/*
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -49,18 +49,30 @@ __constant__ float elemT[9] = {
 
         0.0f, 0.0f, 0.0f,
 };
+*/
+/*
+__managed__ float basisVector[21] = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        0.57735f, 0.57735f, 0.57735f,
+        -0.57735f, -0.57735f, 0.57735f,
+        -0.57735f, 0.57735f, 0.57735f,
+        0.57735f, -0.57735f, 0.57735f
+};
+*/
 
-__managed__ float basisVector[21]= {
-                1.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                0.0f, 0.0f, 1.0f,
-                0.57735f, 0.57735f, 0.57735f,
-                -0.57735f, -0.57735f, 0.57735f,
-                -0.57735f, 0.57735f, 0.57735f,
-                0.57735f, -0.57735f, 0.57735f
+__managed__ float basisVector[21] = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        0.57735f, 0.57735f, 0.57735f,
+        -0.57735f, -0.57735f, 0.57735f,
+        -0.57735f, 0.57735f, 0.57735f,
+        0.57735f, -0.57735f, 0.57735f
 };
 
-__constant__ float INIT_OFFSET[9]= {
+__constant__ float INIT_OFFSET[9] = {
         -3.18f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -3.05f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,

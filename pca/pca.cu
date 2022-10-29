@@ -57,16 +57,16 @@ int main() {
                 "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ctArray[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
-    /*
+
     for (auto &e: ctArray) {
-        e.forEach([](float value) -> float { return 2.0f; });
+        // e.forEach([](float value) -> float { return 2.0f; });
     }
-     */
+
     progressbar pbar(NUM_VOXEL * NUM_VOXEL);
-    for (int x = 0; x < NUM_VOXEL; x++) {
+    for (int z = 0; z < NUM_VOXEL; z++) {
         for (int y = 0; y < NUM_VOXEL; y++) {
             pbar.update();
-            for (int z = 0; z < NUM_VOXEL; z++) {
+            for (int x = 0; x < NUM_VOXEL; x++) {
                 calcEigenVector(ctArray, md, x, y, z);
             }
         }
