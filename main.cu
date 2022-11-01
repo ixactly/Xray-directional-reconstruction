@@ -86,7 +86,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath =
-                "../volume_bin/cfrp_xyz3/CF_XYZ3XTT_TMP_4D_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/cfrp_xyz3/CF_XYZ3XTT_TMP_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePath);
     }

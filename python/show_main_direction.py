@@ -75,6 +75,6 @@ tmp = np.tile(tmp, (size**3, 1))
 
 ax = plt.figure().add_subplot(projection='3d')
 ax.set(xlabel='X', ylabel='Y', zlabel='Z')
-ax.quiver(x, y, z, u, v, w, color=rgba, length=10, normalize=True)
+ax.quiver(x, y, z, u, v, w, color=rgba, length=3, normalize=True)
 
 plt.show()
