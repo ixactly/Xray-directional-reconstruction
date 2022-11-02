@@ -5,7 +5,7 @@ if (debug)
     add_compile_options(-G -g)
 endif()
 add_subdirectory(./ir)
-add_executable(3dReconGPU main.cu)
+add_executable(3dReconGPU main.cu FDK/feldkamp.cu)
 target_link_libraries(3dReconGPU ir_lib)
 set_target_properties(3dReconGPU PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)

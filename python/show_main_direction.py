@@ -16,6 +16,7 @@ size = 32
 skip = int(num_voxel / size)
 eps = 1e-20
 
+# !! x->y, y->z, z->x
 y, z, x = np.meshgrid(np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size))
 
 # u = u_raw.reshape([num_voxel, num_voxel, num_voxel])[::skip, ::skip, ::skip]
@@ -25,6 +26,7 @@ w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
 
 padding = np.zeros_like(u)
 padding[50:216, 50:216, 50:216] = 1.0
+# padding[135:155, 120:140, 130:150] = 1.0
 u = u * padding
 v = v * padding
 w = w * padding
