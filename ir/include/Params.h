@@ -5,8 +5,8 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 1;
-inline constexpr int NUM_PROJ_COND = 1;
+inline constexpr int NUM_BASIS_VECTOR = 7;
+inline constexpr int NUM_PROJ_COND = 3;
 
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
@@ -73,11 +73,11 @@ __managed__ float basisVector[21] = {
 };
 
 __constant__ float INIT_OFFSET[9] = {
-        -1.81f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f, // offset horiz
+        -3.18f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
-        -0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        -3.05f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
-        -0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
+        -3.05f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
 
 inline constexpr float scatter_angle_xy = 0.0f;
 __managed__ float loss;
