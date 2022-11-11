@@ -12,11 +12,12 @@
 #include "omp.h"
 #include <reconstruct.cuh>
 
-namespace MLEM {
-    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                     IR method) {
-        auto forward = (method == IR::MLEM) ? forwardProj : forwardProjXTT;
-        auto backward = (method == IR::MLEM) ? backwardProj : backwardProjXTT;
+namespace IR {
+    void
+    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
+                Method method) {
+        auto forward = (method == Method::MLEM) ? forwardProj : forwardProjXTT;
+        auto backward = (method == Method::MLEM) ? backwardProj : backwardProjXTT;
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
@@ -129,7 +130,7 @@ namespace MLEM {
             }
         }
         */
-        if (method == IR::XTT) {
+        if (method == Method::XTT) {
             for (int y = 0; y < sizeV[1]; y++) {
                 sqrtVoxel<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
@@ -153,7 +154,7 @@ namespace MLEM {
     }
 }
 
-namespace FDK{
+namespace FDK {
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
@@ -162,20 +163,18 @@ namespace FDK{
         int nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devVoxel, *weight, *filt;
+        float *devSino, *devSinoFilt, *devVoxel, *weight, *filt;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
-        cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
+        cudaMalloc(&devSinoFilt, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
         cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
-        cudaMalloc(&weight, sizeof(float) * lenD);
+        cudaMalloc(&weight, sizeof(float) * sizeD[0] * sizeD[1]);
         cudaMallocManaged(&filt, sizeof(float) * geom.detect);
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
-        for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-            cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
@@ -191,72 +190,41 @@ namespace FDK{
         // progress bar
 
         progressbar pbar(nProj);
-        calcWeight<<<gridV, blockV>>>(weight, &geom);
+        calcWeight<<<gridD, blockD>>>(weight, devGeom);
+        cudaDeviceSynchronize();
         // make Shepp-Logan fliter
         float d = geom.detSize * (geom.sod / geom.sdd);
         for (int v = 0; v < geom.detect; v++) {
             filt[v] = 2.0f / (float) (M_PI * M_PI * d * (1.0f - 4.0f * (float) (v * v)));
         }
 
-        for (int n = 0; n < nProj; n++) {
-
+        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+            for (int n = 0; n < nProj; n++) {
+                // convolution
+                // hogeTmpWakaran<<<gridD, blockD>>>();
+                projConv<<<gridD, blockD>>>(&devSinoFilt[lenD * cond], &devSino[lenD * cond], devGeom, n, filt, weight);
+                cudaDeviceSynchronize();
+                for (int y = 0; y < geom.voxel; y++) {
+                    filteredBackProj<<<gridV, blockV>>>(devSinoFilt, devVoxel, devGeom, cond, y, rotation * n);
+                }
+            }
         }
+
+        for (int i = 0; i < NUM_PROJ_COND; i++)
+            cudaMemcpy(sinogram[i].get(), &devSinoFilt[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+        for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+            cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
+        cudaFree(devSinoFilt);
+        cudaFree(devSino);
+        cudaFree(devVoxel);
+        cudaFree(devGeom);
+        cudaFree(filt);
+        cudaFree(weight);
     }
 }
 
-__device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
-           const Geometry &geom) {
 
-    const int n = coord[3];
-    int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
-    int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
-
-    const float theta = 2.0f * (float) M_PI * (float) n / (float) sizeD[2];
-    Vector3f offset(INIT_OFFSET[3 * cond + 0], INIT_OFFSET[3 * cond + 1], INIT_OFFSET[3 * cond + 2]);
-
-    // need to modify
-    // need multiply Rotate matrix (axis and rotation geom) to vecSod
-    Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
-
-    Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
-                   elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
-                   elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);
-    Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
-
-    Rotate = condR * Rotate; // no need
-    offset = Rotate * offset;
-    Vector3f vecSod(0.0f, geom.sod, 0.0f);
-    Vector3f base1(1.0f, 0.0f, 0.0f);
-    Vector3f base2(0.0f, 0.0f, -1.0f);
-
-    vecSod = Rotate * vecSod;
-
-    Vector3f vecVoxel(
-            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
-            (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
-            (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
-
-    // Source to voxel center
-    Vector3f src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
-    // Source to voxel
-    Vector3f src2voxel(vecVoxel[0] + src2cent[0],
-                       vecVoxel[1] + src2cent[1],
-                       vecVoxel[2] + src2cent[2]);
-
-    // src2voxel and plane that have vecSod norm vector
-    // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
-    const float coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
-    Vector3f p = vecSod + coeff * src2voxel;
-
-    u = (p * (Rotate * base1)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[0]);
-    v = (p * (Rotate * base2)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[1]);
-
-    B = src2voxel;
-    B.normalize();
-    G = Rotate * Vector3f(0.0f, 0.0f, 1.0f);
-
-}
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom) {
     for (int i = 0; i < geom.voxel; i++) {

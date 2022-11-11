@@ -4,7 +4,6 @@
 
 #include <Geometry.h>
 #include <fdk.cuh>
-#include <reconstruct.cuh>
 #include <random>
 #include <Params.h>
 #include <Vec.h>
@@ -13,33 +12,42 @@ __global__ void calcWeight(float *weight, const Geometry *geom) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
-    const int idx = u + geom->detect * v + geom->detect * geom->detect;
+
+    const int idx = u + geom->detect * v;
 
     float u_real = ((float) u + 0.5f - (float) geom->detect / 2.0f) * geom->detSize;
     float v_real = ((float) v + 0.5f - (float) geom->detect / 2.0f) * geom->detSize;
 
     weight[idx] =
             geom->sdd / sqrt(geom->sdd * geom->sdd + (float) (u_real * u_real) + (float) (v_real * v_real)); // tmp
+    // printf("weight: %f\n", weight[idx]);
 }
 
 __global__ void
-projConv(const float *srcProj, float *dstProj, const Geometry *geom, int n, const float *filt, const float *weight) {
+projConv(float *dstProj, const float *srcProj, const Geometry *geom, int n, const float *filt, const float *weight) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
-
     for (int j = 0; j < geom->detect; j++) {
         if (v > j) {
-            dstProj[idx] += filt[v - j] * weight[idx] * srcProj[idx];
+            dstProj[idx] += filt[v - j] * srcProj[idx];
         } else {
-            dstProj[idx] += filt[j - v] * weight[idx] * srcProj[idx];
+            dstProj[idx] += filt[j - v] * srcProj[idx];
         }
     }
+    // dstProj[idx] *= weight[u + geom->detect * v];
+    // printf("dst: %f , src: %f , filt: %f , weight: %f \n", dstProj[idx], srcProj[idx], filt[0], weight[u + geom->detect * v]);
+}
+
+__global__ void hogeTmpWakaran() {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    printf("aaaa");
 }
 
 __global__ void
-backwardProj(float *devProj, float* devVoxel, Geometry *geom, int cond,
+filteredBackProj(float *devProj, float* devVoxel, Geometry *geom, int cond,
              int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
@@ -50,7 +58,7 @@ backwardProj(float *devProj, float* devVoxel, Geometry *geom, int cond,
 }
 
 __device__ void
-filteredBackProj(const int coord[4], const float *devProj, float* devVoxel, const Geometry &geom, int cond) {
+backwardonDevice(const int coord[4], const float *devProj, float* devVoxel, const Geometry &geom, int cond) {
 
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
@@ -109,7 +117,7 @@ filteredBackProj(const int coord[4], const float *devProj, float* devVoxel, cons
     float U = geom.sod / (geom.sod - y);
     float C = 2.0f * (float) M_PI / (float) sizeD[2];
 
-    const int idxVoxel = coord[0] + sizeV[0] * coord[2] + cond * (sizeV[0] * sizeV[1]);
+    const int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + cond * (sizeV[0] * sizeV[1] * sizeV[2]);
     const float numBack = c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * abs(n)] +
                           c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * abs(n)] +
                           c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * abs(n)] +

@@ -5,6 +5,7 @@
 #ifndef INC_3DRECONGPU_VEC_H
 #define INC_3DRECONGPU_VEC_H
 
+#define __both__ __device__ __host__
 template<typename T>
 class Vector3X {
 public:

@@ -4,11 +4,12 @@
 
 #ifndef INC_3DRECONGPU_RECONSTRUCT_CUH
 #define INC_3DRECONGPU_RECONSTRUCT_CUH
+
 #include "Volume.h"
 #include "Vec.h"
 #include "Geometry.h"
 
-enum class IR {
+enum class Method {
     XTT,
     MLEM
 };
@@ -17,17 +18,16 @@ enum class Rotate {
     CW,
     CCW
 };
-namespace MLEM {
-    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                     IR method);
+
+namespace IR {
+    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel,
+                       const Geometry &geom, int epoch, int batch, Rotate dir, Method method);
+
 }
+
 namespace FDK {
-    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                     IR method);
+    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
 }
-__device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
-           const Geometry &geom);
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
 

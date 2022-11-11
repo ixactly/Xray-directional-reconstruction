@@ -5,8 +5,8 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 7;
-inline constexpr int NUM_PROJ_COND = 3;
+inline constexpr int NUM_BASIS_VECTOR = 1;
+inline constexpr int NUM_PROJ_COND = 1;
 
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
@@ -129,7 +129,7 @@ inline constexpr int NUM_DETECT_U = 256;
 inline constexpr int NUM_DETECT_V = 256;
 inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
-inline constexpr int NUM_VOXEL = 256;
+inline constexpr int NUM_VOXEL = 512;
 
 // cfrp
 /*
