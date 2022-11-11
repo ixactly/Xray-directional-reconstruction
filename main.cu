@@ -3,12 +3,12 @@
 #include <cuda_runtime.h>
 #include <random>
 #include <chrono>
-#include "ir/include/Volume.h"
-#include "ir/include/Params.h"
-#include "ir/include/Geometry.h"
-#include "ir/include/mlem.cuh"
-#include "ir/include/Vec.h"
-#include "ir/include/reconstruct.cuh"
+#include <Volume.h>
+#include <Params.h>
+#include <Geometry.h>
+#include <mlem.cuh>
+#include <Vec.h>
+#include <reconstruct.cuh>
 
 int main() {
 
@@ -51,7 +51,7 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
-    reconstruct(sinogram, ct, geom, 50, 10, Rotate::CW, IR::MLEM);
+    MLEM::reconstruct(sinogram, ct, geom, 50, 10, Rotate::CW, IR::MLEM);
     // calcurate main direction
     // compareXYZTensorVolume(ct, geom);
     // thresholdProcess

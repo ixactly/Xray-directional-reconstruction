@@ -17,9 +17,17 @@ enum class Rotate {
     CW,
     CCW
 };
-
-void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                 IR method);
+namespace MLEM {
+    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
+                     IR method);
+}
+namespace FDK {
+    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
+                     IR method);
+}
+__device__ void
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
+           const Geometry &geom);
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
 

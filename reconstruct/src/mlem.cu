@@ -5,6 +5,7 @@
 #include <mlem.cuh>
 #include <random>
 #include <Params.h>
+#include <reconstruct.cuh>
 
 __global__ void
 forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
@@ -274,57 +275,4 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
     }
 }
 
-__device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
-           const Geometry &geom) {
-
-    const int n = coord[3];
-    int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
-    int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
-
-    const float theta = 2.0f * (float) M_PI * (float) n / (float) sizeD[2];
-    Vector3f offset(INIT_OFFSET[3 * cond + 0], INIT_OFFSET[3 * cond + 1], INIT_OFFSET[3 * cond + 2]);
-
-    // need to modify
-    // need multiply Rotate matrix (axis and rotation geom) to vecSod
-    Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
-
-    Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
-                   elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
-                   elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);
-    Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
-
-    Rotate = condR * Rotate; // no need
-    offset = Rotate * offset;
-    Vector3f vecSod(0.0f, geom.sod, 0.0f);
-    Vector3f base1(1.0f, 0.0f, 0.0f);
-    Vector3f base2(0.0f, 0.0f, -1.0f);
-
-    vecSod = Rotate * vecSod;
-
-    Vector3f vecVoxel(
-            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
-            (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
-            (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
-
-    // Source to voxel center
-    Vector3f src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
-    // Source to voxel
-    Vector3f src2voxel(vecVoxel[0] + src2cent[0],
-                       vecVoxel[1] + src2cent[1],
-                       vecVoxel[2] + src2cent[2]);
-
-    // src2voxel and plane that have vecSod norm vector
-    // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
-    const float coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
-    Vector3f p = vecSod + coeff * src2voxel;
-
-    u = (p * (Rotate * base1)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[0]);
-    v = (p * (Rotate * base2)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[1]);
-
-    B = src2voxel;
-    B.normalize();
-    G = Rotate * Vector3f(0.0f, 0.0f, 1.0f);
-
-}
 

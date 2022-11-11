@@ -84,8 +84,6 @@ __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
                  const Geometry &geom, int cond);
 
-__device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
-           const Geometry &geom);
+
 
 #endif //INC_3DRECONGPU_MLEM_CUH
