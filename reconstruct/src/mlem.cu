@@ -144,13 +144,13 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
     const int idxVoxel =
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + cond * (sizeV[0] * sizeV[1] * sizeV[2]);
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-              c1 * (float) geom.voxel * devVoxel[idxVoxel]);
+              c1 * geom.voxSize * devVoxel[idxVoxel]);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-              c2 * (float) geom.voxel * devVoxel[idxVoxel]);
+              c2 * geom.voxSize * devVoxel[idxVoxel]);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-              c3 * (float) geom.voxel * devVoxel[idxVoxel]);
+              c3 * geom.voxSize * devVoxel[idxVoxel]);
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-              c4 * (float) geom.voxel * devVoxel[idxVoxel]);
+              c4 * geom.voxSize * devVoxel[idxVoxel]);
 
 }
 
@@ -183,7 +183,7 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
                           c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
                           c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
 
-    devVoxelFactor[idxVoxel] += 1.0f * geom.voxSize;
+    devVoxelFactor[idxVoxel] += 1.0f;
     devVoxelTmp[idxVoxel] += numBack;
 }
 

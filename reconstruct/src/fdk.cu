@@ -29,14 +29,14 @@ projConv(float *dstProj, const float *srcProj, const Geometry *geom, int n, cons
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+
     for (int j = 0; j < geom->detect; j++) {
-        if (v > j) {
-            dstProj[idx] += filt[v - j] * srcProj[idx];
+        if (u > j) {
+            dstProj[idx] += filt[u - j] * srcProj[geom->detect * v + j + geom->detect * geom->detect * abs(n)] * weight[geom->detect * v + j];
         } else {
-            dstProj[idx] += filt[j - v] * srcProj[idx];
+            dstProj[idx] += filt[j - u] * srcProj[geom->detect * v + j + geom->detect * geom->detect * abs(n)] * weight[geom->detect * v + j];
         }
     }
-    // dstProj[idx] *= weight[u + geom->detect * v];
     // printf("dst: %f , src: %f , filt: %f , weight: %f \n", dstProj[idx], srcProj[idx], filt[0], weight[u + geom->detect * v]);
 }
 

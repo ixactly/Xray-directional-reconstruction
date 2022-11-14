@@ -129,7 +129,7 @@ inline constexpr int NUM_DETECT_U = 256;
 inline constexpr int NUM_DETECT_V = 256;
 inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
-inline constexpr int NUM_VOXEL = 512;
+inline constexpr int NUM_VOXEL = 256;
 
 // cfrp
 /*

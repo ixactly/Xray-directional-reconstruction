@@ -87,7 +87,7 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                         // ratio process
-                        projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        // projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -101,12 +101,12 @@ namespace IR {
                         pbar.update();
                         for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                             int n = rotation * ((sub + batch * subOrder) % nProj);
-                            backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
-                                                        cond, y, n);
+                            // backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
+                            //                             cond, y, n);
                             cudaDeviceSynchronize();
                         }
                     }
-                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    // voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                     cudaDeviceSynchronize();
                 }
             }
@@ -115,27 +115,13 @@ namespace IR {
             cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
         }
 
-        /*
-        for (int &sub: subsetOrder) {
-            // forwardProj and ratio
-            for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                    int n = rotation * ((sub + batch * subOrder) % nProj);
-                    // forwardProj process
-                    for (int y = 0; y < sizeV[1]; y++) {
-                        forward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
-                        cudaDeviceSynchronize();
-                    }
-                }
-            }
-        }
-        */
         if (method == Method::XTT) {
             for (int y = 0; y < sizeV[1]; y++) {
                 sqrtVoxel<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
             }
         }
+
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
@@ -193,7 +179,9 @@ namespace FDK {
         calcWeight<<<gridD, blockD>>>(weight, devGeom);
         cudaDeviceSynchronize();
         // make Shepp-Logan fliter
+
         float d = geom.detSize * (geom.sod / geom.sdd);
+        // float d = geom.detSize * (geom.sod / geom.sdd);
         for (int v = 0; v < geom.detect; v++) {
             filt[v] = 2.0f / (float) (M_PI * M_PI * d * (1.0f - 4.0f * (float) (v * v)));
         }
