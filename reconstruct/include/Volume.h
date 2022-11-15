@@ -89,7 +89,12 @@ public :
         data.reset();
         data = std::make_unique<T[]>(size);
         std::ifstream ifile(filename, std::ios::binary);
-
+        if (!ifile) {
+            std::cout << "file not loaded. check file path." << std::endl;
+            return;
+        } else {
+            std::cout << "file loaded correctly, " << filename << std::endl;
+        }
         ifile.read(reinterpret_cast<char *>(data.get()), sizeof(T) * size);
     }
 
@@ -97,8 +102,10 @@ public :
         const int size = sizeX * sizeY * sizeZ;
         std::ofstream ofs(filename, std::ios::binary);
         if (!ofs) {
-            std::cout << "file not opened" << std::endl;
+            std::cout << "file not saved. check file path." << std::endl;
             return;
+        } else {
+            std::cout << "file saved correctly, " << filename << std::endl;
         }
         ofs.write(reinterpret_cast<char *>(data.get()), sizeof(T) * size);
     }

@@ -16,6 +16,8 @@ namespace IR {
     void
     reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                 Method method) {
+        std::cout << "starting reconstruct(IR)..." << std::endl;
+
         auto forward = (method == Method::MLEM) ? forwardProj : forwardProjXTT;
         auto backward = (method == Method::MLEM) ? backwardProj : backwardProjXTT;
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
@@ -87,7 +89,7 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                         // ratio process
-                        // projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -101,12 +103,12 @@ namespace IR {
                         pbar.update();
                         for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                             int n = rotation * ((sub + batch * subOrder) % nProj);
-                            // backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
-                            //                             cond, y, n);
+                            backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
+                                                        cond, y, n);
                             cudaDeviceSynchronize();
                         }
                     }
-                    // voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                     cudaDeviceSynchronize();
                 }
             }
@@ -142,6 +144,7 @@ namespace IR {
 
 namespace FDK {
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
+        std::cout << "starting reconstruct(FDK)..." << std::endl;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
         int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};

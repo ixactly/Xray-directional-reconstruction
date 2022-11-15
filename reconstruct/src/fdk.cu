@@ -43,7 +43,7 @@ projConv(float *dstProj, const float *srcProj, const Geometry *geom, int n, cons
 __global__ void hogeTmpWakaran() {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
-    printf("aaaa");
+    printf("aaaa %d, %d", u, v);
 }
 
 __global__ void
