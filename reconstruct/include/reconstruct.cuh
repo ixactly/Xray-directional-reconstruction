@@ -2,8 +2,11 @@
 // Created by tomokimori on 22/08/30.
 //
 
+
+
 #ifndef INC_3DRECONGPU_RECONSTRUCT_CUH
 #define INC_3DRECONGPU_RECONSTRUCT_CUH
+
 
 #include "Volume.h"
 #include "Vec.h"
@@ -11,7 +14,8 @@
 
 enum class Method {
     XTT,
-    MLEM
+    MLEM,
+    FDK
 };
 
 enum class Rotate {

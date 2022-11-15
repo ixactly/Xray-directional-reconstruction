@@ -1,6 +1,9 @@
 //
 // Created by tomokimori on 22/07/20.
 //
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <Geometry.h>
 #include <mlem.cuh>
 #include <random>

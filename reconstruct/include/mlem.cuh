@@ -5,6 +5,8 @@
 #ifndef INC_3DRECONGPU_MLEM_CUH
 #define INC_3DRECONGPU_MLEM_CUH
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "Volume.h"
 #include "Vec.h"
 

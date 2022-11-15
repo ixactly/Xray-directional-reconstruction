@@ -24,16 +24,8 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        /*
-        sinogram[i].load("../volume_bin/yoji_AXIS" + std::to_string(i + 1) + "/SC/raw/sc_axis" + std::to_string(i + 1) +
-                         "_stack_denoise_672x672x180.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-        */
-        /*
-        sinogram[i].load("../volume_bin/sim_box_origin" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
-                         std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-        */
-        std::string loadfilePath = "../volume_bin/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "/SC/raw/CFRP_XYZ3_AXIS" +
-                                   std::to_string(i + 1) + "_256x256x1080.raw"
+
+        std::string loadfilePath = "C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\proj_raw_bin\\CFRP_XYZ3\\CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_256x256x1080.raw";
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
 
          sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
@@ -45,13 +37,16 @@ int main() {
 
     // main function
     // if you load ct or FDK, turn off initialization of filling 1.0
+    Method reconMethod = Method::MLEM;
 
-    for (auto &e: ct) {
-        // e.forEach([](float value) -> float { return 0.001; });
+    if (reconMethod == Method::MLEM || reconMethod == Method::XTT) {
+        for (auto& e : ct) {
+            e.forEach([](float value) -> float { return 0.001; });
+        }
     }
 
-    // IR::reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, Method::MLEM);
-    FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
+    IR::reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, reconMethod);
+    // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // calcurate main direction
 
     end = std::chrono::system_clock::now();
@@ -62,10 +57,8 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePath1 =
-                "../volume_bin/CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
-                std::to_string(NUM_DETECT_V) + "x" +
-                std::to_string(NUM_PROJ) + ".raw";
-        // sinogram[i].forEach([](float value) -> float { if (value > 3.0) return 0.0; else return value; });
+                "C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
         sinogram[i].save(savefilePath1);
     }
 
@@ -77,14 +70,12 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath2 =
-                "../volume_bin/cfrp_xyz3/CF_XYZ3_SC_FDK" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\CF_XYZ3_SC_FDK" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-
-        "../volume_bin/box_FDK" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
-        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
         ct[i].save(savefilePath2);
     }
+
 
     return 0;
 }

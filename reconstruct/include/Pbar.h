@@ -38,9 +38,9 @@
 #ifndef __PROGRESSBAR_HPP
 #define __PROGRESSBAR_HPP
 
-#include "../../../../../../usr/include/c++/9/iostream"
-#include "../../../../../../usr/include/c++/9/string"
-#include "../../../../../../usr/include/c++/9/stdexcept"
+#include <iostream>
+#include <string>
+#include <stdexcept>
 
 class progressbar {
 
@@ -91,7 +91,7 @@ inline progressbar::progressbar() :
         last_perc(0),
         do_show_bar(true),
         update_is_called(false),
-        done_char("█"),
+        done_char("#"),
         todo_char(" "),
         opening_bracket_char("["),
         closing_bracket_char("]") {}
@@ -102,7 +102,7 @@ inline progressbar::progressbar(int n, bool showbar) :
         last_perc(0),
         do_show_bar(showbar),
         update_is_called(false),
-        done_char("█"),
+        done_char("#"),
         todo_char(" "),
         opening_bracket_char("["),
         closing_bracket_char("]") {}
@@ -146,7 +146,7 @@ inline void progressbar::update() {
     if (perc == last_perc + 1) {
         // erase the correct  number of characters
         if      (perc <= 10)                std::cout << "\b\b"   << perc << '%';
-        else if (perc  > 10 and perc < 100) std::cout << "\b\b\b" << perc << '%';
+        else if ((perc  > 10) && (perc < 100)) std::cout << "\b\b\b" << perc << '%';
         else if (perc == 100)               std::cout << "\b\b\b" << perc << '%';
     }
     if (do_show_bar == true) {

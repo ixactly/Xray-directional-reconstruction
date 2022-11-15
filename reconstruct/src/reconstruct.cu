@@ -1,6 +1,9 @@
 //
 // Created by tomokimori on 22/08/30.
 //
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <Geometry.h>
 #include <mlem.cuh>
 #include <fdk.cuh>
@@ -9,7 +12,6 @@
 #include <Pbar.h>
 #include <Params.h>
 #include <Volume.h>
-#include "omp.h"
 #include <reconstruct.cuh>
 
 namespace IR {
@@ -87,7 +89,7 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                         // ratio process
-                        // projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                         cudaDeviceSynchronize();
                     }
                 }
@@ -101,12 +103,12 @@ namespace IR {
                         pbar.update();
                         for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                             int n = rotation * ((sub + batch * subOrder) % nProj);
-                            // backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
-                            //                             cond, y, n);
+                            backward<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
+                                                         cond, y, n);
                             cudaDeviceSynchronize();
                         }
                     }
-                    // voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                     cudaDeviceSynchronize();
                 }
             }
