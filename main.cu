@@ -24,8 +24,13 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz3/SC/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+        /*
+        std::string loadfilePath = "../proj_raw_bin/sim_box_origin" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                                   std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
+        */
+        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz3_normal/SC/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
         std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
+
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
 
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
@@ -37,18 +42,28 @@ int main() {
 
     // main function
     // if you load ct or FDK, turn off initialization of filling 1.0
-
-
     Method reconMethod = Method::MLEM;
     if (reconMethod == Method::MLEM || reconMethod == Method::XTT) {
         for (auto& e : ct) {
             e.forEach([](float value) -> float { return 0.001; });
+            /*
+            for (int x = 0; x < NUM_VOXEL; x++) {
+                for (int y = 0; y < NUM_VOXEL; y++) {
+                    for (int z = 0; z < NUM_VOXEL; z++) {
+                        if (std::abs(x - NUM_VOXEL/2) < NUM_VOXEL / 4 && std::abs(y - NUM_VOXEL/2) < NUM_VOXEL / 4 && std::abs(z - NUM_VOXEL/2) < NUM_VOXEL / 4) {
+                            e(x, y, z) = 1.0f;
+                        }
+                    }
+                }
+            }
+             */
         }
     }
 
-    // IR::reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, Method::MLEM);
+    // IR::reconstruct(sinogram, ct, geom, 40, 10, Rotate::CW, Method::MLEM);
     FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // calcurate main direction
+    // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -58,7 +73,7 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/cfrp_xyz3/CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
         sinogram[i].save(savefilePathProj);
     }
@@ -66,7 +81,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz3/CF_XYZ3_SC_FDK" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/cfrp_xyz3/cf_sc_normal_mlem_vol" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
         ct[i].save(savefilePathCT);

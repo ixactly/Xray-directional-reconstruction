@@ -215,7 +215,66 @@ namespace FDK {
     }
 }
 
+void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
+    std::cout << "starting forward projection..." << std::endl;
 
+    int rotation = (dir == Rotate::CW) ? 1 : -1;
+
+    int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+    int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+    int nProj = sizeD[2];
+
+    // cudaMalloc
+    float *devProj, *devVoxel;
+    const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
+    const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+
+    cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
+    cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+        cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+
+    Geometry *devGeom;
+    cudaMalloc(&devGeom, sizeof(Geometry));
+    cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
+
+    // define blocksize
+    const int blockSize = 16;
+    dim3 blockV(blockSize, blockSize, 1);
+    dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
+    dim3 blockD(blockSize, blockSize, 1);
+    dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+
+    // forwardProj, divide, backwardProj proj
+    // progress bar
+    progressbar pbar(NUM_PROJ);
+
+    // set scattering vector direction
+    // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
+
+    // main routine
+    cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
+            // forwardProj and ratio
+    for (int n = 0; n < NUM_PROJ; n++) {
+        // !!care!! judge from vecSod which plane we chose
+        pbar.update();
+        // forwardProj process
+        for (int y = 0; y < sizeV[1]; y++) {
+            forwardProj<<<gridV, blockV>>>(devProj, devVoxel, devGeom, 0, y, n * rotation);
+            cudaDeviceSynchronize();
+        }
+    }
+
+    for (int i = 0; i < NUM_PROJ_COND; i++)
+        cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+        cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
+    cudaFree(devProj);
+    cudaFree(devVoxel);
+    cudaFree(devGeom);
+}
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom) {
     for (int i = 0; i < geom.voxel; i++) {

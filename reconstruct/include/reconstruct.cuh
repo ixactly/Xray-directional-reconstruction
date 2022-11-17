@@ -11,7 +11,8 @@
 
 enum class Method {
     XTT,
-    MLEM
+    MLEM,
+    FDK
 };
 
 enum class Rotate {
@@ -28,6 +29,7 @@ namespace IR {
 namespace FDK {
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
 }
+void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
 
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
 
