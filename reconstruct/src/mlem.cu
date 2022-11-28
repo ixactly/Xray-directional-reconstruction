@@ -59,7 +59,7 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
     // const float div = devSino[idx] / devProj[idx];
     if (devProj[idx] != 0.0f)
-        devProj[idx] = devSino[idx] / (devProj[idx] + 0.02f * (1.0f - exp(-abs(1.0f - devSino[idx] / devProj[idx]))));
+        devProj[idx] = devSino[idx] / (devProj[idx] + 0.5f * (1.0f - exp(-abs(1.0f - devSino[idx] / devProj[idx]))));
     // a = b / c;
 }
 
@@ -141,17 +141,17 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
 
     const int n = abs(coord[3]);
 
+    const float ratio = (geom.voxSize * geom.voxSize) / (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
     const int idxVoxel =
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + cond * (sizeV[0] * sizeV[1] * sizeV[2]);
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-              c1 * geom.voxSize * devVoxel[idxVoxel]);
+              c1 * geom.voxSize * ratio * devVoxel[idxVoxel]);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-              c2 * geom.voxSize * devVoxel[idxVoxel]);
+              c2 * geom.voxSize * ratio * devVoxel[idxVoxel]);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-              c3 * geom.voxSize * devVoxel[idxVoxel]);
+              c3 * geom.voxSize * ratio * devVoxel[idxVoxel]);
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-              c4 * geom.voxSize * devVoxel[idxVoxel]);
-
+              c4 * geom.voxSize * ratio * devVoxel[idxVoxel]);
 }
 
 __device__ void

@@ -90,7 +90,7 @@ public :
         data = std::make_unique<T[]>(size);
         std::ifstream ifile(filename, std::ios::binary);
         if (!ifile) {
-            std::cout << "file not loaded. check file path." << std::endl;
+            std::cout << "file not loaded. please check file path." << std::endl;
             return;
         } else {
             std::cout << "file loaded correctly, " << filename << std::endl;

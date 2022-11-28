@@ -17,6 +17,9 @@ namespace IR {
     reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                 Method method) {
         std::cout << "starting reconstruct(IR)..." << std::endl;
+        for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+            voxel[i].forEach([](float value) -> float { return 0.001; });
+        }
 
         auto forward = (method == Method::MLEM) ? forwardProj : forwardProjXTT;
         auto backward = (method == Method::MLEM) ? backwardProj : backwardProjXTT;
@@ -145,6 +148,10 @@ namespace IR {
 namespace FDK {
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
         std::cout << "starting reconstruct(FDK)..." << std::endl;
+        for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+            voxel[i].forEach([](float value) -> float { return 0.0; });
+        }
+
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
         int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
@@ -186,7 +193,7 @@ namespace FDK {
         float d = geom.detSize * (geom.sod / geom.sdd);
         // float d = geom.detSize * (geom.sod / geom.sdd);
         for (int v = 0; v < geom.detect; v++) {
-            filt[v] = 2.0f / (float) (M_PI * M_PI * d * (1.0f - 4.0f * (float) (v * v)));
+            filt[v] = 1.0f / (float) (M_PI * M_PI * d * (1.0f - 4.0f * (float) (v * v)));
         }
 
         for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
