@@ -50,7 +50,7 @@ int main() {
         }
     }
 
-    IR::reconstruct(sinogram, ct, geom, 1, 1, Rotate::CW, Method::ART);
+    IR::reconstruct(sinogram, ct, geom, 40, 40, Rotate::CW, Method::ART);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // calcurate main direction
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);

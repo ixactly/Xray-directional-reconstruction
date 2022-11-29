@@ -115,7 +115,7 @@ namespace IR {
                         }
                     }
                     if (method == Method::ART) {
-                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, 1.0f / (float) subsetSize, devGeom, y);
+                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, 1e-3f / (float) subsetSize, devGeom, y);
                     } else {
                         voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                     }

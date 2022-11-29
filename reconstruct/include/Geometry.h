@@ -10,7 +10,7 @@ class Geometry {
 public:
     Geometry(float sdd, float sod, float detSize, int voxel, int detect, int nProj) :
             sdd(sdd), sod(sod), detSize(detSize), voxel(voxel), detect(detect), nProj(nProj) {
-        voxSize = sod * detSize / sdd;
+        voxSize = 0.5f* sod * detSize / sdd;
     }
 
     float sdd; // Object-Detector Distance

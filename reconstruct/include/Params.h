@@ -103,7 +103,7 @@ inline constexpr int NUM_DETECT_U = 200;
 inline constexpr int NUM_DETECT_V = 200;
 inline constexpr double DETECTOR_SIZE = 1.0;
 
-inline constexpr int NUM_VOXEL = 200;
+inline constexpr int NUM_VOXEL = 400;
 
 
 //yoji cube
