@@ -37,22 +37,9 @@ int main() {
     start = std::chrono::system_clock::now();
 
     // main function
-    for (auto &e: ct) {
-        for (int x = 0; x < NUM_VOXEL; x++) {
-            for (int y = 0; y < NUM_VOXEL; y++) {
-                for (int z = 0; z < NUM_VOXEL; z++) {
-                    if (NUM_VOXEL / 4 < x && x < 3 * NUM_VOXEL / 4 + 1 && NUM_VOXEL / 4 < y && y < 3 * NUM_VOXEL / 4 + 1 &&
-                            NUM_VOXEL / 4 < z && z < 3 * NUM_VOXEL / 4 + 1) {
-                        e(x, y, z) = 1.0f;
-                    }
-                }
-            }
-        }
-    }
 
     IR::reconstruct(sinogram, ct, geom, 40, 40, Rotate::CW, Method::ART);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
-    // calcurate main direction
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
     end = std::chrono::system_clock::now();
