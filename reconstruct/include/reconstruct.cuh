@@ -12,6 +12,7 @@
 enum class Method {
     XTT,
     MLEM,
+    ART,
     FDK
 };
 

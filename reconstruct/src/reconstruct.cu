@@ -18,11 +18,11 @@ namespace IR {
                 Method method) {
         std::cout << "starting reconstruct(IR)..." << std::endl;
         for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-            voxel[i].forEach([](float value) -> float { return 0.001; });
+            voxel[i].forEach([](float value) -> float { return 0.01; });
         }
 
-        auto forward = (method == Method::MLEM) ? forwardProj : forwardProjXTT;
-        auto backward = (method == Method::MLEM) ? backwardProj : backwardProjXTT;
+        auto forward = (method == Method::XTT) ? forwardProjXTT : forwardProj;
+        auto backward = (method == Method::XTT) ? backwardProjXTT : backwardProj;
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
@@ -92,13 +92,16 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                         // ratio process
-                        projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        if (method == Method::ART) {
+                            projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        } else {
+                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        }
                         cudaDeviceSynchronize();
                     }
                 }
 
                 // backwardProj process
-
                 for (int y = 0; y < sizeV[1]; y++) {
                     cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
                     cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
@@ -111,7 +114,11 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                     }
-                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    if (method == Method::ART) {
+                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, 1.0f / (float) subsetSize, devGeom, y);
+                    } else {
+                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    }
                     cudaDeviceSynchronize();
                 }
             }
@@ -122,7 +129,7 @@ namespace IR {
 
         if (method == Method::XTT) {
             for (int y = 0; y < sizeV[1]; y++) {
-                sqrtVoxel<<<gridV, blockV>>>(devVoxel, devGeom, y);
+                voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
             }
         }

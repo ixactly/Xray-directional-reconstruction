@@ -50,10 +50,10 @@ int main() {
         }
     }
 
-    IR::reconstruct(sinogram, ct, geom, 40, 10, Rotate::CW, Method::MLEM);
+    IR::reconstruct(sinogram, ct, geom, 1, 1, Rotate::CW, Method::ART);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // calcurate main direction
-    forwardProjOnly(sinogram, ct, geom, Rotate::CW);
+    // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -71,7 +71,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/box_sim_vol_ir_modified" + std::to_string(i + 1) + "_" +
+                "../volume_bin/box_sim_vol_art" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 

@@ -20,7 +20,7 @@ forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
 
 __global__ void
 backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
-                const int y, const int n) {
+                int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -50,7 +50,7 @@ backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry
     backwardonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
 }
 
-__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n) {
+__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
@@ -65,7 +65,7 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
 
 __global__ void
 voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFactor, const Geometry *geom,
-             const int y) {
+             int y) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -77,34 +77,23 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
         devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 1e-10f : devVoxel[idxVoxel] *
                                                                              devVoxelTmp[idxOnPlane] /
                                                                              devVoxelFactor[idxOnPlane];
-        /*
-        if (devVoxelFactor[idxOnPlane] == 0.0f) {
-            devVoxel[idxVoxel] = 0.0f;
-        }
-        else {
-            if (devVoxel[idxVoxel] == 0.0f) {
-                if (1 < x && x < geom->voxel - 1 && 1 < y && y < geom->voxel - 1 && 1 < z && z < geom->voxel - 1) {
-                    devVoxel[idxVoxel] = (devVoxel[x - 1 + geom->voxel * y + geom->voxel * geom->voxel * z +
-                                                   (geom->voxel * geom->voxel * geom->voxel) * i]
-                                          + devVoxel[x + 1 + geom->voxel * y + geom->voxel * geom->voxel * z +
-                                                     (geom->voxel * geom->voxel * geom->voxel) * i]
-                                          + devVoxel[x + geom->voxel * (y - 1) + geom->voxel * geom->voxel * z +
-                                                     (geom->voxel * geom->voxel * geom->voxel) * i]
-                                          + devVoxel[x + geom->voxel * (y + 1) + geom->voxel * geom->voxel * z +
-                                                     (geom->voxel * geom->voxel * geom->voxel) * i]
-                                          + devVoxel[x + geom->voxel * y + geom->voxel * geom->voxel * (z - 1) +
-                                                     (geom->voxel * geom->voxel * geom->voxel) * i]
-                                          + devVoxel[x + geom->voxel * y + geom->voxel * geom->voxel * (z + 1) +
-                                                     (geom->voxel * geom->voxel * geom->voxel) * i]) / 6.0f;
-                }
-            }
-            devVoxel[idxVoxel] = devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
-        }
-         */
     }
 }
 
-__global__ void sqrtVoxel(float *devVoxel, const Geometry *geom, const int y) {
+__global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n) {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    if (u >= geom->detect || v >= geom->detect) return;
+
+    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
+    // const float div = devSino[idx] / devProj[idx];
+    devProj[idx] = devSino[idx] - devProj[idx];
+    // a = b / c;
+}
+
+__global__ void
+voxelPlus(float *devVoxel, const float *devVoxelTmp, float alpha, const Geometry *geom, int y) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -112,9 +101,20 @@ __global__ void sqrtVoxel(float *devVoxel, const Geometry *geom, const int y) {
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
+        const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
+        devVoxel[idxVoxel] = devVoxel[idxVoxel] + alpha * devVoxelTmp[idxOnPlane];
+    }
+}
 
+__global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        const int idxVoxel =
+                x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         devVoxel[idxVoxel] = sqrt(devVoxel[idxVoxel]);
-
     }
 }
 
