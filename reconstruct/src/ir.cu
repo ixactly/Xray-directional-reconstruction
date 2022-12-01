@@ -2,7 +2,7 @@
 // Created by tomokimori on 22/07/20.
 //
 #include <Geometry.h>
-#include <mlem.cuh>
+#include <ir.cuh>
 #include <random>
 #include <Params.h>
 #include <reconstruct.cuh>
@@ -58,8 +58,13 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
     // const float div = devSino[idx] / devProj[idx];
-    if (devProj[idx] != 0.0f)
-        devProj[idx] = devSino[idx] / (devProj[idx] + 0.5f * (1.0f - exp(-abs(1.0f - devSino[idx] / devProj[idx]))));
+    if (devProj[idx] != 0.0f) {
+        // devProj[idx] = devSino[idx] / (devProj[idx] + 0.1f * (1.0f - exp(-abs(1.0f - devSino[idx] / devProj[idx]))));
+        devProj[idx] = devSino[idx] / (devProj[idx]);
+    }
+    if (devProj[idx] > 2.0f) {
+        devProj[idx] = 2.0f;
+    }
     // a = b / c;
 }
 
@@ -74,7 +79,7 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
-        devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 1e-10f : devVoxel[idxVoxel] *
+        devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 1e-8f : devVoxel[idxVoxel] *
                                                                              devVoxelTmp[idxOnPlane] /
                                                                              devVoxelFactor[idxOnPlane];
     }

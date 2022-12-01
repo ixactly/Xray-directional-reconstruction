@@ -20,14 +20,18 @@ int main() {
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
-    // sinogram.load("../volume_bin/cube_proj_phantom-500x500x500.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
+        /*
         std::string loadfilePath = "../proj_raw_bin/box_sim_proj" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
                                    std::to_string(NUM_PROJ) + ".raw";
-
+        */
+        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz3/SC/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" +
+                                   std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
+                                   std::to_string(NUM_PROJ) + ".raw";
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
     }
@@ -38,7 +42,7 @@ int main() {
 
     // main function
 
-    IR::reconstruct(sinogram, ct, geom, 40, 40, Rotate::CW, Method::ART);
+    XTT::reconstruct(sinogram, ct, geom, 15, 40, Rotate::CW, Method::ART, 2e-4);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -50,7 +54,7 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/box_sim_proj_modified" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/cfrp_xyz3/proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
         sinogram[i].save(savefilePathProj);
     }
@@ -58,7 +62,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/box_sim_vol_art" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz3/haikou_xtt" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
