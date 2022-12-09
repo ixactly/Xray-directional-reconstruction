@@ -80,8 +80,8 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
         devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 1e-8f : devVoxel[idxVoxel] *
-                                                                             devVoxelTmp[idxOnPlane] /
-                                                                             devVoxelFactor[idxOnPlane];
+                                                                            devVoxelTmp[idxOnPlane] /
+                                                                            devVoxelFactor[idxOnPlane];
     }
 }
 
@@ -146,7 +146,8 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
 
     const int n = abs(coord[3]);
 
-    const float ratio = (geom.voxSize * geom.voxSize) / (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
+    const float ratio = (geom.voxSize * geom.voxSize) /
+                        (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
     const int idxVoxel =
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + cond * (sizeV[0] * sizeV[1] * sizeV[2]);
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -215,6 +216,9 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
             c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
+    const float ratio = (geom.voxSize * geom.voxSize) /
+                        (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
+
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
@@ -225,12 +229,13 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c1 * devVoxel[idxVoxel]);
+                  vkm * vkm * c1 * geom.voxSize * ratio * devVoxel[idxVoxel]);
         atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c2 * devVoxel[idxVoxel]);
+                  vkm * vkm * c2 * geom.voxSize * ratio * devVoxel[idxVoxel]);
         atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c3 * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], vkm * vkm * c4 * devVoxel[idxVoxel]);
+                  vkm * vkm * c3 * geom.voxSize * ratio * devVoxel[idxVoxel]);
+        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+                  vkm * vkm * c4 * geom.voxSize * ratio * devVoxel[idxVoxel]);
         // printf("%d: %lf\n", i+1, vkm);
         // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
     }
