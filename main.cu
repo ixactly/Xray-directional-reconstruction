@@ -44,7 +44,7 @@ int main() {
                                    std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" +
                                    std::to_string(NUM_VOXEL) + ".raw";
 
-        ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
     // measure clock
@@ -53,7 +53,7 @@ int main() {
 
     // main function
 
-    // IR::reconstruct(sinogram, ct, geom, 10, 40, Rotate::CW, Method::ART, 5e-2);
+    XTT::fiberModelReconstruct(sinogram, ct, geom, 50, 40, Rotate::CW, Method::ART, 5e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -73,7 +73,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz3/haikou_mlem_tmp" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz3/haikou_fiber" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 

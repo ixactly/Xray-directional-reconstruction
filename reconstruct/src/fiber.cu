@@ -11,10 +11,11 @@ __device__ void forwardFiberModel(const int coord[4], float *devProj, const floa
 
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
-    int d[3] = {
+    int d[4] = {
         coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2]),
         coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2]),
-        coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 2 * (sizeV[0] * sizeV[1] * sizeV[2])
+        coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 2 * (sizeV[0] * sizeV[1] * sizeV[2]),
+        coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 3 * (sizeV[0] * sizeV[1] * sizeV[2]),
     };
 
     Vector3f F(devVoxel[d[0]], devVoxel[d[1]], devVoxel[d[2]]);
@@ -46,7 +47,7 @@ __device__ void forwardFiberModel(const int coord[4], float *devProj, const floa
     Vector3f BxG = B.cross(G);
 
     for (int i = 0; i < 3; i++) {
-        const float proj = abs(BxG[i] * norm);
+        const float proj = abs(BxG[i] * norm) + devVoxel[d[3]];
         atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
                   c1 * geom.voxSize * ratio * proj * devVoxel[d[i]]);
         atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -77,10 +78,11 @@ backwardFiberModel(const int coord[4], const float *devProj, float *devVoxel, fl
 
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
     int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
-    int d[3] = {
+    int d[4] = {
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2]),
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2]),
-            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 2 * (sizeV[0] * sizeV[1] * sizeV[2])
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 2 * (sizeV[0] * sizeV[1] * sizeV[2]),
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 3 * (sizeV[0] * sizeV[1] * sizeV[2]),
     };
 
     Vector3f F(devVoxel[d[0]], devVoxel[d[1]], devVoxel[d[2]]);
@@ -110,7 +112,7 @@ backwardFiberModel(const int coord[4], const float *devProj, float *devVoxel, fl
 
     for (int i = 0; i < 3; i++) {
 
-        const float proj = abs(BxG[i] * norm);
+        const float proj = abs(BxG[i] * norm) + devVoxel[d[3]];
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = proj * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   proj * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +

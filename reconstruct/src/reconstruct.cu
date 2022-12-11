@@ -519,7 +519,7 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
 
     // forwardProj, divide, backwardProj proj
     // progress bar
-    progressbar pbar(NUM_PROJ);
+    progressbar pbar(NUM_PROJ * NUM_PROJ_COND);
 
     // set scattering vector direction
     // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
@@ -527,13 +527,15 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
     // main routine
     cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
     // forwardProj and ratio
-    for (int n = 0; n < NUM_PROJ; n++) {
-        // !!care!! judge from vecSod which plane we chose
-        pbar.update();
-        // forwardProj process
-        for (int y = 0; y < sizeV[1]; y++) {
-            forwardProj<<<gridV, blockV>>>(devProj, devVoxel, devGeom, 0, y, n * rotation);
-            cudaDeviceSynchronize();
+    for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+        for (int n = 0; n < NUM_PROJ; n++) {
+            // !!care!! judge from vecSod which plane we chose
+            pbar.update();
+            // forwardProj process
+            for (int y = 0; y < sizeV[1]; y++) {
+                forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n * rotation);
+                cudaDeviceSynchronize();
+            }
         }
     }
 
