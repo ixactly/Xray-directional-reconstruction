@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import ndarray
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber1_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber_tmp_1_256x256x256.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber2_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber_tmp_2_256x256x256.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber3_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber_tmp_3_256x256x256.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
 num_voxel = 256
@@ -25,7 +25,7 @@ v = v_raw.reshape([num_voxel, num_voxel, num_voxel])
 w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
 
 padding = np.zeros_like(u)
-padding[50:216, 50:216, 50:216] = 1.0
+padding[80:165, 90:170, 90:165] = 1.0
 # padding[135:155, 120:140, 130:150] = 1.0
 u = u * padding
 v = v * padding
@@ -35,7 +35,7 @@ u = u[::skip, ::skip, ::skip]
 v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
-eps2 = 0.05
+eps2 = 0.02
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 

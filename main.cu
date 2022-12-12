@@ -53,7 +53,7 @@ int main() {
 
     // main function
 
-    XTT::fiberModelReconstruct(sinogram, ct, geom, 10, 30, Rotate::CW, Method::ART, 5e-3);
+    XTT::fiberModelReconstruct(sinogram, ct, geom, 5, 30, Rotate::CW, Method::ART, 2e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -73,7 +73,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz3/haikou_fiber_tmp_norm" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz3/haikou_fiber_tmp_" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 

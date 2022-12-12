@@ -2,10 +2,13 @@
 // Created by tomokimori on 22/12/09.
 //
 
-#include "fiber.cuh"
-#include "Vec.h"
-#include "Params.h"
-#include "cuda_runtime.h"
+#include <fiber.cuh>
+#include <Vec.h>
+#include <Geometry.h>
+#include <ir.cuh>
+#include <random>
+#include <Params.h>
+#include <cuda_runtime.h>
 
 __device__ void forwardFiberModel(const int coord[4], float *devProj, const float *devVoxel,
                                   const Geometry &geom, int cond) {
@@ -49,23 +52,26 @@ __device__ void forwardFiberModel(const int coord[4], float *devProj, const floa
     Vector3f BxG = B.cross(G);
     float norm = FxB.norm2();
     // FxB.normalize(); // normalize
-    float proj_store[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    // signature
+    float proj_store = 0.0f;
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         float proj = (i >= 3) ? 1.0f : BxG[i];
-        proj_store[i] += proj * devVoxel[d[i]];
+        proj_store += proj * devVoxel[d[i]]; // abs
     }
+    float boolean = (proj_store >= 0) ? 1.0f: -1.0f;
 
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        // atomic add 3 times -> calc proj value
-        atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  c1 * geom.voxSize * ratio * abs(proj_store[i]));
-        atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  c2 * geom.voxSize * ratio * abs(proj_store[i]));
-        atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-                  c3 * geom.voxSize * ratio * abs(proj_store[i]));
-        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-                  c4 * geom.voxSize * ratio * abs(proj_store[i]));
-    }
+    // atomic add 3 times -> calc proj value
+    float proj = proj_store * boolean;// (i >= 3) ? 1.0f : abs(BxG[i] * boolean[i]) * devVoxel[d[i]];
+    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c1 * geom.voxSize * ratio * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c2 * geom.voxSize * ratio * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c3 * geom.voxSize * ratio * proj);
+    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c4 * geom.voxSize * ratio * proj);
+
     // printf("%d: %lf\n", i+1, vkm);
     // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
 }
@@ -78,6 +84,71 @@ __global__ void forwardProjFiber(float *devProj, float *devVoxel, Geometry *geom
 
     const int coord[4] = {x, y, z, n};
     forwardFiberModel(coord, devProj, devVoxel, *geom, cond);
+    /*
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+    int d[4] = {
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2]),
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2]),
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 2 * (sizeV[0] * sizeV[1] * sizeV[2]),
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 3 * (sizeV[0] * sizeV[1] * sizeV[2]),
+    };
+
+    Vector3f F(devVoxel[d[0]], devVoxel[d[1]], devVoxel[d[2]]);
+    Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
+    float u = 0.0f, v = 0.0f;
+    rayCastingFiber(u, v, B, G, cond, coord, *geom);
+
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
+        return;
+
+    const int abs_n = abs(coord[3]);
+
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
+    int intU = floor(u_tmp), intV = floor(v_tmp);
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
+            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
+            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
+
+    const float ratio = (geom->voxSize * geom->voxSize) /
+                        (geom->detSize * (geom->sod / geom->sdd) * geom->detSize * (geom->sod / geom->sdd));
+
+    // B->beam direction unit vector (src2voxel)
+    // S->scattering base vector
+    // G->grating sensivity vector
+
+    float mu = F.norm2();
+    F.normalize();
+    Vector3f FxB = F.cross(B); // unit vector
+    Vector3f BxG = B.cross(G);
+    float norm = FxB.norm2();
+    // FxB.normalize(); // normalize
+
+    float proj_store[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    float boolean[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        float proj = (i >= 3) ? 1.0f : BxG[i];
+        proj_store[i] += proj * devVoxel[d[i]];
+        boolean[i] = (proj_store[i] >= 0) ? 1.0f : -1.0f;
+        printf("boolean: %f", boolean[i]);
+    }
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        // atomic add 3 times -> calc proj value
+        float proj = BxG[i] * norm * boolean[i] * devVoxel[d[i]];// (i >= 3) ? 1.0f : abs(BxG[i] * boolean[i]) * devVoxel[d[i]];
+        atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * abs_n],
+                  c1 * geom->voxSize * ratio * proj);
+        atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * abs_n],
+                  c2 * geom->voxSize * ratio * proj);
+        atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * abs_n],
+                  c3 * geom->voxSize * ratio * proj);
+        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * abs_n],
+                  c4 * geom->voxSize * ratio * proj);
+    }
+    // printf("%d: %lf\n", i+1, vkm);
+    // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
+     */
 }
 
 __device__ void
@@ -121,23 +192,23 @@ backwardFiberModel(const int coord[4], const float *devProj, float *devVoxel, fl
     float norm = FxB.norm2();
     // FxB.normalize(); // normalize
 
-    float proj_store[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    float boolean[6];
+    // signature
+    float proj_store = 0.0f;
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         float proj = (i >= 3) ? 1.0f : BxG[i];
-        proj_store[i] += proj * devVoxel[d[i]];
-        boolean[i] = (proj_store[i] >= 0) ? 1.0f : -1.0f;
+        proj_store += proj * devVoxel[d[i]]; // abs
     }
+    float boolean = (proj_store >= 0) ? 1.0f: -1.0f;
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-
+        float proj = (i >= 3) ? 1.0f : BxG[i] * boolean; // abs BxG
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
-        const float backForward = boolean[i] * proj_store[i] * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                                  boolean[i] * proj_store[i] * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                                  boolean[i] * proj_store[i] * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
-                                  boolean[i] * proj_store[i] * c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
+        const float backForward = proj * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                                  proj * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                                  proj * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
+                                  proj * c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
 
-        devVoxelFactor[idxVoxel] += boolean[i] * proj_store[i];
+        devVoxelFactor[idxVoxel] += proj;
         devVoxelTmp[idxVoxel] += backForward;
     }
 }
