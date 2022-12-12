@@ -148,8 +148,10 @@ namespace XTT {
     reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                 Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
-        for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-            voxel[i].forEach([](float value) -> float { return 0.01; });
+        if (method == Method::MLEM) {
+            for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+                voxel[i].forEach([](float value) -> float { return 0.01; });
+            }
         }
 
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
@@ -301,9 +303,9 @@ namespace XTT {
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
-        cudaMalloc(&devVoxel, sizeof(float) * lenV * 3);
-        cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * 3);
-        cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * 3);
+        cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
+        cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+        cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);

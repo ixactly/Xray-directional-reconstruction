@@ -5,7 +5,7 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 4;
+inline constexpr int NUM_BASIS_VECTOR = 3;
 inline constexpr int NUM_PROJ_COND = 3;
 
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,

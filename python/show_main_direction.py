@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import ndarray
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/PCA/CF_MAIND_X_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber1_256x256x256.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/PCA/CF_MAIND_Y_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber2_256x256x256.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/PCA/CF_MAIND_Z_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber3_256x256x256.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
 num_voxel = 256
@@ -35,7 +35,7 @@ u = u[::skip, ::skip, ::skip]
 v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
-eps2 = 0.01
+eps2 = 0.05
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 
