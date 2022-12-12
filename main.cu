@@ -53,7 +53,7 @@ int main() {
 
     // main function
 
-    XTT::fiberModelReconstruct(sinogram, ct, geom, 5, 30, Rotate::CW, Method::ART, 2e-2);
+    XTT::fiberModelReconstruct(sinogram, ct, geom, 5, 30, Rotate::CW, Method::MLEM, 5e-4);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 

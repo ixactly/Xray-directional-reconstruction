@@ -57,12 +57,12 @@ __device__ void forwardFiberModel(const int coord[4], float *devProj, const floa
     float proj_store = 0.0f;
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         float proj = (i >= 3) ? 1.0f : BxG[i];
-        proj_store += proj * devVoxel[d[i]]; // abs
+        proj_store += abs(proj * devVoxel[d[i]]); // abs
     }
     float boolean = (proj_store >= 0) ? 1.0f: -1.0f;
 
     // atomic add 3 times -> calc proj value
-    float proj = proj_store * boolean;// (i >= 3) ? 1.0f : abs(BxG[i] * boolean[i]) * devVoxel[d[i]];
+    float proj = abs(proj_store * boolean); // (i >= 3) ? 1.0f : abs(BxG[i] * boolean[i]) * devVoxel[d[i]];
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
               c1 * geom.voxSize * ratio * proj);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -201,7 +201,7 @@ backwardFiberModel(const int coord[4], const float *devProj, float *devVoxel, fl
     float boolean = (proj_store >= 0) ? 1.0f: -1.0f;
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        float proj = (i >= 3) ? 1.0f : BxG[i] * boolean; // abs BxG
+        float proj = (i >= 3) ? 1.0f : abs(BxG[i] * boolean); // abs BxG
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = proj * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   proj * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
