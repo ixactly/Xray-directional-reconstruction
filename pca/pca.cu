@@ -53,7 +53,7 @@ int main() {
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string loadfilePath =
-                "../volume_bin/cfrp_xyz3/CF_XYZ3XTT_7D_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) +
+                "../volume_bin/cfrp_xyz7/cfrp7_xtt_" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) +
                 "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ctArray[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
@@ -76,7 +76,7 @@ int main() {
 
     for (int i = 0; i < 3; i++) {
         std::string savefilePath =
-                "../volume_bin/cfrp_xyz3/PCA/CF_MAIND_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../volume_bin/cfrp_xyz7/PCA/CF_MAIND_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         md[i].save(savefilePath);
     }

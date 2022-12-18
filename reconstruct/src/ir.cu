@@ -219,6 +219,7 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
     const float ratio = (geom.voxSize * geom.voxSize) /
                         (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
 
+    float proj = 0.0f;
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
@@ -228,17 +229,19 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
         float vkm = B.cross(S).norm2() * abs(S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
-        atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c1 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c2 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c3 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-        atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-                  vkm * vkm * c4 * geom.voxSize * ratio * devVoxel[idxVoxel]);
+        proj += vkm * vkm * geom.voxSize * ratio * devVoxel[idxVoxel];
         // printf("%d: %lf\n", i+1, vkm);
         // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
     }
+    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c1 * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c2 * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c3 * proj);
+    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c4 * proj);
+
 }
 
 // change to class

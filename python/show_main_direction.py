@@ -2,21 +2,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import ndarray
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber_tmp_1_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/CF_MAIND_X_256x256x256.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber_tmp_2_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/CF_MAIND_Y_256x256x256.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/haikou_fiber_tmp_3_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/CF_MAIND_Z_256x256x256.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
 num_voxel = 256
-size = 32
+size = 64
 skip = int(num_voxel / size)
 eps = 1e-20
 
-# !! x->y, y->z, z->x
 y, z, x = np.meshgrid(np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size))
 
 # u = u_raw.reshape([num_voxel, num_voxel, num_voxel])[::skip, ::skip, ::skip]
@@ -25,8 +24,7 @@ v = v_raw.reshape([num_voxel, num_voxel, num_voxel])
 w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
 
 padding = np.zeros_like(u)
-padding[80:165, 90:170, 90:165] = 1.0
-# padding[135:155, 120:140, 130:150] = 1.0
+padding[70:200, 80:195, 60:170] = 1.0
 u = u * padding
 v = v * padding
 w = w * padding
@@ -35,7 +33,7 @@ u = u[::skip, ::skip, ::skip]
 v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
-eps2 = 0.02
+eps2 = 0.006
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 
@@ -77,6 +75,7 @@ tmp = np.tile(tmp, (size**3, 1))
 
 ax = plt.figure().add_subplot(projection='3d')
 ax.set(xlabel='X', ylabel='Y', zlabel='Z')
-ax.quiver(x, y, z, u, v, w, color=rgba, length=3, normalize=True)
+ax.quiver(x, y, z, u, v, w, color=rgba, length=4, normalize=True)
 
 plt.show()
+

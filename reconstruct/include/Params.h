@@ -5,8 +5,19 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_BASIS_VECTOR = 7;
 inline constexpr int NUM_PROJ_COND = 3;
+
+/* cfrp3 haikou
+
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 1080;
+inline constexpr int NUM_DETECT_U = 256;
+inline constexpr int NUM_DETECT_V = 256;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 256;
 
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
@@ -28,7 +39,55 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
                                 0.313176, -0.734379, -0.728910,
 };
 
+__constant__ float INIT_OFFSET[9] = {
+        -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
+
+*/
+
+// cfrp_xyz7
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 360;
+inline constexpr int NUM_DETECT_U = 256;
+inline constexpr int NUM_DETECT_V = 256;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 256;
 /*
+__constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
+
+                                0.003682, 0.038107, -0.999267,
+                                -0.073760, 0.996562, 0.037732,
+                                0.997269, 0.073567, 0.006480,
+
+                                0.991596, 0.114062, 0.061051,
+                                0.053369, 0.069234, -0.996172,
+                                -0.117852, 0.991058, 0.062565,
+};
+
+__constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
+
+                               -0.052278, -0.057119, 0.566564,
+
+                               - 0.561273, 0.241813, 0.117783,
+};
+
+__constant__ float INIT_OFFSET[9] = {
+        -14.45f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -14.32f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
+};
+*/
+// initial params
+
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -49,48 +108,14 @@ __constant__ float elemT[9] = {
 
         0.0f, 0.0f, 0.0f,
 };
-*/
-/*
-__managed__ float basisVector[21] = {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        0.57735f, 0.57735f, 0.57735f,
-        -0.57735f, -0.57735f, 0.57735f,
-        -0.57735f, 0.57735f, 0.57735f,
-        0.57735f, -0.57735f, 0.57735f
-};
-*/
-
-__managed__ float basisVector[21] = {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        0.57735f, 0.57735f, 0.57735f,
-        -0.57735f, -0.57735f, 0.57735f,
-        -0.57735f, 0.57735f, 0.57735f,
-        0.57735f, -0.57735f, 0.57735f,
-};
 
 __constant__ float INIT_OFFSET[9] = {
-        -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        -14.45f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
-        -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        -14.32f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
-        -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
-
-inline constexpr float scatter_angle_xy = 0.0f;
-__managed__ float loss;
-// params on yuki
-/*
-inline constexpr double SRC_OBJ_DISTANCE = 455.849;
-inline constexpr double SRC_DETECT_DISTANCE = 1519.739;
-inline constexpr int NUM_PROJ = 1000;
-inline constexpr int NUM_DETECT_U = 1024;
-inline constexpr int NUM_DETECT_V = 1024;
-inline constexpr double DETECTOR_SIZE = 0.4; // 1024 / 256
-inline constexpr int NUM_VOXEL = 1024; // 1024
-*/
+        -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
+};
 
 // cube
 /*
@@ -106,44 +131,17 @@ inline constexpr double DETECTOR_SIZE = 1.0;
 inline constexpr int NUM_VOXEL = 400;
 */
 
-//yoji cube
-/*
-inline constexpr float SRC_OBJ_DISTANCE = 1003;
-inline constexpr float SRC_DETECT_DISTANCE = 1458;
-inline constexpr int NUM_PROJ = 180;
-inline constexpr int NUM_DETECT_U = 672;
-inline constexpr int NUM_DETECT_V = 672;
-inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+__managed__ float basisVector[21] = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        0.57735f, 0.57735f, 0.57735f,
+        -0.57735f, -0.57735f, 0.57735f,
+        -0.57735f, 0.57735f, 0.57735f,
+        0.57735f, -0.57735f, 0.57735f,
+};
 
-inline constexpr int NUM_VOXEL = 672;
+inline constexpr float scatter_angle_xy = 0.0f;
+__managed__ float loss;
 
-inline constexpr float INIT_OFFSET[3] = {0.0, 0.0, 0.0};
-*/
-
-// cfrp_xyz3 params
-
-inline constexpr float SRC_OBJ_DISTANCE = 1003;
-inline constexpr float SRC_DETECT_DISTANCE = 1458;
-inline constexpr int NUM_PROJ = 1080;
-inline constexpr int NUM_DETECT_U = 256;
-inline constexpr int NUM_DETECT_V = 256;
-inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
-
-inline constexpr int NUM_VOXEL = 256;
-
-// cfrp
-/*
-inline constexpr float SRC_OBJ_DISTANCE = 1069.0;
-inline constexpr float SRC_DETECT_DISTANCE = 1450.0;
-
-inline constexpr int NUM_PROJ = 360;
-
-inline constexpr int NUM_DETECT_U = 1000;
-inline constexpr int NUM_DETECT_V = 1000;
-
-inline constexpr double DETECTOR_SIZE = 100.5312 / 1344.0;
-inline constexpr int NUM_VOXEL = 1000;
-
-inline constexpr double INIT_OFFSET[3] = {-1.98, 0.0, 0.0};
-*/
 #endif // CUDA_EXAMPLE_PARAMS_H

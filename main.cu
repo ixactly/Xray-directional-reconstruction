@@ -30,7 +30,7 @@ int main() {
                                    std::to_string(NUM_PROJ) + ".raw";
         */
 
-        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz3/SC/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
                                    std::to_string(NUM_PROJ) + ".raw";
 
@@ -53,7 +53,7 @@ int main() {
 
     // main function
 
-    XTT::fiberModelReconstruct(sinogram, ct, geom, 5, 30, Rotate::CW, Method::MLEM, 5e-4);
+    IR::reconstruct(sinogram, ct, geom, 15, 30, Rotate::CW, Method::MLEM, 5e-4);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -65,7 +65,7 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/cfrp_xyz3/proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/cfrp_xyz7/proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
         sinogram[i].save(savefilePathProj);
     }
@@ -73,7 +73,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz3/haikou_fiber_tmp_" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7/cfrp7_xtt_" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
