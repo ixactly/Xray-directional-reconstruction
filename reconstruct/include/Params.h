@@ -5,10 +5,10 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 7;
+inline constexpr int NUM_BASIS_VECTOR = 3;
 inline constexpr int NUM_PROJ_COND = 3;
 
-/* cfrp3 haikou
+// cfrp3 haikou
 
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
@@ -46,8 +46,7 @@ __constant__ float INIT_OFFSET[9] = {
 
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
 
-*/
-
+/*
 // cfrp_xyz7
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
@@ -87,7 +86,7 @@ __constant__ float INIT_OFFSET[9] = {
 };
 */
 // initial params
-
+/*
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -116,7 +115,7 @@ __constant__ float INIT_OFFSET[9] = {
 
         -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
-
+*/
 // cube
 /*
 inline constexpr double SRC_OBJ_DISTANCE = 500.0;
