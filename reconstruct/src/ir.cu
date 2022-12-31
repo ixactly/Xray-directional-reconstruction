@@ -227,6 +227,7 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
         // G->grating sensivity vector
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         float vkm = B.cross(S).norm2() * abs(S * G);
+        // float vkm = abs(S * G);
         const int idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         proj += vkm * vkm * geom.voxSize * ratio * devVoxel[idxVoxel];
@@ -276,6 +277,8 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
         // v_km = (|B_m x S_k|<S_k*G>)^2
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         float vkm = B.cross(S).norm2() * abs(S * G);
+        //float vkm = abs(S * G);
+
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *
@@ -339,7 +342,6 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     B = src2voxel;
     B.normalize();
     G = Rotate * Vector3f(0.0f, 0.0f, 1.0f);
-
 }
 
 

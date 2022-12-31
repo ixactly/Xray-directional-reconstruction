@@ -1,0 +1,5 @@
+project(PCA LANGUAGES C CXX)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+add_executable(PCA pca.cu pca.cuh)
+target_include_directories(PCA PUBLIC ../reconstruct/include)
+target_link_libraries(PCA Eigen3::Eigen ir_lib)

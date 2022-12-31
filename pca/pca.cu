@@ -2,8 +2,8 @@
 // Created by tomokimori on 22/10/24.
 //
 
+#include "pca.cuh"
 #include <iostream>
-#include <Volume.h>
 #include <Params.h>
 #include <Eigen/Dense>
 #include <array>
