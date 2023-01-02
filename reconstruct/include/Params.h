@@ -9,7 +9,7 @@ inline constexpr int NUM_BASIS_VECTOR = 7;
 inline constexpr int NUM_PROJ_COND = 3;
 
 // cfrp3 haikou
-
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 1080;
@@ -45,8 +45,8 @@ __constant__ float INIT_OFFSET[9] = {
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
+*/
 
-/*
 // cfrp_xyz7
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
@@ -56,7 +56,7 @@ inline constexpr int NUM_DETECT_V = 256;
 inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
 inline constexpr int NUM_VOXEL = 256;
-/*
+
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -74,7 +74,7 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
 
                                -0.052278, -0.057119, 0.566564,
 
-                               - 0.561273, 0.241813, 0.117783,
+                               -0.561273, 0.241813, 0.117783,
 };
 
 __constant__ float INIT_OFFSET[9] = {
@@ -84,7 +84,7 @@ __constant__ float INIT_OFFSET[9] = {
 
         -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
-*/
+
 // initial params
 /*
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,

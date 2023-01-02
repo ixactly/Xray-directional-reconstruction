@@ -5,6 +5,6 @@
 #ifndef PCA_PCA_CUH
 #define PCA_PCA_CUH
 
-#include <Volume.h>
+#include "../../reconstruct/include/Volume.h"
 void calcEigenVector(const Volume<float> *ct, Volume<float> *md, int x, int y, int z);
 #endif //PCA_PCA_CUH

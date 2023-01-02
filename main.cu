@@ -15,8 +15,10 @@ int main() {
         e = Volume<float>(NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
 
     // ground truth
-    Volume<float> ct[NUM_BASIS_VECTOR];
+    Volume<float> ct[NUM_BASIS_VECTOR], md[3];
     for (auto &e: ct)
+        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    for (auto &e: md)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
@@ -30,7 +32,7 @@ int main() {
                                    std::to_string(NUM_PROJ) + ".raw";
         */
 
-        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz3/SC/CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
                                    std::to_string(NUM_PROJ) + ".raw";
 
@@ -53,7 +55,7 @@ int main() {
 
     // main function
 
-    XTT::reconstruct(sinogram, ct, geom, 2, 30, Rotate::CW, Method::MLEM, 5e-4);
+    XTT::reconstruct(sinogram, ct, md, geom, 30, 30, Rotate::CW, Method::ART, 5e-3);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -73,12 +75,22 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz3/cfrp3_xtt_" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7/cfrp7_xtt_ref_art" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
         ct[i].save(savefilePathCT);
     }
+    // save ct volume
+    for (int i = 0; i < 3; i++) {
+        std::string savefilePathCT =
+                "../volume_bin/cfrp_xyz7/PCA/main_direction" + std::to_string(i + 1) + "_" +
+                std::to_string(NUM_VOXEL) + "x" +
+                std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+
+        // md[i].save(savefilePathCT);
+    }
+
 
     return 0;
 }

@@ -91,6 +91,7 @@ public :
         std::ifstream ifile(filename, std::ios::binary);
         if (!ifile) {
             std::cout << "file not loaded. please check file path." << std::endl;
+            std::cout << "input path: " + filename << std::endl;
             return;
         } else {
             std::cout << "file loaded correctly, " << filename << std::endl;

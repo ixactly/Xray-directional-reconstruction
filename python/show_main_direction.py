@@ -33,7 +33,8 @@ u = u[::skip, ::skip, ::skip]
 v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
-eps2 = 0.006
+# threshold
+eps2 = 0.1
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 

@@ -8,6 +8,18 @@
 #include "Volume.h"
 #include "Vec.h"
 
+__global__ void
+backwardProjXTTbyFiber(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry& geom, int cond,
+                       int y, int p, float* devDirection);
+__global__ void
+forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
+                      int y, int p, float *devDirection);
+
+__device__ void
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4], const Geometry &geom);
+
+__global__ void voxelSqrtFromSrc(float *hostVoxel, const float *devVoxel,const Geometry *geom, int y);
+
 inline __host__ void setScatterDirecOnXY(float angle, float *vec) {
     vec[0] = std::cos(angle);
     vec[1] = std::sin(angle);
