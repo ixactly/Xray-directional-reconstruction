@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import ndarray
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/CF_MAIND_X_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_ref1_256x256x256.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/CF_MAIND_Y_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_ref2_256x256x256.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/CF_MAIND_Z_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_ref3_256x256x256.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
 num_voxel = 256

@@ -28,7 +28,7 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
         F = Vector3f(1.0f, 1.0f, 1.0f);
     F.normalize();
 
-    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f) || (F * B > 0.98f))
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f) || abs(F * B) > fdThresh)
         return;
 
     const int n = abs(coord[3]);
@@ -86,7 +86,7 @@ backwardProjXTTbyFiber(float *devProj, float *devVoxelTmp, float *devVoxelFactor
         F = Vector3f(1.0f, 1.0f, 1.0f);
     F.normalize();
 
-    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f) || (F * B > 0.98f))
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f) || (abs(F * B) > fdThresh))
         return;
 
     const int n = abs(coord[3]);
@@ -232,7 +232,7 @@ __global__ void voxelSqrtFromSrc(float *hostVoxel, const float *devVoxel,const G
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
-        hostVoxel[idxVoxel] = sqrt(devVoxel[idxVoxel]);
+        hostVoxel[idxVoxel] = sqrt(abs(devVoxel[idxVoxel]));
     }
 }
 
@@ -244,7 +244,7 @@ __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
-        devVoxel[idxVoxel] = sqrt(devVoxel[idxVoxel]);
+        devVoxel[idxVoxel] = sqrt(abs(devVoxel[idxVoxel]));
     }
 }
 

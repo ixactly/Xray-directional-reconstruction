@@ -146,8 +146,8 @@ namespace IR {
 
 namespace XTT {
     void
-    newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int epoch, int batch,
-                   Rotate dir, Method method, float lambda) {
+    newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int iter1,
+                   int iter2, int batch, Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
         if (method == Method::MLEM) {
             for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
@@ -179,7 +179,6 @@ namespace XTT {
         cudaMalloc(&devDirection, sizeof(float) * lenV * 3);
         for (int i = 0; i < 3; i++) {
             md[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-            md[i].forEach([](float value) -> float { return 1e-5; });
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -205,86 +204,88 @@ namespace XTT {
             subsetOrder[i] = i;
         }
 
-        std::vector<float> losses(epoch);
+        std::vector<float> losses(iter1);
 
         // progress bar
-        progressbar pbar(epoch * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
+        progressbar pbar(iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
         // set scattering vector direction
         // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
 
         // main routine
-        for (int ep = 0; ep < epoch; ep++) {
-            std::mt19937_64 get_rand_mt; // fixed seed
-            std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-            cudaMemset(&loss, 0.0f, sizeof(float));
-            cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
-
+        for (int it2 = 0; it2 < iter1; it2++) {
             // copy md to devMD
             for (int i = 0; i < 3; i++)
                 cudaMemcpy(md[i].get(), &devDirection[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
-            for (int &sub: subsetOrder) {
-                // forwardProj and ratio
-                for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                    for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                        int n = rotation * ((sub + batch * subOrder) % nProj);
-                        // !!care!! judge from vecSod which plane we chose
-                        pbar.update();
+            for (int ep = 0; ep < iter2; ep++) {
+                std::mt19937_64 get_rand_mt; // fixed seed
+                std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
+                cudaMemset(&loss, 0.0f, sizeof(float));
+                cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
 
-                        // forwardProj process
-                        for (int y = 0; y < sizeV[1]; y++) {
-                            // iterate basis vector in forwardProjXTT
-                            forwardProjXTTbyFiber<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, *devGeom,
-                                                                     cond, y, n, devDirection);
+                for (int &sub: subsetOrder) {
+                    // forwardProj and ratio
+                    for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+                        for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                            int n = rotation * ((sub + batch * subOrder) % nProj);
+                            // !!care!! judge from vecSod which plane we chose
+                            pbar.update();
+
+                            // forwardProj process
+                            for (int y = 0; y < sizeV[1]; y++) {
+                                // iterate basis vector in forwardProjXTT
+                                forwardProjXTTbyFiber<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, *devGeom,
+                                                                         cond, y, n, devDirection);
+                                cudaDeviceSynchronize();
+                            }
+
+                            // ratio process
+                            if (method == Method::ART) {
+                                projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,
+                                                                n);
+                            } else {
+                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            }
                             cudaDeviceSynchronize();
                         }
+                    }
 
-                        // ratio process
+                    // backwardProj process
+                    for (int y = 0; y < sizeV[1]; y++) {
+                        cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                        cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+                            pbar.update();
+                            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                                int n = rotation * ((sub + batch * subOrder) % nProj);
+                                backwardProjXTTbyFiber<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp,
+                                                                          devVoxelFactor,
+                                                                          *devGeom, cond, y, n, devDirection);
+                                cudaDeviceSynchronize();
+                            }
+                        }
                         if (method == Method::ART) {
-                            projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom,
+                                                         y);
                         } else {
-                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                         }
                         cudaDeviceSynchronize();
                     }
                 }
 
-                // backwardProj process
-                for (int y = 0; y < sizeV[1]; y++) {
-                    cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                    cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                    for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                        pbar.update();
-                        for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                            int n = rotation * ((sub + batch * subOrder) % nProj);
-                            backwardProjXTTbyFiber<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor,
-                                                               *devGeom, cond, y, n, devDirection);
-                            cudaDeviceSynchronize();
-                        }
-                    }
-                    if (method == Method::ART) {
-                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom, y);
-                    } else {
-                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
-                    }
-                    cudaDeviceSynchronize();
-                }
+                loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
+                cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
             }
-
-            loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
-
-            // record voxel sqrt to host memory
-            Volume<float> ctArray[NUM_BASIS_VECTOR];
+            // record sqrt of voxel val to host memory
             for (int y = 0; y < sizeV[1]; y++) {
                 voxelSqrtFromSrc<<<gridV, blockV>>>(hostVoxel, devVoxel, devGeom, y); // host
                 cudaDeviceSynchronize();
             }
 
             for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-                ctArray[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-                cudaMemcpy(ctArray[i].get(), &hostVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                cudaMemcpy(voxel[i].get(), &hostVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
                 cudaDeviceSynchronize();
             }
 
@@ -293,7 +294,7 @@ namespace XTT {
 #pragma parallel omp for
                 for (int y = 0; y < NUM_VOXEL; y++) {
                     for (int x = 0; x < NUM_VOXEL; x++) {
-                        calcEigenVector(ctArray, md, x, y, z);
+                        calcEigenVector(voxel, md, x, y, z);
                     }
                 }
             }
@@ -303,9 +304,10 @@ namespace XTT {
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+        /*
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(voxel[i].get(), &hostVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-
+*/
         cudaFree(devProj);
         cudaFree(devSino);
         cudaFree(devVoxel);
@@ -321,8 +323,8 @@ namespace XTT {
     }
 
     void
-    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                Method method, float lambda) {
+    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int epoch,
+                int batch, Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
         if (method == Method::MLEM) {
             for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
@@ -419,8 +421,7 @@ namespace XTT {
                         for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                             int n = rotation * ((sub + batch * subOrder) % nProj);
                             backwardProjXTT<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor,
-                                                               devGeom,
-                                                               cond, y, n);
+                                                               devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
                     }
@@ -446,6 +447,17 @@ namespace XTT {
             cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
+        std::cout << "\ncalculate main direction\n";
+        // calc main direction
+        for (int z = 0; z < NUM_VOXEL; z++) {
+#pragma parallel omp for
+            for (int y = 0; y < NUM_VOXEL; y++) {
+                for (int x = 0; x < NUM_VOXEL; x++) {
+                    calcEigenVector(voxel, md, x, y, z);
+                }
+            }
+        }
 
         cudaFree(devProj);
         cudaFree(devSino);
