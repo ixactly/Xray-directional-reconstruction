@@ -145,9 +145,8 @@ namespace IR {
 }
 
 namespace XTT {
-    void
-    newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int iter1,
-                   int iter2, int batch, Rotate dir, Method method, float lambda) {
+    void newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
+                        int iter1, int iter2, int batch, Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
         if (method == Method::MLEM) {
             for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
@@ -204,7 +203,7 @@ namespace XTT {
             subsetOrder[i] = i;
         }
 
-        std::vector<float> losses(iter1);
+        std::vector<float> losses(iter1 * iter2);
 
         // progress bar
         progressbar pbar(iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
@@ -214,10 +213,6 @@ namespace XTT {
 
         // main routine
         for (int it2 = 0; it2 < iter1; it2++) {
-            // copy md to devMD
-            for (int i = 0; i < 3; i++)
-                cudaMemcpy(md[i].get(), &devDirection[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-
             for (int ep = 0; ep < iter2; ep++) {
                 std::mt19937_64 get_rand_mt; // fixed seed
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
@@ -277,29 +272,33 @@ namespace XTT {
 
                 loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
                 cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
-            }
-            // record sqrt of voxel val to host memory
-            for (int y = 0; y < sizeV[1]; y++) {
-                voxelSqrtFromSrc<<<gridV, blockV>>>(hostVoxel, devVoxel, devGeom, y); // host
-                cudaDeviceSynchronize();
-            }
 
-            for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-                cudaMemcpy(voxel[i].get(), &hostVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-                cudaDeviceSynchronize();
-            }
+                // record sqrt of voxel val to host memory
+                for (int y = 0; y < sizeV[1]; y++) {
+                    voxelSqrtFromSrc<<<gridV, blockV>>>(hostVoxel, devVoxel, devGeom, y); // host
+                    cudaDeviceSynchronize();
+                }
 
-            // calc main direction
-            for (int z = 0; z < NUM_VOXEL; z++) {
+                for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+                    cudaMemcpy(voxel[i].get(), &hostVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                    cudaDeviceSynchronize();
+                }
+
+                // calc main direction
+                for (int z = 0; z < NUM_VOXEL; z++) {
 #pragma parallel omp for
-                for (int y = 0; y < NUM_VOXEL; y++) {
-                    for (int x = 0; x < NUM_VOXEL; x++) {
-                        calcEigenVector(voxel, md, x, y, z);
+                    for (int y = 0; y < NUM_VOXEL; y++) {
+                        for (int x = 0; x < NUM_VOXEL; x++) {
+                            calcEigenVector(voxel, md, x, y, z);
+                        }
                     }
                 }
+                for (int i = 0; i < 3; i++)
+                    cudaMemcpy(&devDirection[i * lenV], md[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
             }
+            // copy md to devMD
             for (int i = 0; i < 3; i++)
-                cudaMemcpy(&devDirection[i * lenV], md[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+                cudaMemcpy(md[i].get(), &devDirection[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -323,8 +322,8 @@ namespace XTT {
     }
 
     void
-    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int epoch,
-                int batch, Rotate dir, Method method, float lambda) {
+    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
+                int epoch, int batch, Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
         if (method == Method::MLEM) {
             for (int i = 0; i < NUM_BASIS_VECTOR; i++) {

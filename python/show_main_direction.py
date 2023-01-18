@@ -1,14 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy import ndarray
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_ref1_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_art_vec1_256x256x256.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_ref2_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_art_vec2_256x256x256.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_ref3_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_art_vec3_256x256x256.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
 num_voxel = 256
@@ -34,9 +33,10 @@ v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
 # threshold
-eps2 = 0.1
+eps2 = 0.05
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
+# judge = np.where((np.abs(u.reshape([-1, 1])) + np.abs(v.reshape([-1, 1])) + np.abs(w.reshape([-1, 1]))) / 3 < eps2, 0, 1)
 
 judge = np.concatenate((np.concatenate((np.ones([size**3, 3]), judge), axis=1), np.ones([2 * size**3, 4])), axis=0)
 

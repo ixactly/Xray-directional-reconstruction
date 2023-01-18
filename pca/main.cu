@@ -10,6 +10,7 @@
 #include <omp.h>
 
 int main() {
+    /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
     for (auto &e: ctArray)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
@@ -48,4 +49,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         md[i].save(savefilePath);
     }
+     */
+
+    rodriguesRotation(1.0, 1.0, 1.0, M_PI / 4.0);
 }

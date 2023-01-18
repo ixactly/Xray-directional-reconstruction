@@ -54,8 +54,9 @@ int main() {
     start = std::chrono::system_clock::now();
 
     // main function
-    XTT::newReconstruct(sinogram, ct, md, geom, 1, 40, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 30, 30, Rotate::CW, Method::ART, 1e-2);
+    // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
+    XTT::reconstruct(sinogram, ct, md, geom, 10, 30, Rotate::CW, Method::MLEM, 9e-3);
+    // IR::reconstruct(sinogram, ct, geom, 30, 30, Rotate::CW, Method::ART, 5e-3);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -76,6 +77,7 @@ int main() {
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
                 "../volume_bin/cfrp_xyz7/cfrp7_xtt_new_art" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/cfrp_xyz7/cfrp7_ir" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
@@ -84,7 +86,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7/PCA/main_direction_new" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7/PCA/main_direction_art_vec" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 

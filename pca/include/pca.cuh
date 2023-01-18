@@ -7,4 +7,5 @@
 
 #include "../../reconstruct/include/Volume.h"
 void calcEigenVector(const Volume<float> *ct, Volume<float> *md, int x, int y, int z);
+void rodriguesRotation(double n_x, double n_y, double z, double theta);
 #endif //PCA_PCA_CUH
