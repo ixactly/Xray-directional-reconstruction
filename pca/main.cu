@@ -51,5 +51,5 @@ int main() {
     }
      */
 
-    rodriguesRotation(1.0, 1.0, 1.0, M_PI / 4.0);
+    rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
 }

@@ -17,8 +17,8 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, int x, int y, i
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         float mu = (ct[i])(x, y, z);
         mu_mean += mu;
-        Eigen::Matrix<float, 3, 1> scat(mu * basisVector[3 * i + 0], mu * basisVector[3 * i + 1],
-                                        mu * basisVector[3 * i + 2]);
+        Eigen::Matrix<float, 3, 1> scat;
+        scat << mu * basisVector[3 * i + 0], mu * basisVector[3 * i + 1], mu * basisVector[3 * i + 2];
         varMatrix += scat * scat.transpose();
     }
 
@@ -64,7 +64,5 @@ void rodriguesRotation(double x, double y, double z, double theta) {
     }
 
     Eigen::MatrixXd vec = ((1 - std::cos(theta)) * rot1 + rot2) * basis;
-
-
     std::cout << vec.transpose() << std::endl;
 }

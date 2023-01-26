@@ -86,7 +86,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7/PCA/main_direction_art_vec" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7/PCA/main_direction_art_new" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
