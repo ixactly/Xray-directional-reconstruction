@@ -6,7 +6,7 @@
 #define CUDA_EXAMPLE_PARAMS_H
 
 inline constexpr int NUM_BASIS_VECTOR = 7;
-inline constexpr int NUM_PROJ_COND = 3;
+inline constexpr int NUM_PROJ_COND = 5;
 
 // cfrp3 haikou
 /*
@@ -48,6 +48,7 @@ __constant__ float INIT_OFFSET[9] = {
 */
 
 // cfrp_xyz7
+
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -57,8 +58,6 @@ inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
 inline constexpr int NUM_VOXEL = 256;
 
-__constant__ float fdThresh = 0.99f;
-/*
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -78,8 +77,7 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
 
                                -0.561273f, 0.241813f, 0.117783f,
 };
-*/
-
+/*
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -99,7 +97,7 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
 
                                -0.561273f, 0.241813f, 0.117783f,
 };
-
+*/
 
 __constant__ float INIT_OFFSET[9] = {
         -14.45f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
@@ -108,6 +106,64 @@ __constant__ float INIT_OFFSET[9] = {
 
         -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
+
+
+// cfrp_xyz3_mark
+/*
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 360;
+inline constexpr int NUM_DETECT_U = 350;
+inline constexpr int NUM_DETECT_V = 350;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 350;
+
+__constant__ float elemR[45] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
+
+                                0.064387f, 0.008937f, -0.997885f,
+                                0.021271f, 0.999721f, 0.010326f,
+                                0.997698f, -0.021891f, 0.064179f,
+
+                                0.998553f, 0.049504f, -0.021018f,
+                                -0.022439f, 0.028334f, -0.999347f,
+                                -0.048876f, 0.998372f, 0.029404f,
+
+                                0.040532f, -0.875220f, -0.482024f,
+                                0.814624f, -0.250399f, 0.523153f,
+                                -0.578572f, -0.413872f, 0.702826f,
+
+                                0.796767f, -0.297876f, -0.525768f,
+                                -0.094836f, 0.797644f, -0.595626f,
+                                0.596799f, 0.524437f, 0.607286f,
+};
+
+__constant__ float elemT[15] = {0.0f, 0.0f, 0.0f,
+
+                                3.187846f, 0.118894f, 2.181062f,
+
+                                1.097470f, 2.889862f, 2.313975f,
+
+                                2.540399f, -1.845656f, 0.654514f,
+
+                                2.785375f, 2.035686f, 0.739872f,
+};
+
+__constant__ float INIT_OFFSET[15] = {
+        -9.95f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -10.28f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -10.26f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -11.13f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -10.33f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+};
+*/
+
 
 // initial params
 /*
@@ -156,28 +212,29 @@ inline constexpr int NUM_VOXEL = 400;
 */
 /*
 __managed__ float basisVector[21] = {
+        0.57735f, 0.57735f, 0.57735f,
+        -0.57735f, 0.57735f, 0.57735f,
+        0.57735f, -0.57735f, 0.57735f,
+        0.57735f, 0.57735f, -0.57735f,
         1.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
-        0.57735f, 0.57735f, 0.57735f,
-        -0.57735f, -0.57735f, 0.57735f,
-        -0.57735f, 0.57735f, 0.57735f,
-        0.57735f, -0.57735f, 0.57735f,
 };
 */
 
 __managed__ float basisVector[21] = {
          0.666667f,  0.666667f, -0.333333f,
--0.333333f,  0.666667f,  0.666667f,
- 0.666667f, -0.333333f,  0.666667f,
-  0.57735f,   0.57735f,   0.57735f,
-  0.19245f,  -0.96225f,   0.19245f,
- -0.19245f,  -0.19245f, 0.96225f,
-  0.96225f,  -0.19245f,  -0.19245f,
+        -0.333333f,  0.666667f,  0.666667f,
+         0.666667f, -0.333333f,  0.666667f,
+          0.57735f,   0.57735f,   0.57735f,
+          0.19245f,  -0.96225f,   0.19245f,
+         -0.19245f,  -0.19245f, 0.96225f,
+          0.96225f,  -0.19245f,  -0.19245f,
 };
 
 
 inline constexpr float scatter_angle_xy = 0.0f;
+__constant__ float fdThresh = 0.99f;
 __managed__ float loss;
 
 #endif // CUDA_EXAMPLE_PARAMS_H

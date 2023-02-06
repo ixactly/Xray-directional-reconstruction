@@ -1,17 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_art_vec1_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond1_350x350x350.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_art_vec2_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond2_350x350x350.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7/PCA/main_direction_art_vec3_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond3_350x350x350.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
-num_voxel = 256
-size = 64
+num_voxel = 350
+size = 50
 skip = int(num_voxel / size)
 eps = 1e-20
 
@@ -23,7 +23,7 @@ v = v_raw.reshape([num_voxel, num_voxel, num_voxel])
 w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
 
 padding = np.zeros_like(u)
-padding[70:200, 80:195, 60:170] = 1.0
+padding[120:290, 120:280, 100:250] = 1.0
 u = u * padding
 v = v * padding
 w = w * padding
@@ -33,7 +33,7 @@ v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
 # threshold
-eps2 = 0.05
+eps2 = 0.01
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 # judge = np.where((np.abs(u.reshape([-1, 1])) + np.abs(v.reshape([-1, 1])) + np.abs(w.reshape([-1, 1]))) / 3 < eps2, 0, 1)

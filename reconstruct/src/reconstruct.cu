@@ -285,11 +285,16 @@ namespace XTT {
                 }
 
                 // calc main direction
+                Volume<float> tmp[3];
+                for (auto &e : tmp) {
+                    e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+                }
+
                 for (int z = 0; z < NUM_VOXEL; z++) {
 #pragma parallel omp for
                     for (int y = 0; y < NUM_VOXEL; y++) {
                         for (int x = 0; x < NUM_VOXEL; x++) {
-                            calcEigenVector(voxel, md, x, y, z);
+                            calcEigenVector(voxel, md, tmp, y, z, x);
                         }
                     }
                 }
@@ -448,12 +453,16 @@ namespace XTT {
             cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
         std::cout << "\ncalculate main direction\n";
+        Volume<float> tmp[3];
+        for (auto &e : tmp) {
+            e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        }
         // calc main direction
         for (int z = 0; z < NUM_VOXEL; z++) {
 #pragma parallel omp for
             for (int y = 0; y < NUM_VOXEL; y++) {
                 for (int x = 0; x < NUM_VOXEL; x++) {
-                    calcEigenVector(voxel, md, x, y, z);
+                    calcEigenVector(voxel, md, tmp, y, z, x);
                 }
             }
         }
