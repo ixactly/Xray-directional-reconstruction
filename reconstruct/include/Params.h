@@ -5,7 +5,7 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 7;
+inline constexpr int NUM_BASIS_VECTOR = 3;
 inline constexpr int NUM_PROJ_COND = 5;
 
 // cfrp3 haikou
@@ -48,7 +48,7 @@ __constant__ float INIT_OFFSET[9] = {
 */
 
 // cfrp_xyz7
-
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -77,7 +77,7 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
 
                                -0.561273f, 0.241813f, 0.117783f,
 };
-/*
+
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -97,7 +97,7 @@ __constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
 
                                -0.561273f, 0.241813f, 0.117783f,
 };
-*/
+
 
 __constant__ float INIT_OFFSET[9] = {
         -14.45f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
@@ -106,10 +106,10 @@ __constant__ float INIT_OFFSET[9] = {
 
         -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
+*/
 
+// cfrp_xyz7_mark
 
-// cfrp_xyz3_mark
-/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -162,8 +162,6 @@ __constant__ float INIT_OFFSET[15] = {
 
         -10.33f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 };
-*/
-
 
 // initial params
 /*

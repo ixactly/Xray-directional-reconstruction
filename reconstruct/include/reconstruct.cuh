@@ -39,6 +39,9 @@ namespace XTT {
     newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int iter1,
                    int iter2, int batch, Rotate dir, Method method, float lambda);
 
+    void orthReconstruct(Volume<float> *sinogram, Volume<float> voxel[3], Volume<float> md[2], const Geometry &geom,
+                         int iter1, int iter2, int batch, Rotate dir, Method method, float lambda);
+
     void fiberModelReconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch,
                                int batch, Rotate dir, Method method, float lambda = 1e-2);
 }

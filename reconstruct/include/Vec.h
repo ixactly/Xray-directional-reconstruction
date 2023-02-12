@@ -129,6 +129,14 @@ public:
         return val[3 * i + j];
     }
 
+    __both__ T &operator[](const int i) {
+        return this->val[i];
+    }
+
+    __both__ T operator[](const int i) const {
+        return this->val[i];
+    }
+
     __both__ Matrix3X operator+(const Matrix3X &rhv) const {
         Matrix3X w(0, 0, 0, 0, 0, 0, 0, 0, 0);
         for (int i = 0; i < 9; i++) {
