@@ -151,8 +151,8 @@ backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geome
     backwardXTTonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
 }
 
-__global__ void forwardOrth(float *devProj, float *devVoxel, const float *direction, Geometry *geom, int cond,
-                            int y, int n) {
+__global__ void
+ forwardOrth(float *devProj, float *devVoxel, const float *direction, Geometry *geom, int cond, int y, int n, int it) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -182,6 +182,7 @@ __global__ void forwardOrth(float *devProj, float *devVoxel, const float *direct
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])];
     const float theta = direction[
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+
     Matrix3f R(cos(phi) * cos(theta), -sin(phi), cos(phi) * sin(theta),
                sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta),
                -sin(theta), 0, cos(theta));
@@ -202,10 +203,13 @@ __global__ void forwardOrth(float *devProj, float *devVoxel, const float *direct
         S[i] = 1.0f;
         S = R * S;
 
-        // printf("[%lf, %lf, %lf]\n", S[0], S[1], S[2]);
         float vkm = B.cross(S).norm2() * abs(S * G);
         proj += vkm * vkm * geom->voxSize * ratio * devVoxel[idxVoxel];
         // printf("%d: %lf, %lf\n", i+1, vkm, proj);
+    }
+
+    if (it == 1) {
+        // printf("angle: (%lf, %lf), proj: %lf\n", phi, theta, proj);
     }
 
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1 * proj);
@@ -216,7 +220,7 @@ __global__ void forwardOrth(float *devProj, float *devVoxel, const float *direct
 
 __global__ void
 backwardOrth(const float *devProj, const float *direction, float *devVoxelTmp, float *devVoxelFactor,
-             const Geometry *geom, int cond, int y, int n) {
+             const Geometry *geom, int cond, int y, int n, int it) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -262,19 +266,24 @@ backwardOrth(const float *devProj, const float *direction, float *devVoxelTmp, f
         //float vkm = abs(S * G);
 
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
-        const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+        const float backward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *
                                   devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
 
         devVoxelFactor[idxVoxel] += (vkm * vkm);
-        devVoxelTmp[idxVoxel] += backForward;
+        devVoxelTmp[idxVoxel] += backward;
+
+        if (it == 1) {
+            // printf("angle: (%lf, %lf), back: %lf\n", phi, theta, backward);
+        }
     }
+
 }
 
 __global__ void
-calcNormalVector(float *devVoxel, float *direction, Geometry *geom, int y) {
+calcNormalVector(const float *devVoxel, float *direction, const Geometry *geom, int y, int it) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -306,24 +315,36 @@ calcNormalVector(float *devVoxel, float *direction, Geometry *geom, int y) {
     zy = R * zy;
 
     Vector3f norm = zx.cross(zy);
-    norm.normalize();
+    if (norm.norm2() != 0.0f) {
+        norm.normalize();
 
-    float sign = norm[1] >= 0.0f ? 1.0f : -1.0f;
-    direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])]
-            = sign * acos(norm[0] / sqrt(norm[0] * norm[0] + norm[1] * norm[1]));
-    direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])]
-            = acos(norm[2]);
+        const float sign = norm[1] >= 0.0f ? 1.0f : -1.0f;
+        // calc angle
+
+        direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])]
+                = (norm[0] == 0 && norm[1] == 0) ? 0.0f : sign * acos(norm[0] / sqrt(norm[0] * norm[0] + norm[1] * norm[1]));
+        direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2])]
+                = acos(norm[2]);
+
+        if (isnan(acos(norm[2]))) {
+            printf("mu: (%lf, %lf, %lf), norm: (%lf, %lf, %lf), angle: bef(%lf, %lf), aft(%lf, %lf)\n",
+                   mu[0], mu[1], mu[2], norm[0], norm[1], norm[2], phi, theta,
+                   direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])],
+                   direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2])]);
+        }
+    }
 
 }
 
-void convertNormVector(Volume<float>* voxel, Volume<float>* md, Volume<float>* angle) {
+void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volume<float> *angle) {
     for (int x = 0; x < NUM_VOXEL; x++) {
-#pragma omp parallel for
         for (int y = 0; y < NUM_VOXEL; y++) {
             for (int z = 0; z < NUM_VOXEL; z++) {
-                md[0](x, y, z) = std::sin(angle[1](x, y, z)) * std::cos(angle[0](x, y, z));
-                md[1](x, y, z) = std::sin(angle[1](x, y, z)) * std::sin(angle[0](x, y, z));
-                md[2](x, y, z) = std::cos(angle[1](x, y, z));
+                float coef = (voxel[0](x, y, z) + voxel[1](x, y, z) + voxel[2](x, y, z)) / 3.0f;
+                // printf("phi: %lf, theta: %lf\n", angle[0](x, y, z), angle[1](x, y, z));
+                md[0](x, y, z) = coef * std::sin(angle[1](x, y, z)) * std::cos(angle[0](x, y, z));
+                md[1](x, y, z) = coef * std::sin(angle[1](x, y, z)) * std::sin(angle[0](x, y, z));
+                md[2](x, y, z) = coef * std::cos(angle[1](x, y, z));
             }
         }
     }

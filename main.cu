@@ -50,7 +50,7 @@ int main() {
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 40, Rotate::CW, Method::MLEM, 9e-3);
-    XTT::orthReconstruct(sinogram, ct, md, geom, 1, 5, 30, Rotate::CW, Method::MLEM, 9e-3);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 10, 30, Rotate::CW, Method::MLEM, 9e-3);
     // IR::reconstruct(sinogram, ct, geom, 10, 30, Rotate::CW, Method::MLEM, 5e-3);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);

@@ -231,7 +231,7 @@ namespace XTT {
                             for (int y = 0; y < sizeV[1]; y++) {
                                 // iterate basis vector in forwardProjXTT
                                 forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devDirection,
-                                                               devGeom, cond, y, n);
+                                                               devGeom, cond, y, n, ep1);
                                 cudaDeviceSynchronize();
                             }
 
@@ -240,8 +240,7 @@ namespace XTT {
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
                                                                 &devSino[lenD * cond], devGeom, n);
                             else
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
-                                                             devGeom, n);
+                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                             cudaDeviceSynchronize();
                         }
                     }
@@ -255,7 +254,7 @@ namespace XTT {
                             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                                 int n = rotation * ((sub + batch * subOrder) % nProj);
                                 backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devDirection, devVoxelTmp,
-                                                                devVoxelFactor, devGeom, cond, y, n);
+                                                                devVoxelFactor, devGeom, cond, y, n, ep1);
                                 cudaDeviceSynchronize();
                             }
                         }
@@ -269,10 +268,12 @@ namespace XTT {
                     }
                 }
             }
+
+            // out iter1
             for (int y = 0; y < sizeV[1]; y++) {
                 voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
-                calcNormalVector<<<gridV, blockV>>>(devVoxel, devDirection, devGeom, y);
+                calcNormalVector<<<gridV, blockV>>>(devVoxel, devDirection, devGeom, y, ep1);
                 cudaDeviceSynchronize();
             }
 
@@ -290,11 +291,9 @@ namespace XTT {
             angle[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
             cudaMemcpy(angle[i].get(), &devDirection[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }
+
         convertNormVector(voxel, md, angle);
         // need convert phi, theta to direction(size<-mu1 + mu2 / 2)
-
-        for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-            cudaMemcpy(md[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
         cudaFree(devProj);
         cudaFree(devSino);
