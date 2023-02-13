@@ -315,7 +315,7 @@ calcNormalVector(const float *devVoxel, float *direction, const Geometry *geom, 
     zy = R * zy;
 
     Vector3f norm = zx.cross(zy);
-    if (norm.norm2() != 0.0f) {
+    if (norm.norm2() > 1e-8) {
         norm.normalize();
 
         const float sign = norm[1] >= 0.0f ? 1.0f : -1.0f;
@@ -325,13 +325,14 @@ calcNormalVector(const float *devVoxel, float *direction, const Geometry *geom, 
                 = (norm[0] == 0 && norm[1] == 0) ? 0.0f : sign * acos(norm[0] / sqrt(norm[0] * norm[0] + norm[1] * norm[1]));
         direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2])]
                 = acos(norm[2]);
-
+        /*
         if (isnan(acos(norm[2]))) {
             printf("mu: (%lf, %lf, %lf), norm: (%lf, %lf, %lf), angle: bef(%lf, %lf), aft(%lf, %lf)\n",
                    mu[0], mu[1], mu[2], norm[0], norm[1], norm[2], phi, theta,
                    direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])],
                    direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2])]);
         }
+        */
     }
 
 }

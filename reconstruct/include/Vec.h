@@ -84,9 +84,15 @@ public:
 
     __both__ void normalize() {
         T value = sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
-        this->x /= value;
-        this->y /= value;
-        this->z /= value;
+        if (value != 0) {
+            this->x /= value;
+            this->y /= value;
+            this->z /= value;
+        } else {
+            this->x = 0;
+            this->y = 0;
+            this->z = 0;
+        }
     }
 
     __both__ T norm2() {
