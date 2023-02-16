@@ -180,8 +180,14 @@ namespace XTT {
             cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
         // store theta, phi on polar coordination to devDirection
-        float *devDirection;
-        cudaMalloc(&devDirection, sizeof(float) * lenV * 2);
+        float *devCoef;
+        cudaMalloc(&devCoef, sizeof(float) * lenV * 4);
+        std::vector<float> hCoef1(lenV);
+        for (auto &e: hCoef1)
+            e = 1.0f;
+
+        cudaMemcpy(&devCoef[lenV * 0], hCoef1.data(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+        cudaMemcpy(&devCoef[lenV * 2], hCoef1.data(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
@@ -230,8 +236,10 @@ namespace XTT {
                             // forwardProj process
                             for (int y = 0; y < sizeV[1]; y++) {
                                 // iterate basis vector in forwardProjXTT
-                                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devDirection,
-                                                               devGeom, cond, y, n, ep1);
+
+                                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
+                                                               cond, y, n, ep1, devGeom);
+
                                 cudaDeviceSynchronize();
                             }
 
@@ -253,7 +261,8 @@ namespace XTT {
                             pbar.update();
                             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                                 int n = rotation * ((sub + batch * subOrder) % nProj);
-                                backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devDirection, devVoxelTmp,
+
+                                backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devCoef, devVoxelTmp,
                                                                 devVoxelFactor, devGeom, cond, y, n, ep1);
                                 cudaDeviceSynchronize();
                             }
@@ -273,7 +282,7 @@ namespace XTT {
             for (int y = 0; y < sizeV[1]; y++) {
                 voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
-                calcNormalVector<<<gridV, blockV>>>(devVoxel, devDirection, devGeom, y, ep1);
+                calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom);
                 cudaDeviceSynchronize();
             }
 
@@ -286,13 +295,13 @@ namespace XTT {
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
-        Volume<float> angle[2];
-        for (int i = 0; i < 2; i++) {
-            angle[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-            cudaMemcpy(angle[i].get(), &devDirection[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+        Volume<float> coef[4];
+        for (int i = 0; i < 4; i++) {
+            coef[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+            cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }
 
-        convertNormVector(voxel, md, angle);
+        convertNormVector(voxel, md, coef);
         // need convert phi, theta to direction(size<-mu1 + mu2 / 2)
 
         cudaFree(devProj);
@@ -301,11 +310,12 @@ namespace XTT {
         cudaFree(devGeom);
         cudaFree(devVoxelFactor);
         cudaFree(devVoxelTmp);
-        cudaFree(devDirection);
+        cudaFree(devCoef);
 
         std::ofstream ofs("../python/loss.csv");
         for (auto &e: losses)
             ofs << e << ",";
+
     }
 
     void newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
@@ -402,11 +412,9 @@ namespace XTT {
                             // ratio process
                             if (method == Method::ART) {
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
-                                                                devGeom,
-                                                                n);
+                                                                devGeom, n);
                             } else {
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,
-                                                             n);
+                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                             }
                             cudaDeviceSynchronize();
                         }
@@ -428,8 +436,7 @@ namespace XTT {
                         }
                         if (method == Method::ART) {
                             voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize,
-                                                         devGeom,
-                                                         y);
+                                                         devGeom, y);
                         } else {
                             voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                         }

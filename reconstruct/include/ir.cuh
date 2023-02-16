@@ -16,16 +16,16 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
                       int y, int p, float *devDirection);
 
 __global__ void
-forwardOrth(float *devProj, float *devVoxel, const float *direction, Geometry *geom, int cond, int y, int n, int it);
+forwardOrth(float *devProj, float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
 
 __global__ void
-backwardOrth(const float *devProj, const float *direction, float *devVoxelTmp, float *devVoxelFactor,
+backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp, float *devVoxelFactor,
              const Geometry *geom, int cond, int y, int n, int it);
 
 __global__ void
-calcNormalVector(const float *devVoxel, float *direction, const Geometry *geom, int y, int it);
+calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom);
 
-void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *angle);
+void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);
 
 __device__ void
 rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4], const Geometry &geom);
