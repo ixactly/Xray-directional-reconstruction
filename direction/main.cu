@@ -2,6 +2,7 @@
 // Created by tomokimori on 23/01/01.
 //
 #include "pca.cuh"
+#include "moire.cuh"
 #include <iostream>
 #include "Params.h"
 #include <Eigen/Dense>
@@ -10,7 +11,7 @@
 #include <omp.h>
 
 int main() {
-
+    /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
     for (auto &e: ctArray)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
@@ -30,7 +31,7 @@ int main() {
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string loadfilePath =
-                "../../volume_bin/cfrp_xyz7/cfrp7_xtt_new_art" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) +
+                "../../volume_bin/cfrp_xyz7_mark/tmp_vol" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) +
                 "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ctArray[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
@@ -53,10 +54,10 @@ int main() {
     for (int i = 0; i < 3; i++) {
         std::string savefilePath =
                 // "../../volume_bin/cfrp_xyz7_mark/pca/md_5cond" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
-                "../../volume_bin/cfrp_xyz7/pca/tmp" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../../volume_bin/cfrp_xyz7_mark/pca/tmp" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         std::string saveEvaluesPath =
-                "../../volume_bin/cfrp_xyz7/pca/eigenvalues" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "../../volume_bin/cfrp_xyz7_mark/pca/eigenvalues" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
         md[i].save(savefilePath);
@@ -69,6 +70,32 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         angle[i].save(saveAnglePath);
     }
+
+
+    */
+    const int N = 1728;
+    Volume<float> ctArray[4];
+    Volume<float> out[3];
+    for (auto &e: out)
+        e = Volume<float>(N, N, 1);
+
+    for (int i = 0; i < 4; i++) {
+        std::string loadfilePath =
+                "../../proj_raw_bin/gfrp_sc/SC_" + std::to_string(i + 1) + ".raw";
+        ctArray[i].load(loadfilePath, N, N, 1);
+    }
+
+    calcSinFittingLimited(ctArray, out, N, N, 1);
+
+    for (int i = 0; i < 3; i++) {
+        std::string savefilePath =
+                "../../volume_bin/gfrp_sc/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                std::to_string(N) + ".raw";
+        out[i].save(savefilePath);
+
+    }
+
+
 
     // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
 }

@@ -23,9 +23,6 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
         scat << mu * basisVector[3 * i + 0], mu * basisVector[3 * i + 1], mu * basisVector[3 * i + 2];
         // std::cout << basisVector[3 * i + 1] << std::endl;
         varMatrix += scat * scat.transpose();
-        if ((125 < x && x < 135) && y == 189 && z == 171) {
-            std::cout << "mu" << i + 1 << ": " << mu << ", ";
-        }
     }
 
     mu_mean /= static_cast<float>(NUM_BASIS_VECTOR);
@@ -38,36 +35,37 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
 
     // (temporary) pick up minimum eigenvector, then normalization
     Eigen::Vector3f min = vectors.col(0); //.normalized();
-    /*
+
     md[0](x, y, z) = mu_mean * min.x();
     md[1](x, y, z) = mu_mean * min.y();
     md[2](x, y, z) = mu_mean * min.z();
-    */
 
+    /*
     md[0](x, y, z) = min.x();
     md[1](x, y, z) = min.y();
     md[2](x, y, z) = min.z();
+    */
 
     evalue[0](x, y, z) = values(0) / (values(0) + values(1) + values(2));
     evalue[1](x, y, z) = values(1) / (values(0) + values(1) + values(2));
     evalue[2](x, y, z) = values(2) / (values(0) + values(1) + values(2));
-
+    /*
     if ((125 < x && x < 135) && y == 189 && z == 171) {
         std::cout << std::endl << varMatrix << std::endl ;
         std::cout << "eigenvalue1: " << values(0) << ", vector1 x: " << vectors.col(0).x() << ", y: " << vectors.col(0).y() << ", z: " << vectors.col(0).z() << std::endl;
         std::cout << "eigenvalue2: " << values(1) << ", vector2 x: " << vectors.col(1).x() << ", y: " << vectors.col(1).y() << ", z: " << vectors.col(1).z() << std::endl;
         std::cout << "eigenvalue3: " << values(2) << ", vector3 x: " << vectors.col(2).x() << ", y: " << vectors.col(2).y() << ", z: " << vectors.col(2).z() << std::endl << std::endl;
-    }
+    }*/
 
     // std::cout << md[0](x, y, z) << " " << md[1](x, y, z) << " " << md[2](x, y, z) << std::endl;
     // std::cout << varMatrix << std::endl;
 }
 
 void calcPartsAngle(const Volume<float> md[3], Volume<float> angle[2], int x, int y, int z) {
-    angle[0](x, y, z) = std::atan(md[1](x, y, z)/md[0](x, y, z)) * 180.0 / M_PI;
+    angle[0](x, y, z) = std::atan(md[1](x, y, z)/md[0](x, y, z)) * 180.0f / M_PI;
     angle[1](x, y, z) =
             std::atan(md[2](x, y, z) / std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z))) *
-            180.0 / M_PI;
+            180.0f / M_PI;
 }
 
 void rodriguesRotation(double x, double y, double z, double theta) {

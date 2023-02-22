@@ -99,7 +99,7 @@ public :
         ifile.read(reinterpret_cast<char *>(data.get()), sizeof(T) * size);
     }
 
-    void save(const std::string &filename) {
+    void save(const std::string &filename) const {
         const int size = sizeX * sizeY * sizeZ;
         std::ofstream ofs(filename, std::ios::binary);
         if (!ofs) {
