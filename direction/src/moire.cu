@@ -15,8 +15,8 @@ void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int 
                 const float a = (I[0] + I[1] + I[2] + I[3]) / 4.0f;
                 const float b = std::sqrt((I[0] - I[2]) * (I[0] - I[2]) + (I[1] - I[3]) * (I[1] - I[3])) / 4.0f;
                 float phi = std::atan2(I[1] - I[3], I[0] - I[2]) / 2.0f;
-
                 // float phi = std::atan2(-(y - size_y / 2.0f), x - size_x / 2.0f);
+
                 phi = (phi >= 0.0f) ? phi : (float) M_PI + phi;
                 float r = std::sqrt(
                         (x - size_x / 2.0f) * (x - size_x / 2.0f) + (y - size_y / 2.0f) * (y - size_y / 2.0f));

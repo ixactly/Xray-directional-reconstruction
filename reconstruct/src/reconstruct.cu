@@ -239,7 +239,6 @@ namespace XTT {
 
                                 forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
                                                                cond, y, n, ep1, devGeom);
-
                                 cudaDeviceSynchronize();
                             }
 
