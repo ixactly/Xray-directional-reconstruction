@@ -281,6 +281,7 @@ __managed__ float basisVector[21] = {
 
 inline constexpr float scatter_angle_xy = 0.0f;
 __constant__ float fdThresh = 0.99f;
-__managed__ float loss;
+__managed__ float d_loss_proj;
+__managed__ float d_loss_norm;
 
 #endif // CUDA_EXAMPLE_PARAMS_H

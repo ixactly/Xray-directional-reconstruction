@@ -16,7 +16,7 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
                       int y, int p, float *devDirection);
 
 __global__ void
-forwardOrth(float *devProj, float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
+forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
 
 __global__ void
 backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp, float *devVoxelFactor,
@@ -24,6 +24,8 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 
 __global__ void
 calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom);
+
+__both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float theta);
 
 void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);
 
@@ -69,7 +71,7 @@ inline __host__ void setScatterDirecOn4D(float angle, float *vec) {
 }
 
 // mlem
-__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n);
+__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss);
 
 __global__ void
 voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFactor, const Geometry *geom,

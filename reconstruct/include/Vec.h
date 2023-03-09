@@ -169,6 +169,16 @@ public:
         return w;
     }
 
+    __both__ friend Matrix3X operator*(const T t, const Matrix3X &rhv) {
+        Matrix3X<T> w(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                    w.val[3 * i + j] = t * rhv.val[3 * i + j];
+            }
+        }
+        return w;
+    }
+
     __both__ Vector3X<T> operator*(const Vector3X<T> &rhv) const {
         Vector3X<T> w(0, 0, 0);
         for (int i = 0; i < 3; i++) {

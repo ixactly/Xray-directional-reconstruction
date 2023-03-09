@@ -75,7 +75,7 @@ namespace IR {
         for (int ep = 0; ep < epoch; ep++) {
             std::mt19937_64 get_rand_mt; // fixed seed
             std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-            cudaMemset(&loss, 0.0f, sizeof(float));
+            cudaMemset(&d_loss_proj, 0.0f, sizeof(float));
             cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
             for (int &sub: subsetOrder) {
                 // forwardProj and ratio
@@ -94,7 +94,8 @@ namespace IR {
                         if (method == Method::ART) {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                         } else {
-                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                                         nullptr);
                         }
                         cudaDeviceSynchronize();
                     }
@@ -122,8 +123,8 @@ namespace IR {
                 }
             }
 
-            loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
+            d_loss_proj /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
+            cudaMemcpy(losses.data() + ep, &d_loss_proj, sizeof(float), cudaMemcpyDeviceToHost); // loss
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -182,12 +183,7 @@ namespace XTT {
         // store theta, phi on polar coordination to devDirection
         float *devCoef;
         cudaMalloc(&devCoef, sizeof(float) * lenV * 4);
-        std::vector<float> hCoef1(lenV);
-        for (auto &e: hCoef1)
-            e = 1.0f;
-
-        cudaMemcpy(&devCoef[lenV * 0], hCoef1.data(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-        cudaMemcpy(&devCoef[lenV * 2], hCoef1.data(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+        cudaMemset(devCoef, 0.0f, sizeof(float) * lenV * 4);
 
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
@@ -207,7 +203,10 @@ namespace XTT {
             subsetOrder[i] = i;
         }
 
-        std::vector<float> losses(iter1);
+        float *loss1;
+        cudaMalloc(&loss1, sizeof(float));
+        std::vector<float> proj_loss(iter1 * iter2);
+        std::vector<float> norm_loss(iter1);
 
         // progress bar
         progressbar pbar(iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
@@ -223,7 +222,7 @@ namespace XTT {
             for (int ep2 = 0; ep2 < iter2; ep2++) {
                 std::mt19937_64 get_rand_mt; // fixed seed
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-                cudaMemset(&loss, 0.0f, sizeof(float));
+                cudaMemset(loss1, 0.0f, sizeof(float));
                 cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
                 for (int &sub: subsetOrder) {
                     // forwardProj and ratio
@@ -247,7 +246,8 @@ namespace XTT {
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
                                                                 &devSino[lenD * cond], devGeom, n);
                             else
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                                             loss1);
                             cudaDeviceSynchronize();
                         }
                     }
@@ -275,6 +275,8 @@ namespace XTT {
                         cudaDeviceSynchronize();
                     }
                 }
+                cudaMemcpy(proj_loss.data() + ep2 * (ep1 + 1), loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
+                // std::cout << proj_loss[ep2 * (ep1 + 1)] << std::endl;
             }
 
             // out iter1
@@ -284,9 +286,6 @@ namespace XTT {
                 calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom);
                 cudaDeviceSynchronize();
             }
-
-            loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep1, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -312,8 +311,8 @@ namespace XTT {
         cudaFree(devCoef);
 
         std::ofstream ofs("../python/loss.csv");
-        for (auto &e: losses)
-            ofs << e << ",";
+        for (auto &e: proj_loss)
+            ofs << e / static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ) << ",";
 
     }
 
@@ -389,7 +388,7 @@ namespace XTT {
             for (int ep = 0; ep < iter2; ep++) {
                 std::mt19937_64 get_rand_mt; // fixed seed
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-                cudaMemset(&loss, 0.0f, sizeof(float));
+                cudaMemset(&d_loss_proj, 0.0f, sizeof(float));
                 cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
 
                 for (int &sub: subsetOrder) {
@@ -413,7 +412,8 @@ namespace XTT {
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
                                                                 devGeom, n);
                             } else {
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                                             nullptr);
                             }
                             cudaDeviceSynchronize();
                         }
@@ -443,8 +443,8 @@ namespace XTT {
                     }
                 }
 
-                loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-                cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
+                d_loss_proj /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
+                cudaMemcpy(losses.data() + ep, &d_loss_proj, sizeof(float), cudaMemcpyDeviceToHost); // loss
 
                 // record sqrt of voxel val to host memory
                 for (int y = 0; y < sizeV[1]; y++) {
@@ -562,7 +562,7 @@ namespace XTT {
         for (int ep = 0; ep < epoch; ep++) {
             std::mt19937_64 get_rand_mt; // fixed seed
             std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-            cudaMemset(&loss, 0.0f, sizeof(float));
+            cudaMemset(&d_loss_proj, 0.0f, sizeof(float));
             cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
             for (int &sub: subsetOrder) {
                 // forwardProj and ratio
@@ -584,7 +584,8 @@ namespace XTT {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,
                                                             n);
                         } else {
-                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                                         nullptr);
                         }
                         cudaDeviceSynchronize();
                     }
@@ -613,8 +614,8 @@ namespace XTT {
                 }
             }
 
-            loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
+            d_loss_proj /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
+            cudaMemcpy(losses.data() + ep, &d_loss_proj, sizeof(float), cudaMemcpyDeviceToHost); // loss
         }
 
         for (int y = 0; y < sizeV[1]; y++) {
@@ -715,7 +716,7 @@ namespace XTT {
         for (int ep = 0; ep < epoch; ep++) {
             std::mt19937_64 get_rand_mt; // fixed seed
             std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-            cudaMemset(&loss, 0.0f, sizeof(float));
+            cudaMemset(&d_loss_proj, 0.0f, sizeof(float));
             cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
             for (int &sub: subsetOrder) {
                 // forwardProj and ratio
@@ -738,7 +739,8 @@ namespace XTT {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,
                                                             n);
                         } else {
-                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                                         nullptr);
                         }
                         cudaDeviceSynchronize();
                     }
@@ -767,8 +769,8 @@ namespace XTT {
                 }
             }
 
-            loss /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep, &loss, sizeof(float), cudaMemcpyDeviceToHost); // loss
+            d_loss_proj /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
+            cudaMemcpy(losses.data() + ep, &d_loss_proj, sizeof(float), cudaMemcpyDeviceToHost); // loss
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)

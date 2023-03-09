@@ -152,7 +152,8 @@ backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geome
 }
 
 __global__ void
-forwardOrth(float *devProj, float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom) {
+forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it,
+            Geometry *geom) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -180,13 +181,13 @@ forwardOrth(float *devProj, float *devVoxel, const float *coefficient, int cond,
 
     const float coef[4] = {
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos(phi)
+                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_x
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(phi)
+                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_y
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos(theta)
+                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_z
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(theta)
+                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // theta
     };
 
     /*
@@ -194,9 +195,7 @@ forwardOrth(float *devProj, float *devVoxel, const float *coefficient, int cond,
        sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta),
        -sin(theta), 0, cos(theta));
     */
-    Matrix3f R(coef[0] * coef[2], -coef[1], coef[0] * coef[3],
-               coef[1] * coef[2], coef[0], coef[1] * coef[3],
-               -coef[3], 0, coef[2]);
+    Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3]);
 
     float proj = 0.0f;
 
@@ -221,13 +220,12 @@ forwardOrth(float *devProj, float *devVoxel, const float *coefficient, int cond,
         // printf("%d: %lf, %lf\n", i+1, vkm, proj);
     }
 
-    if (it == 0) {
-        // printf("angle: (%lf, %lf), proj: %lf\n", phi, theta, proj);
-        /*
-        printf("R:\n[%lf, %lf, %lf]\n[%lf, %lf, %lf],\n[%lf, %lf, %lf]\n", R[0], R[1], R[2],
-               R[3], R[4], R[5], R[6], R[7], R[8]);
-        */
-    }
+    // printf("angle: (%lf, %lf), back: %lf\n", phi, theta, backward);
+    /*
+    if (isnan(proj)) {
+        printf("proj: (%lf), coef: (%lf, %lf, %lf, %lf)\n",
+               proj, coef[0], coef[1], coef[2], coef[3]);
+    }*/
 
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1 * proj);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2 * proj);
@@ -271,9 +269,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
                         3 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(theta)
     };
 
-    Matrix3f R(coef[0] * coef[2], -coef[1], coef[0] * coef[3],
-               coef[1] * coef[2], coef[0], coef[1] * coef[3],
-               -coef[3], 0, coef[2]);
+    Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3]);
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // calculate immutable geometry
@@ -292,19 +288,42 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 
         const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
-                               vkm * vkm * c2 *
-                               devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                               vkm * vkm * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                vkm * vkm * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
                                vkm * vkm * c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
 
         devVoxelFactor[idxVoxel] += (vkm * vkm);
         devVoxelTmp[idxVoxel] += backward;
 
-        if (it == 1) {
-            // printf("angle: (%lf, %lf), back: %lf\n", phi, theta, backward);
-        }
+
     }
 
+}
+
+__both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float theta) {
+
+    float eps = 0.01f;
+    if (std::sqrt(x * x + y * y + z * z) < eps) {
+        Matrix3f R(1.0f, 0.0f, 0.0f,
+                   0.0f, 1.0f, 0.0f,
+                   0.0f, 0.0f, 1.0f);
+        return R;
+    }
+
+    const float n_x = x / std::sqrt(x * x + y * y + z * z);
+    const float n_y = y / std::sqrt(x * x + y * y + z * z);
+    const float n_z = z / std::sqrt(x * x + y * y + z * z);
+
+    Matrix3f rot1(n_x * n_x, n_x * n_y, n_x * n_z,
+                  n_x * n_y, n_y * n_y, n_y * n_z,
+                  n_x * n_z, n_y * n_z, n_z * n_z);
+
+    Matrix3f rot2(cos(theta), -n_z * sin(theta), n_y * sin(theta),
+                  n_z * sin(theta), cos(theta), -n_x * sin(theta),
+                  -n_y * sin(theta), n_x * sin(theta), cos(theta));
+
+    Matrix3f rot = ((1.0f - cos(theta)) * rot1 + rot2);
+    return rot;
 }
 
 __global__ void
@@ -319,18 +338,16 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
 
     const float coef[4] = {
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos(phi)
+                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_x
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(phi)
+                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_y
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos(theta)
+                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_z
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(theta)
+                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // theta
     };
 
-    Matrix3f R(coef[0] * coef[2], -coef[1], coef[0] * coef[3],
-               coef[1] * coef[2], coef[0], coef[1] * coef[3],
-               -coef[3], 0, coef[2]);
+    Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3]);
 
     const float mu[3] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -347,32 +364,43 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     zy = R * zy;
 
     Vector3f norm = zx.cross(zy);
-    if (norm.norm2() > 1e-8) {
+    norm.normalize();
 
-        coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                  0 * (sizeV[0] * sizeV[1] * sizeV[2])]
-                = (norm[0] == 0.0f && norm[1] == 0.0f) ?
-                  1.0f : norm[0] / sqrt(norm[0] * norm[0] + norm[1] * norm[1]);
-        coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                  1 * (sizeV[0] * sizeV[1] * sizeV[2])]
-                = (norm[0] == 0.0f && norm[1] == 0.0f) ?
-                  0.0f : norm[1] / sqrt(norm[0] * norm[0] + norm[1] * norm[1]);
-        coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                  2 * (sizeV[0] * sizeV[1] * sizeV[2])]
-                = norm[2] / norm.norm2();
-        coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                  3 * (sizeV[0] * sizeV[1] * sizeV[2])]
-                = sqrt(norm[0] * norm[0] + norm[1] * norm[1]) / norm.norm2();
+    Vector3f base = {0.0f, 0.0f, 1.0f};
+    /*
+    if (mu[0] >= mu[1] && mu[0] >= mu[2]) {
+        base = {1.0f, 0.0f, 0.0f};
+    } else if (mu[1] >= mu[0] && mu[1] >= mu[2]) {
+        base = {0.0f, 1.0f, 0.0f};
+    } else {
+        base = {0.0f, 0.0f, 1.0f};
+    }*/
 
-        /*
-        if (isnan(acos(norm[2]))) {
-            printf("mu: (%lf, %lf, %lf), norm: (%lf, %lf, %lf), angle: bef(%lf, %lf), aft(%lf, %lf)\n",
-                   mu[0], mu[1], mu[2], norm[0], norm[1], norm[2], phi, theta,
-                   direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 0 * (sizeV[0] * sizeV[1] * sizeV[2])],
-                   direction[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + 1 * (sizeV[0] * sizeV[1] * sizeV[2])]);
-        }
-        */
+    Vector3f rotAxis = base.cross(norm);
+    float theta;
+    float cos = base * norm;
+    if (cos > 1.0f) {
+        theta = 0.0f;
+    } else if (cos < -1.0f) {
+        theta = M_PI;
+    } else {
+        theta = acos(cos);
     }
+
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                3 * (sizeV[0] * sizeV[1] * sizeV[2])] = theta; //sin(theta)
+                /*
+    if (isnan(theta))
+        printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
+                 */
+    rotAxis.normalize();
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                0 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[0];
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                1 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[1];
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                2 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[2];
+
 }
 
 void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volume<float> *coefficient) {
@@ -381,22 +409,33 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
             for (int z = 0; z < NUM_VOXEL; z++) {
                 float mu = (voxel[0](x, y, z) + voxel[1](x, y, z) + voxel[2](x, y, z)) / 3.0f;
                 // printf("phi: %lf, theta: %lf\n", angle[0](x, y, z), angle[1](x, y, z));
-                Vector3f base(0.0f, 0.0f, 1.0f);
+
+                const float v[3] =
+                        {voxel[0](x, y, z), voxel[1](x, y, z), voxel[2](x, y, z)};
+
+                Vector3f zx(v[0], 0.0f, -v[2]);
+                Vector3f zy(0.0f, v[1], -v[2]);
+
                 const float coef[4] = {
                         coefficient[0](x, y, z), coefficient[1](x, y, z),
                         coefficient[2](x, y, z), coefficient[3](x, y, z)};
 
-                Matrix3f R(coef[0] * coef[2], -coef[1], coef[0] * coef[3],
-                           coef[1] * coef[2], coef[0], coef[1] * coef[3],
-                           -coef[3], 0, coef[2]);
-                base = R * base;
+                Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3]);
+
+                zx = R * zx;
+                zy = R * zy;
+
+                Vector3f norm = zx.cross(zy);
+                norm.normalize();
+
                 /*
                 printf("R:\n[%lf, %lf, %lf]\n[%lf, %lf, %lf],\n[%lf, %lf, %lf]\n",
                        R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7], R[8]);
                 printf("base: [%lf, %lf, %lf]\n", base[0], base[1], base[2]);
                 */
+
                 for (int i = 0; i < 3; i++) {
-                    md[i](x, y, z) = mu * base[i];
+                    md[i](x, y, z) = mu * norm[i];
                 }
             }
         }
@@ -424,13 +463,14 @@ backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry
     backwardonDevice(coord, devProj, devVoxelTmp, devVoxelFactor, *geom, cond);
 }
 
-__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n) {
+__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
-    atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
+    atomicAdd(loss, abs(devSino[idx] - devProj[idx]));
+    // printf("%lf\n", *loss);
     // const float div = devSino[idx] / devProj[idx];
     if (devProj[idx] != 0.0f) {
         // devProj[idx] = devSino[idx] / (devProj[idx] + 0.1f * (1.0f - exp(-abs(1.0f - devSino[idx] / devProj[idx]))));
@@ -455,6 +495,11 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
         devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 1e-8f : devVoxel[idxVoxel] *
                                                                             devVoxelTmp[idxOnPlane] /
                                                                             devVoxelFactor[idxOnPlane];
+
+        if (isnan(devVoxel[idxVoxel])) {
+            printf("voxel: %lf, tmp: %lf, fact: %lf\n", devVoxel[idxVoxel], devVoxelTmp[idxOnPlane],
+                   devVoxelFactor[idxOnPlane]);
+        }
     }
 }
 
@@ -464,7 +509,7 @@ __global__ void projSubtract(float *devProj, const float *devSino, const Geometr
     if (u >= geom->detect || v >= geom->detect) return;
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
-    atomicAdd(&loss, abs(devSino[idx] - devProj[idx]));
+    atomicAdd(&d_loss_proj, abs(devSino[idx] - devProj[idx]));
     // const float div = devSino[idx] / devProj[idx];
     devProj[idx] = devSino[idx] - devProj[idx];
     // a = b / c;
@@ -703,8 +748,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     vecSod = Rotate * vecSod;
 
     Vector3f vecVoxel(
-            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] -
-            t[0], // -R * offset
+            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
             (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
             (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
 
