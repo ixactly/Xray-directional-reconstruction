@@ -25,7 +25,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 __global__ void
 calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom);
 
-__both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float theta);
+__both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float cos, float sin);
 
 void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);
 

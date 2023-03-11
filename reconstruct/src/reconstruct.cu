@@ -45,6 +45,9 @@ namespace IR {
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
+        float *loss1;
+        cudaMalloc(&loss1, sizeof(float));
+
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
@@ -75,7 +78,7 @@ namespace IR {
         for (int ep = 0; ep < epoch; ep++) {
             std::mt19937_64 get_rand_mt; // fixed seed
             std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-            cudaMemset(&d_loss_proj, 0.0f, sizeof(float));
+            cudaMemset(loss1, 0.0f, sizeof(float));
             cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
             for (int &sub: subsetOrder) {
                 // forwardProj and ratio
@@ -95,7 +98,7 @@ namespace IR {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
                         } else {
                             projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                         nullptr);
+                                                         loss1);
                         }
                         cudaDeviceSynchronize();
                     }
@@ -123,8 +126,8 @@ namespace IR {
                 }
             }
 
-            d_loss_proj /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep, &d_loss_proj, sizeof(float), cudaMemcpyDeviceToHost); // loss
+            cudaMemcpy(losses.data() + ep, loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
+
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -141,7 +144,7 @@ namespace IR {
 
         std::ofstream ofs("../python/loss.csv");
         for (auto &e: losses)
-            ofs << e << ",";
+            ofs << e / static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ) << ",";
     }
 }
 
@@ -182,8 +185,8 @@ namespace XTT {
 
         // store theta, phi on polar coordination to devDirection
         float *devCoef;
-        cudaMalloc(&devCoef, sizeof(float) * lenV * 4);
-        cudaMemset(devCoef, 0.0f, sizeof(float) * lenV * 4);
+        cudaMalloc(&devCoef, sizeof(float) * lenV * 5);
+        cudaMemset(devCoef, 0.0f, sizeof(float) * lenV * 5);
 
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));

@@ -7,6 +7,27 @@
 #include "Params.h"
 #include "cmath"
 
+float colorIntensity(float phi, float shift) {
+    float phi_redef = phi - shift;
+    if (phi_redef > M_PI / 2.0f) {
+        phi_redef = phi_redef - (float) M_PI;
+    } else if (phi_redef < -M_PI / 2.0f) {
+        phi_redef = phi_redef + (float) M_PI;
+    }
+
+    if (-M_PI / 2.0f < phi_redef && phi_redef <= -M_PI / 3.0f) {
+        return 0.0f;
+    } else if (-M_PI / 3.0f < phi_redef && phi_redef <= -M_PI / 6.0f) {
+        return (float) (6.0f / M_PI) * (phi_redef + M_PI / 3.0f);
+    } else if (-M_PI / 6.0f < phi_redef && phi_redef <= M_PI / 6.0f) {
+        return (float) 1.0f;
+    } else if (M_PI / 6.0f < phi_redef && phi_redef <= M_PI / 3.0f) {
+        return (float) (-6.0f / M_PI) * (phi_redef - M_PI / 3.0f);
+    } else if (M_PI / 3.0f < phi_redef && phi_redef <= M_PI / 2.0f) {
+        return 0.0f;
+    }
+}
+
 void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int size_x, int size_y, int size_z) {
     for (int x = 0; x < size_x; x++) {
         for (int y = 0; y < size_y; y++) {
@@ -17,7 +38,7 @@ void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int 
                 float phi = std::atan2(I[1] - I[3], I[0] - I[2]) / 2.0f;
                 // float phi = std::atan2(-(y - size_y / 2.0f), x - size_x / 2.0f);
 
-                phi = (phi >= 0.0f) ? phi : (float) M_PI + phi;
+                // phi = (phi >= 0.0f) ? phi : (float) M_PI + phi;
                 float r = std::sqrt(
                         (x - size_x / 2.0f) * (x - size_x / 2.0f) + (y - size_y / 2.0f) * (y - size_y / 2.0f));
                 // std::cout << "(x, y, z): " << x << ", " << y << ", " << z << std::endl;
@@ -25,28 +46,11 @@ void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int 
                 // std::cout << ct[3](x, y, z) << std::endl;
                 // r, g, b
 
-                if (0.0f <= phi && phi <= M_PI / 4.0f) {
-                    out[0](x, y, z) = -phi * 4.0f / (float) M_PI + 1.0f;
-                    out[1](x, y, z) = 0.0f;
-                    out[2](x, y, z) = phi * 4.0f / (float) M_PI;
-                } else if (M_PI / 4.0f < phi && phi <= M_PI / 2.0f) {
-                    out[0](x, y, z) = 0.0f;
-                    out[1](x, y, z) = phi * 4.0f / (float) M_PI - 1.0f;
-                    out[2](x, y, z) = 1.0f;
-                } else if (M_PI / 2.0f < phi && phi <= 3 * M_PI / 4.0f) {
-                    out[0](x, y, z) = 0.0f;
-                    out[1](x, y, z) = 1.0f;
-                    out[2](x, y, z) = -(phi - 3.0f * (float) M_PI / 4.0f) * 4.0f / (float) M_PI;
-                } else if (3 * M_PI / 4.0f < phi && phi <= M_PI) {
-                    out[0](x, y, z) = (phi - 3.0f * (float) M_PI / 4.0f) * 4.0f / (float) M_PI;
-                    out[1](x, y, z) = -(phi - (float) M_PI) * 4.0f / (float) M_PI;
-                    out[2](x, y, z) = 0.0f;
-                }
 
-                // out[0](x, y, z) = (180.0f / M_PI) * (phi / 2.0f);
-                out[0](x, y, z) = a * out[0](x, y, z);
-                out[1](x, y, z) = a * out[1](x, y, z);
-                out[2](x, y, z) = a * out[2](x, y, z);
+                out[0](x, y, z) = colorIntensity(phi, 0.0f);
+                // out[0](x, y, z) = a * out[0](x, y, z);
+                out[1](x, y, z) = colorIntensity(phi, M_PI / 3.0f);
+                out[2](x, y, z) = colorIntensity(phi, 2.0f * M_PI / 3.0f);
 
             }
         }
