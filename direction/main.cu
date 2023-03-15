@@ -70,32 +70,28 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         angle[i].save(saveAnglePath);
     }
-
-
     */
-    const int N = 1728;
+
+    const int N = 500;
     Volume<float> ctArray[4];
-    Volume<float> out[3];
+    Volume<float> out[4];
     for (auto &e: out)
-        e = Volume<float>(N, N, 1);
+        e = Volume<float>(N, N, N);
 
     for (int i = 0; i < 4; i++) {
         std::string loadfilePath =
-                "../../proj_raw_bin/gfrp_sc/SC_" + std::to_string(i + 1) + ".raw";
-        ctArray[i].load(loadfilePath, N, N, 1);
+                "../../volume_bin/gfrp_b/gfrp_at_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
+        ctArray[i].load(loadfilePath, N, N, N);
     }
 
-    calcSinFittingLimited(ctArray, out, N, N, 1);
+    flipAxis(out, ctArray, N, N, N);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         std::string savefilePath =
-                "../../volume_bin/gfrp_sc/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
-                std::to_string(N) + ".raw";
+                "../../volume_bin/gfrp_b/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                std::to_string(N) + "x" + std::to_string(N) + ".raw";
         out[i].save(savefilePath);
-
     }
-
-
 
     // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
 }

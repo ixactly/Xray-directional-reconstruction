@@ -588,7 +588,7 @@ namespace XTT {
                                                             n);
                         } else {
                             projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                         nullptr);
+                                                         &d_loss_proj);
                         }
                         cudaDeviceSynchronize();
                     }

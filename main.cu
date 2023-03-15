@@ -26,7 +26,8 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
+        // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/gfrp_b/SC/gfrp_b_ct" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
                                    std::to_string(NUM_PROJ) + ".raw";
 
@@ -51,7 +52,7 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 30, 30, Rotate::CW, Method::MLEM, 9e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 3, 5, 30, Rotate::CW, Method::MLEM, 9e-3);
-    IR::reconstruct(sinogram, ct, geom, 20, 30, Rotate::CW, Method::MLEM, 5e-3);
+    IR::reconstruct(sinogram, ct, geom, 10, 30, Rotate::CW, Method::MLEM, 5e-3);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
 
@@ -65,14 +66,14 @@ int main() {
         std::string savefilePathProj =
                 "../volume_bin/cfrp_xyz7_mark/proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-        sinogram[i].save(savefilePathProj);
+        // sinogram[i].save(savefilePathProj);
     }
 
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_mark/orth_cond3" + std::to_string(i + 1) + "_" +
-                // "../volume_bin/cfrp_xyz7/cfrp7_ir" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/cfrp_xyz7_mark/xtt_cond3" + std::to_string(i + 1) + "_" +
+                "../volume_bin/gfrp_b/gfrp_at_iter15_ir" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
@@ -81,7 +82,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_cond3" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7_mark/pca/main_direction_xtt_cond3" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 

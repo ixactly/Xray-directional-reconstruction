@@ -5,8 +5,8 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 3;
+inline constexpr int NUM_BASIS_VECTOR = 4;
+inline constexpr int NUM_PROJ_COND = 4;
 
 // cfrp3 haikou
 /*
@@ -109,7 +109,7 @@ __constant__ float INIT_OFFSET[9] = {
 */
 
 // cfrp_xyz7_mark
-
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -157,45 +157,6 @@ __constant__ float elemT[18] = {0.0f, 0.0f, 0.0f,
 
                                 -0.743207f, -1.481425f, 0.917192f
 };
-/*
-__constant__ float elemR[54] = {1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-};
-
-__constant__ float elemT[18] = {0.0f, 0.0f, 0.0f,
-
-                                0.0f, 0.0f, 0.0f,
-
-                                0.0f, 0.0f, 0.0f,
-
-                                0.0f, 0.0f, 0.0f,
-
-                                0.0f, 0.0f, 0.0f,
-
-                                0.0f, 0.0f, 0.0f,
-};
-*/
 
 __constant__ float INIT_OFFSET[18] = {
         -9.95f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
@@ -242,6 +203,104 @@ __constant__ float INIT_OFFSET[9] = {
         -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
 */
+
+// gfrp_a
+/*
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 360;
+inline constexpr int NUM_DETECT_U = 500;
+inline constexpr int NUM_DETECT_V = 500;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 500;
+
+
+__constant__ float elemR[36] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
+
+                                0.707191f,        -0.012743f,       0.706908f,
+-0.008084f,       0.999627f,        0.026107f,
+-0.706977f,       -0.024177f,       0.706824f,
+
+                                -0.997646f,       -0.067227f,       0.013551f,
+-0.067110f,       0.997706f,        0.008920f,
+-0.014120f,       0.007989f,        -0.999868f,
+
+                                -0.695359f,       -0.056052f,       -0.716474f,
+                                -0.062659f,       0.997886f,        -0.017254f,
+                                0.715926f,        0.032896f,        -0.697401f,
+};
+
+__constant__ float elemT[12] = {0.0f, 0.0f, 0.0f,
+
+                                -0.489544f,       -0.016512f,       -0.132867f,
+
+                                -0.872586f, -0.027004f, 1.142567f,
+
+                                -0.159483f, -0.014800f, 1.268844f
+};
+
+__constant__ float INIT_OFFSET[12] = {
+        -10.22f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -9.73f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -9.89f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -9.92f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
+};
+ */
+
+// gfrp_b
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 360;
+inline constexpr int NUM_DETECT_U = 500;
+inline constexpr int NUM_DETECT_V = 500;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 500;
+
+
+__constant__ float elemR[36] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
+
+                                0.700282f, -0.020235f, 0.713579f,
+                                0.003906f, 0.999692f, 0.024516f,
+                                -0.713855f, -0.014381f, 0.700146f,
+
+                                0.000913f, -0.035358f, 0.999374f,
+                                -0.020320f, 0.999168f, 0.035369f,
+                                -0.999793f, -0.020340f, 0.000193f,
+
+                                -0.697451f, -0.052602f, 0.714699f,
+                                -0.050504f, 0.998431f, 0.024200f,
+                                -0.714851f, -0.019217f, -0.699013f,
+};
+
+__constant__ float elemT[12] = {0.0f, 0.0f, 0.0f,
+
+                                -0.186383f, 0.019577f, -0.115473f,
+
+                                -0.451453f, 0.011098f, -0.060198f,
+
+                                -0.687516f, 0.012961f, 0.261203f,
+
+
+};
+
+__constant__ float INIT_OFFSET[12] = {
+        -8.09f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -8.7f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -7.04f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -8.67f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
+};
 
 // cube
 /*
