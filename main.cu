@@ -27,7 +27,7 @@ int main() {
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
-        std::string loadfilePath = "../proj_raw_bin/gfrp_b/SC/gfrp_b_ct" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/gfrp_a/AT/gfrp_a_ct" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
                                    std::to_string(NUM_PROJ) + ".raw";
 
@@ -73,7 +73,7 @@ int main() {
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
                 // "../volume_bin/cfrp_xyz7_mark/xtt_cond3" + std::to_string(i + 1) + "_" +
-                "../volume_bin/gfrp_b/gfrp_at_iter15_ir" + std::to_string(i + 1) + "_" +
+                "../volume_bin/gfrp_a/gfrp_at_iter15_ir" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 

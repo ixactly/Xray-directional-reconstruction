@@ -74,24 +74,51 @@ int main() {
 
     const int N = 500;
     Volume<float> ctArray[4];
-    Volume<float> out[4];
+    Volume<float> out[6];
     for (auto &e: out)
-        e = Volume<float>(N, N, N);
+        // e = Volume<float>(N, N, N);
+        e = Volume<float>(1549, 1569, 872);
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 1; i++) {
         std::string loadfilePath =
-                "../../volume_bin/gfrp_b/gfrp_at_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
-        ctArray[i].load(loadfilePath, N, N, N);
+                //  "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
+                "../../volume_bin/gfrp_vol/KM-GFRP-AB-dir-twentyave-phi-rev-1549x1569x872-9.94691403827472um.raw";
+        ctArray[i].load(loadfilePath, 1549, 1569, 872);
+        // ctArray[i].load(loadfilePath, N, N, N);
     }
 
-    flipAxis(out, ctArray, N, N, N);
-
-    for (int i = 0; i < 4; i++) {
+    // calcPseudoCT(out, ctArray, N, N, N);
+    phi2color(out, ctArray[0], 1549, 1569, 872);
+    for (int i = 0; i < 3; i++) {
         std::string savefilePath =
-                "../../volume_bin/gfrp_b/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
-                std::to_string(N) + "x" + std::to_string(N) + ".raw";
+                // "../../volume_bin/gfrp_a/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                // std::to_string(N) + "x" + std::to_string(N) + ".raw";
+                "../../volume_bin/gfrp_vol/direction" + std::to_string(i + 1) + ".raw";
         out[i].save(savefilePath);
     }
 
+    /*
+    const int N = 500;
+    Volume<float> ctArray[4];
+    Volume<float> out[6];
+    for (auto &e: out)
+        e = Volume<float>(N, N, N);
+
+    for (int i = 0; i < 1; i++) {
+        std::string loadfilePath =
+                "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
+        ctArray[i].load(loadfilePath, 1549, 1569, 872);
+    }
+
+    calcPseudoCT(out, ctArray, N, N, N);
+    for (int i = 0; i < 3; i++) {
+        std::string savefilePath =
+                "../../volume_bin/gfrp_a/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                std::to_string(N) + "x" + std::to_string(N) + ".raw";
+    }
+    // out[3].save("../../volume_bin/gfrp_a/direc_int.raw");
+    // out[4].save("../../volume_bin/gfrp_a/direc_deg.raw");
+
     // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
+    */
 }
