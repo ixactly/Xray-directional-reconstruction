@@ -45,8 +45,8 @@ int main() {
         }
     }
 
-    IR::reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, reconMethod);
-    // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
+    // IR::reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, reconMethod);
+    FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // calcurate main direction
 
     end = std::chrono::system_clock::now();

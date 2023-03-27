@@ -185,7 +185,7 @@ namespace FDK {
         float d = geom.detSize * (geom.sod / geom.sdd);
         // float d = geom.detSize * (geom.sod / geom.sdd);
         for (int v = 0; v < geom.detect; v++) {
-            filt[v] = 2.0f / (float) (M_PI * M_PI * d * (1.0f - 4.0f * (float) (v * v)));
+            filt[v] = 1.0f / (float) (M_PI * M_PI * d * (1.0f - 4.0f * (float) (v * v)));
         }
 
         for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
