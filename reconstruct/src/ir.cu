@@ -479,18 +479,19 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
+    float threshold = 2.0f;
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     atomicAdd(loss, abs(devSino[idx] - devProj[idx]));
     // printf("%lf\n", *loss);
     // const float div = devSino[idx] / devProj[idx];
     if (devProj[idx] != 0.0f) {
         // devProj[idx] = devSino[idx] / (devProj[idx] + 0.1f * (1.0f - exp(-abs(1.0f - devSino[idx] / devProj[idx]))));
-        devProj[idx] = devSino[idx] / (devProj[idx]);
+        devProj[idx] = devSino[idx] / devProj[idx];
     }
-    if (devProj[idx] > 2.0f) {
-        devProj[idx] = 2.0f;
+
+    if (devProj[idx] > threshold) {
+        devProj[idx] = threshold;
     }
-    // a = b / c;
 }
 
 __global__ void

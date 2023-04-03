@@ -125,9 +125,7 @@ namespace IR {
                     cudaDeviceSynchronize();
                 }
             }
-
             cudaMemcpy(losses.data() + ep, loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
-
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -608,8 +606,7 @@ namespace XTT {
                         }
                     }
                     if (method == Method::ART) {
-                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom,
-                                                     y);
+                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom, y);
                     } else {
                         voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                     }

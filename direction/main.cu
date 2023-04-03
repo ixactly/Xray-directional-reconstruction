@@ -72,53 +72,123 @@ int main() {
     }
     */
 
-    const int N = 500;
-    Volume<float> ctArray[4];
-    Volume<float> out[6];
+
+    Volume<float> ctArray[1];
+    Volume<float> out[3];
     for (auto &e: out)
         // e = Volume<float>(N, N, N);
-        e = Volume<float>(1549, 1569, 872);
+        e = Volume<float>(1549, 1569, 386);
 
     for (int i = 0; i < 1; i++) {
         std::string loadfilePath =
                 //  "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
-                "../../volume_bin/gfrp_vol/KM-GFRP-AB-dir-twentyave-phi-rev-1549x1569x872-9.94691403827472um.raw";
-        ctArray[i].load(loadfilePath, 1549, 1569, 872);
-        // ctArray[i].load(loadfilePath, N, N, N);
+                "../../volume_bin/gfrp_vol/KM-GFRP-B-dir-twentyave-phi-rev-1549x1569x386-9.94691403827472um.raw";
+        ctArray[i].load(loadfilePath, 1549, 1569, 386);
     }
 
-    // calcPseudoCT(out, ctArray, N, N, N);
-    phi2color(out, ctArray[0], 1549, 1569, 872);
+    phi2color(out, ctArray[0], 1549, 1569, 386);
     for (int i = 0; i < 3; i++) {
         std::string savefilePath =
                 // "../../volume_bin/gfrp_a/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
                 // std::to_string(N) + "x" + std::to_string(N) + ".raw";
-                "../../volume_bin/gfrp_vol/direction" + std::to_string(i + 1) + ".raw";
+                "../../volume_bin/gfrp_vol/GFRP_B_direction" + std::to_string(i + 1) + "_1549x1569x356.raw";
         out[i].save(savefilePath);
     }
 
     /*
     const int N = 500;
-    Volume<float> ctArray[4];
-    Volume<float> out[6];
-    for (auto &e: out)
+    Volume<float> ctArray[3];
+    Volume<float> ctRot[3];
+    Volume<float> angle[2];
+    Volume<float> color[3];
+
+    for (auto &e: angle)
+        e = Volume<float>(N, N, N);
+    for (auto &e: color)
         e = Volume<float>(N, N, N);
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 3; i++) {
         std::string loadfilePath =
-                "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
-        ctArray[i].load(loadfilePath, 1549, 1569, 872);
+                // "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
+                "../../volume_bin/gfrp_a/pca/main_direction_xtt_" + std::to_string(i + 1) + "_500x500x500.raw";
+        ctArray[i].load(loadfilePath, N, N, N);
+        ctRot[i] = Volume<float>(N, N, N);
+        flipAxis(ctRot[i], ctArray[i], N, N, N);
+        // ctArray[i].load(loadfilePath, N, N, N);
     }
 
-    calcPseudoCT(out, ctArray, N, N, N);
+    calcPartsAngle(ctRot, angle, N, N, N);
+    phi2color(color, angle[0], N, N, N);
+
     for (int i = 0; i < 3; i++) {
         std::string savefilePath =
-                "../../volume_bin/gfrp_a/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                "../../volume_bin/gfrp_a/pca/xtt_color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
+        color[i].save(savefilePath);
     }
-    // out[3].save("../../volume_bin/gfrp_a/direc_int.raw");
-    // out[4].save("../../volume_bin/gfrp_a/direc_deg.raw");
-
-    // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
     */
+
+    /*
+    const int N = 500;
+    int arrange_index[4] = {3, 2, 1, 4};
+    Volume<float> ctArray[6];
+    Volume<float> ctRot[4];
+    Volume<float> color[6];
+
+    for (auto &e: color)
+        e = Volume<float>(N, N, N);
+
+    for (int i = 0; i < 4; i++) {
+        std::string loadfilePath =
+                "../../volume_bin/gfrp_b/gfrp_sc_iter15_ir" + std::to_string(arrange_index[i]) + "_500x500x500.raw";
+                // "../../volume_bin/gfrp_a/pca/main_direction_xtt_" + std::to_string(i + 1) + "_500x500x500.raw";
+        ctArray[i].load(loadfilePath, N, N, N);
+        ctArray[i].forEach([](float val) -> float {if (val < 1e-3) return 0.0f; else return val;});
+        ctRot[i] = Volume<float>(N, N, N);
+        flipAxis(ctRot[i], ctArray[i], N, N, N);
+        // ctArray[i].load(loadfilePath, N, N, N);
+    }
+
+    calcPseudoCT(color, ctRot, N, N, N);
+
+    for (int i = 0; i < 4; i++) {
+        std::string savefilePath =
+                "../../volume_bin/gfrp_b/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                std::to_string(N) + "x" + std::to_string(N) + ".raw";
+       color[i].save(savefilePath);
+    }
+    color[5].save("../../volume_bin/gfrp_a/phi_500x500x500.raw");
+    */
+
+    /*
+    const int N = 1728;
+    Volume<float> ctArray[4];
+    Volume<float> ctRot[3];
+    Volume<float> angle[2];
+    Volume<float> color[6];
+
+    for (auto &e: angle)
+        e = Volume<float>(N, N, 1);
+    for (auto &e: color)
+        e = Volume<float>(N, N, 1);
+
+    for (int i = 0; i < 4; i++) {
+        std::string loadfilePath =
+                // "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
+                "../../proj_raw_bin/gfrp_sc/SC_" + std::to_string(i + 1) + ".raw";
+        ctArray[i].load(loadfilePath, N, N, 1);
+        // ctArray[i].load(loadfilePath, N, N, N);
+    }
+
+    calcPseudoCT(color, ctArray, N, N, 1);
+
+    for (int i = 0; i < 3; i++) {
+        std::string savefilePath =
+                "../../volume_bin/gfrp_sc/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                std::to_string(N) + "x" + std::to_string(1) + ".raw";
+        color[i].save(savefilePath);
+    }
+    color[5].save("../../volume_bin/gfrp_sc/phi_500x500x500.raw");
+     */
+    // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
 }

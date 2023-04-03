@@ -51,7 +51,16 @@ void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int 
                 // out[0](x, y, z) = a * out[0](x, y, z);
                 out[1](x, y, z) = colorIntensity(phi, M_PI / 3.0f);
                 out[2](x, y, z) = colorIntensity(phi, 2.0f * M_PI / 3.0f);
+            }
+        }
+    }
+}
 
+void flipAxis(Volume<float> &dst, const Volume<float> &src, int size_x, int size_y, int size_z) {
+    for (int x = 0; x < size_x; x++) {
+        for (int y = 0; y < size_y; y++) {
+            for (int z = 0; z < size_z; z++) {
+                dst(x, size_z - z, y) = src(x, y, z);
             }
         }
     }
@@ -73,13 +82,13 @@ void calcPseudoCT(Volume<float> *dst, const Volume<float> *ct, int size_x, int s
                 // std::cout << ct[3](x, y, z) << std::endl;
                 // r, g, b
 
-                dst[0](x, z, y) = colorIntensity(phi, 0.0f);
+                dst[0](x, y, z) = colorIntensity(phi, 0.0f);
                 // dst[0](x, z, y) = a * ct[0](x, y, z);
-                dst[1](x, z, y) = colorIntensity(phi, M_PI / 3.0f);
-                dst[2](x, z, y) = colorIntensity(phi, 2.0f * M_PI / 3.0f);
-                dst[3](x, z, y) = a;
-                dst[4](x, z, y) = b;
-                dst[5](x, z, y) = phi;
+                dst[1](x, y, z) = colorIntensity(phi, M_PI / 3.0f);
+                dst[2](x, y, z) = colorIntensity(phi, 2.0f * M_PI / 3.0f);
+                dst[3](x, y, z) = a;
+                dst[4](x, y, z) = b;
+                dst[5](x, y, z) = phi;
 
                 /*
                 dst[0](x, z, y) = ct[0](x, y, z);
@@ -94,7 +103,7 @@ void calcPseudoCT(Volume<float> *dst, const Volume<float> *ct, int size_x, int s
     }
 }
 
-void phi2color(Volume<float> *dst, const Volume<float>& angle, int size_x, int size_y, int size_z) {
+void phi2color(Volume<float> *dst, const Volume<float> &angle, int size_x, int size_y, int size_z) {
     for (int x = 0; x < size_x; x++) {
         for (int y = 0; y < size_y; y++) {
             for (int z = 0; z < size_z; z++) {

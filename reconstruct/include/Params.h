@@ -5,7 +5,7 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int NUM_BASIS_VECTOR = 4;
+inline constexpr int NUM_BASIS_VECTOR = 6;
 inline constexpr int NUM_PROJ_COND = 4;
 
 // cfrp3 haikou
@@ -45,67 +45,6 @@ __constant__ float INIT_OFFSET[9] = {
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
-*/
-
-// cfrp_xyz7
-/*
-inline constexpr float SRC_OBJ_DISTANCE = 1003;
-inline constexpr float SRC_DETECT_DISTANCE = 1458;
-inline constexpr int NUM_PROJ = 360;
-inline constexpr int NUM_DETECT_U = 256;
-inline constexpr int NUM_DETECT_V = 256;
-inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
-
-inline constexpr int NUM_VOXEL = 256;
-
-__constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                0.003682f, 0.038107f, -0.999267f,
-                                -0.073760f, 0.996562f, 0.037732f,
-                                0.997269f, 0.073567f, 0.006480f,
-
-                                0.991596f, 0.114062f, 0.061051f,
-                                0.053369f, 0.069234f, -0.996172f,
-                                -0.117852f, 0.991058f, 0.062565f,
-};
-
-__constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
-
-                               -0.052278f, -0.057119f, 0.566564f,
-
-                               -0.561273f, 0.241813f, 0.117783f,
-};
-
-__constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f,
-
-                                0.126658f, -0.082269f, -0.988529f,
-                                -0.063645f, 0.993827f, -0.090865f,
-                                0.989903f, 0.074423f, 0.120640f,
-
-                                0.991596f, 0.114062f, 0.061051f,
-                                0.053369f, 0.069234f, -0.996172f,
-                                -0.117852f, 0.991058f, 0.062565f,
-};
-
-__constant__ float elemT[9] = {0.0f, 0.0f, 0.0f,
-
-                               -0.406386f, 0.326821f, -0.031730f,
-
-                               -0.561273f, 0.241813f, 0.117783f,
-};
-
-
-__constant__ float INIT_OFFSET[9] = {
-        -14.45f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
-
-        -14.32f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
-
-        -13.99f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
-};
 */
 
 // cfrp_xyz7_mark
@@ -251,7 +190,6 @@ __constant__ float INIT_OFFSET[12] = {
         -9.9f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
 
-
 // gfrp_b
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
@@ -327,6 +265,7 @@ __managed__ float basisVector[21] = {
 };
 */
 
+/*
 __managed__ float basisVector[21] = {
         0.666667f, 0.666667f, -0.333333f,
         -0.333333f, 0.666667f, 0.666667f,
@@ -335,6 +274,17 @@ __managed__ float basisVector[21] = {
         0.19245f, -0.96225f, 0.19245f,
         -0.19245f, -0.19245f, 0.96225f,
         0.96225f, -0.19245f, -0.19245f,
+};
+*/
+
+// x-z plane xtt
+__managed__ float basisVector[21] = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        0.866025f, 0.0f, 0.5f,
+        0.5f, 0.0f, 0.866025f,
+        0.866025f, 0.0f, -0.5f,
+        0.5f, 0.0f, -0.866025f,
 };
 
 

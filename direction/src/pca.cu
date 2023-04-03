@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
+
 void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *evalue, int x, int y, int z) {
 
     Eigen::Matrix3f varMatrix;
@@ -62,11 +63,17 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
     // std::cout << varMatrix << std::endl;
 }
 
-void calcPartsAngle(const Volume<float> md[3], Volume<float> angle[2], int x, int y, int z) {
-    angle[0](x, y, z) = std::atan(md[1](x, y, z) / md[0](x, y, z)) * 180.0f / M_PI;
-    angle[1](x, y, z) =
-            std::atan(md[2](x, y, z) / std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z))) *
-            180.0f / M_PI;
+void calcPartsAngle(const Volume<float> md[3], Volume<float> angle[2], int size_x, int size_y, int size_z) {
+    for (int x = 0; x < size_x; x++) {
+        for (int y = 0; y < size_y; y++) {
+            for (int z = 0; z < size_z; z++) {
+                angle[0](x, y, z) = std::atan2(-md[2](x, y, z), md[0](x, y, z));
+                angle[1](x, y, z) = std::atan2(md[2](x, y, z),
+                                  std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z)));
+            }
+        }
+    }
+
 }
 
 void rodriguesRotation(double x, double y, double z, double theta) {
