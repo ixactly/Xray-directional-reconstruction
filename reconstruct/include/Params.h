@@ -5,6 +5,8 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
+inline constexpr int blockSize = 32;
+
 inline constexpr int NUM_BASIS_VECTOR = 6;
 inline constexpr int NUM_PROJ_COND = 4;
 

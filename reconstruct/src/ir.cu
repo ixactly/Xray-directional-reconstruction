@@ -515,17 +515,29 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
     }
 }
 
-__global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n) {
+__global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
-    atomicAdd(&d_loss_proj, abs(devSino[idx] - devProj[idx]));
+    atomicAdd(loss, abs(devSino[idx] - devProj[idx]));
     // const float div = devSino[idx] / devProj[idx];
     devProj[idx] = devSino[idx] - devProj[idx];
     // a = b / c;
 }
+
+__global__ void projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n) {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    if (u >= geom->detect || v >= geom->detect) return;
+
+    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    // const float div = devSino[idx] / devProj[idx];
+    devCompare[idx] = devSino[idx] - devProj[idx];
+    // a = b / c;
+}
+
 
 __global__ void
 voxelPlus(float *devVoxel, const float *devVoxelTmp, float alpha, const Geometry *geom, int y) {

@@ -30,12 +30,13 @@ namespace IR {
         int nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
+        float *devSino, *devProj, *devCompare, *devVoxel, *devVoxelFactor, *devVoxelTmp;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
+        cudaMalloc(&devCompare, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
@@ -53,7 +54,6 @@ namespace IR {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        const int blockSize = 16;
         dim3 blockV(blockSize, blockSize, 1);
         dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
         dim3 blockD(blockSize, blockSize, 1);
@@ -93,9 +93,12 @@ namespace IR {
                             forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
+                        projCompare<<<gridD, blockD>>>(&devCompare[lenD * cond], &devSino[lenD * cond],
+                                                       &devProj[lenD * cond], devGeom, n);
                         // ratio process
                         if (method == Method::ART) {
-                            projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                            projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                                            nullptr);
                         } else {
                             projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
                                                          loss1);
@@ -129,12 +132,13 @@ namespace IR {
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
-            cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+            cudaMemcpy(sinogram[i].get(), &devCompare[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
         cudaFree(devProj);
         cudaFree(devSino);
+        cudaFree(devCompare);
         cudaFree(devVoxel);
         cudaFree(devGeom);
         cudaFree(devVoxelFactor);
@@ -191,7 +195,6 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        const int blockSize = 16;
         dim3 blockV(blockSize, blockSize, 1);
         dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
         dim3 blockD(blockSize, blockSize, 1);
@@ -245,7 +248,7 @@ namespace XTT {
                             // ratio process
                             if (method == Method::ART)
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
-                                                                &devSino[lenD * cond], devGeom, n);
+                                                                &devSino[lenD * cond], devGeom, n, nullptr);
                             else
                                 projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
                                                              loss1);
@@ -363,7 +366,6 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        const int blockSize = 16;
         dim3 blockV(blockSize, blockSize, 1);
         dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
         dim3 blockD(blockSize, blockSize, 1);
@@ -411,7 +413,7 @@ namespace XTT {
                             // ratio process
                             if (method == Method::ART) {
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
-                                                                devGeom, n);
+                                                                devGeom, n, nullptr);
                             } else {
                                 projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
                                                              nullptr);
@@ -500,15 +502,9 @@ namespace XTT {
             ofs << e << ",";
     }
 
-    void
-    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
+    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
                 int epoch, int batch, Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
-        if (method == Method::MLEM) {
-            for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-                voxel[i].forEach([](float value) -> float { return 0.01; });
-            }
-        }
 
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
@@ -528,6 +524,9 @@ namespace XTT {
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
 
+        float *loss1;
+        cudaMalloc(&loss1, sizeof(float));
+
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
@@ -538,7 +537,6 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        const int blockSize = 16;
         dim3 blockV(blockSize, blockSize, 1);
         dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
         dim3 blockD(blockSize, blockSize, 1);
@@ -563,7 +561,7 @@ namespace XTT {
         for (int ep = 0; ep < epoch; ep++) {
             std::mt19937_64 get_rand_mt; // fixed seed
             std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-            cudaMemset(&d_loss_proj, 0.0f, sizeof(float));
+            cudaMemset(loss1, 0.0f, sizeof(float));
             cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
             for (int &sub: subsetOrder) {
                 // forwardProj and ratio
@@ -583,10 +581,10 @@ namespace XTT {
                         // ratio process
                         if (method == Method::ART) {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,
-                                                            n);
+                                                            n, loss1);
                         } else {
-                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                         &d_loss_proj);
+                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
+                                                         devGeom, n, loss1);
                         }
                         cudaDeviceSynchronize();
                     }
@@ -614,8 +612,7 @@ namespace XTT {
                 }
             }
 
-            d_loss_proj /= static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ);
-            cudaMemcpy(losses.data() + ep, &d_loss_proj, sizeof(float), cudaMemcpyDeviceToHost); // loss
+            cudaMemcpy(losses.data() + ep, loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
         }
 
         for (int y = 0; y < sizeV[1]; y++) {
@@ -652,13 +649,12 @@ namespace XTT {
 
         std::ofstream ofs("../python/loss.csv");
         for (auto &e: losses)
-            ofs << e << ",";
+            ofs << e / static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ) << ",";
     }
 
     void
     fiberModelReconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch,
-                          Rotate dir,
-                          Method method, float lambda) {
+                          Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT), use fiber model..." << std::endl;
         for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
             voxel[i].forEach([](float value) -> float { return 0.01; });
@@ -690,8 +686,6 @@ namespace XTT {
         cudaMalloc(&devGeom, sizeof(Geometry));
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
-        // define blocksize
-        const int blockSize = 16;
         dim3 blockV(blockSize, blockSize, 1);
         dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
         dim3 blockD(blockSize, blockSize, 1);
@@ -729,15 +723,14 @@ namespace XTT {
                         // forwardProj process
                         for (int y = 0; y < sizeV[1]; y++) {
                             // iterate basis vector in forwardProjXTT
-                            forwardProjFiber<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y,
-                                                                n);
+                            forwardProjFiber<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
 
                         // ratio process
                         if (method == Method::ART) {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,
-                                                            n);
+                                                            n, nullptr);
                         } else {
                             projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
                                                          nullptr);
@@ -823,7 +816,6 @@ namespace FDK {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        const int blockSize = 16;
         dim3 blockV(blockSize, blockSize, 1);
         dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
         dim3 blockD(blockSize, blockSize, 1);
@@ -894,7 +886,6 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
     cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
     // define blocksize
-    const int blockSize = 16;
     dim3 blockV(blockSize, blockSize, 1);
     dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
 

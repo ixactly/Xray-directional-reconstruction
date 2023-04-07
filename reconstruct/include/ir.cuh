@@ -16,6 +16,9 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
                       int y, int p, float *devDirection);
 
 __global__ void
+projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n);
+
+__global__ void
 forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
 
 __global__ void
@@ -81,7 +84,7 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
 __global__ void
 voxelPlus(float *devVoxel, const float *devVoxelTmp, float alpha, const Geometry *geom, int y);
 
-__global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n);
+__global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss);
 
 __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y);
 

@@ -36,7 +36,7 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
     Eigen::Matrix3f vectors = ES.eigenvectors();
 
     // (temporary) pick up minimum eigenvector, then normalization
-    Eigen::Vector3f min = vectors.col(0); //.normalized();
+    Eigen::Vector3f min = vectors.col(1); //.normalized();
 
     md[0](x, y, z) = mu_mean * min.x();
     md[1](x, y, z) = mu_mean * min.y();
@@ -67,13 +67,12 @@ void calcPartsAngle(const Volume<float> md[3], Volume<float> angle[2], int size_
     for (int x = 0; x < size_x; x++) {
         for (int y = 0; y < size_y; y++) {
             for (int z = 0; z < size_z; z++) {
-                angle[0](x, y, z) = std::atan2(-md[2](x, y, z), md[0](x, y, z));
+                angle[0](x, y, z) = std::atan2(md[0](x, y, z), -md[2](x, y, z));
                 angle[1](x, y, z) = std::atan2(md[2](x, y, z),
                                   std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z)));
             }
         }
     }
-
 }
 
 void rodriguesRotation(double x, double y, double z, double theta) {

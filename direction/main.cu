@@ -72,7 +72,7 @@ int main() {
     }
     */
 
-
+    /*
     Volume<float> ctArray[1];
     Volume<float> out[3];
     for (auto &e: out)
@@ -94,8 +94,8 @@ int main() {
                 "../../volume_bin/gfrp_vol/GFRP_B_direction" + std::to_string(i + 1) + "_1549x1569x356.raw";
         out[i].save(savefilePath);
     }
+    */
 
-    /*
     const int N = 500;
     Volume<float> ctArray[3];
     Volume<float> ctRot[3];
@@ -126,7 +126,6 @@ int main() {
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
         color[i].save(savefilePath);
     }
-    */
 
     /*
     const int N = 500;
