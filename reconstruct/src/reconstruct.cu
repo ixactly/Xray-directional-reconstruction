@@ -17,9 +17,9 @@
 namespace IR {
     void
     reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                Method method) {
-        auto forward = (method == Method::MLEM) ? forwardProj : forwardProjXTT;
-        auto backward = (method == Method::MLEM) ? backwardProj : backwardProjXTT;
+                Method method, float lambda) {
+        auto forward = (method != Method::XTT) ? forwardProj : forwardProjXTT;
+        auto backward = (method != Method::XTT) ? backwardProj : backwardProjXTT;
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
@@ -89,10 +89,14 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                         // ratio process
-                        projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
-                        cudaDeviceSynchronize();
+                        if (method == Method::ART) {
+                            projSubtract<<<gridD, blockD >>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        }
+                        else {
+                            projRatio<<<gridD, blockD >>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n);
+                        }
                     }
-                }
+                }                                                                       
 
                 // backwardProj process
 
@@ -108,7 +112,12 @@ namespace IR {
                             cudaDeviceSynchronize();
                         }
                     }
-                    voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    if (method == Method::ART) {
+                        voxelPlus<<<gridV, blockV >>>(devVoxel, devVoxelTmp, lambda / (float)subsetSize, devGeom, y);
+                    }
+                    else {
+                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    }
                     cudaDeviceSynchronize();
                 }
             }

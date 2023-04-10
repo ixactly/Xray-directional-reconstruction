@@ -83,8 +83,14 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
                 const Geometry &geom, int cond);
 
 __device__ void
-backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
-                 const Geometry &geom, int cond);
+backwardonDevice(const int coord[4], const float* devProj, float* devVoxelTmp, float* devVoxelFactor,
+    const Geometry& geom, int cond);
+
+__global__ void
+voxelPlus(float* devVoxel, const float* devVoxelTmp, float alpha, const Geometry* geom, int y);
+
+__global__ void
+projSubtract(float* devProj, const float* devSino, const Geometry* geom, int n);
 
 __device__ void
 rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],

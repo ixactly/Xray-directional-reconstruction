@@ -37,7 +37,7 @@ int main() {
 
     // main function
     // if you load ct or FDK, turn off initialization of filling 1.0
-    Method reconMethod = Method::MLEM;
+    Method reconMethod = Method::ART;
 
     if (reconMethod == Method::MLEM || reconMethod == Method::XTT) {
         for (auto& e : ct) {
@@ -45,8 +45,8 @@ int main() {
         }
     }
 
-    // IR::reconstruct(sinogram, ct, geom, 1, 10, Rotate::CW, reconMethod);
-    FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
+    IR::reconstruct(sinogram, ct, geom, 5, 10, Rotate::CW, reconMethod, 5e-2);
+    // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // calcurate main direction
 
     end = std::chrono::system_clock::now();
@@ -70,7 +70,7 @@ int main() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         */
         std::string savefilePath2 =
-                "C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\CF_XYZ3_SC_FDK" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                "C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\CF_XYZ3_SC_ART" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
         ct[i].save(savefilePath2);

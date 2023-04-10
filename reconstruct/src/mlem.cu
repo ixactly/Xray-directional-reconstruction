@@ -278,6 +278,31 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
     }
 }
 
+__global__ void projSubtract(float* devProj, const float* devSino, const Geometry* geom, int n) {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    if (u >= geom->detect || v >= geom->detect) return;
+
+    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    // const float div = devSino[idx] / devProj[idx];
+    devProj[idx] = devSino[idx] - devProj[idx];
+    // a = b / c;
+}
+
+__global__ void
+voxelPlus(float* devVoxel, const float* devVoxelTmp, float alpha, const Geometry* geom, int y) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        const int idxVoxel =
+            x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
+        const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
+        devVoxel[idxVoxel] = devVoxel[idxVoxel] + alpha * devVoxelTmp[idxOnPlane];
+    }
+}
+
 __device__ void
 rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
            const Geometry &geom) {

@@ -15,6 +15,7 @@
 enum class Method {
     XTT,
     MLEM,
+    ART,
     FDK
 };
 
@@ -24,9 +25,8 @@ enum class Rotate {
 };
 
 namespace IR {
-    void reconstruct(Volume<float> *sinogram, Volume<float> *voxel,
-                       const Geometry &geom, int epoch, int batch, Rotate dir, Method method);
-
+    void reconstruct(Volume<float>* sinogram, Volume<float>* voxel, const Geometry& geom, int epoch, int batch, Rotate dir,
+        Method method, float lambda=1e-3f);
 }
 
 namespace FDK {
