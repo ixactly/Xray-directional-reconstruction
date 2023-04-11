@@ -96,6 +96,7 @@ int main() {
     }
     */
 
+    /*
     const int N = 500;
     Volume<float> ctArray[3];
     Volume<float> ctRot[3];
@@ -126,8 +127,8 @@ int main() {
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
         color[i].save(savefilePath);
     }
+    */
 
-    /*
     const int N = 500;
     int arrange_index[4] = {3, 2, 1, 4};
     Volume<float> ctArray[6];
@@ -139,7 +140,7 @@ int main() {
 
     for (int i = 0; i < 4; i++) {
         std::string loadfilePath =
-                "../../volume_bin/gfrp_b/gfrp_sc_iter15_ir" + std::to_string(arrange_index[i]) + "_500x500x500.raw";
+                "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(arrange_index[i]) + "_500x500x500.raw";
                 // "../../volume_bin/gfrp_a/pca/main_direction_xtt_" + std::to_string(i + 1) + "_500x500x500.raw";
         ctArray[i].load(loadfilePath, N, N, N);
         ctArray[i].forEach([](float val) -> float {if (val < 1e-3) return 0.0f; else return val;});
@@ -152,13 +153,12 @@ int main() {
 
     for (int i = 0; i < 4; i++) {
         std::string savefilePath =
-                "../../volume_bin/gfrp_b/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                "../../volume_bin/gfrp_a/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
        color[i].save(savefilePath);
     }
-    color[5].save("../../volume_bin/gfrp_a/phi_500x500x500.raw");
-    */
-
+    color[3].save("../../volume_bin/gfrp_a/int_500x500x500.raw");
+    color[4].save("../../volume_bin/gfrp_a/deg_500x500x500.raw");
     /*
     const int N = 1728;
     Volume<float> ctArray[4];
@@ -188,6 +188,6 @@ int main() {
         color[i].save(savefilePath);
     }
     color[5].save("../../volume_bin/gfrp_sc/phi_500x500x500.raw");
-     */
+   */
     // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
 }

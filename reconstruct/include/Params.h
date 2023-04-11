@@ -7,7 +7,7 @@
 
 inline constexpr int blockSize = 32;
 
-inline constexpr int NUM_BASIS_VECTOR = 6;
+inline constexpr int NUM_BASIS_VECTOR = 7;
 inline constexpr int NUM_PROJ_COND = 4;
 
 // cfrp3 haikou
@@ -255,7 +255,7 @@ inline constexpr double DETECTOR_SIZE = 1.0;
 
 inline constexpr int NUM_VOXEL = 400;
 */
-/*
+
 __managed__ float basisVector[21] = {
         0.57735f, 0.57735f, 0.57735f,
         -0.57735f, 0.57735f, 0.57735f,
@@ -265,7 +265,7 @@ __managed__ float basisVector[21] = {
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
 };
-*/
+
 
 /*
 __managed__ float basisVector[21] = {
@@ -280,6 +280,7 @@ __managed__ float basisVector[21] = {
 */
 
 // x-z plane xtt
+/*
 __managed__ float basisVector[21] = {
         1.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
@@ -288,7 +289,7 @@ __managed__ float basisVector[21] = {
         0.866025f, 0.0f, -0.5f,
         0.5f, 0.0f, -0.866025f,
 };
-
+*/
 
 inline constexpr float scatter_angle_xy = 0.0f;
 __constant__ float fdThresh = 0.99f;
