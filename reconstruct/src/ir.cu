@@ -534,7 +534,8 @@ __global__ void projCompare(float *devCompare, const float *devSino, const float
 
     const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     // const float div = devSino[idx] / devProj[idx];
-    devCompare[idx] = devSino[idx] - devProj[idx];
+    // devCompare[idx] = devSino[idx] - devProj[idx];
+    devCompare[idx] = devSino[idx] / devProj[idx];
     // a = b / c;
 }
 

@@ -19,9 +19,6 @@ namespace IR {
     reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
                 Method method, float lambda) {
         std::cout << "starting reconstruct(IR)..." << std::endl;
-        for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-            voxel[i].forEach([](float value) -> float { return 0.01; });
-        }
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
@@ -98,7 +95,7 @@ namespace IR {
                         // ratio process
                         if (method == Method::ART) {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                            nullptr);
+                                                            loss1);
                         } else {
                             projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
                                                          loss1);

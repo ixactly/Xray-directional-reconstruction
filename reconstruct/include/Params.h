@@ -7,8 +7,8 @@
 
 inline constexpr int blockSize = 32;
 
-inline constexpr int NUM_BASIS_VECTOR = 7;
-inline constexpr int NUM_PROJ_COND = 4;
+inline constexpr int NUM_BASIS_VECTOR = 1;
+inline constexpr int NUM_PROJ_COND = 1;
 
 // cfrp3 haikou
 /*
@@ -146,7 +146,7 @@ __constant__ float INIT_OFFSET[9] = {
 */
 
 // gfrp_a
-
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -183,7 +183,8 @@ __constant__ float elemT[12] = {0.0f, 0.0f, 0.0f,
 };
 
 __constant__ float INIT_OFFSET[12] = {
-        -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        // -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        3.26f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -10.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
@@ -191,7 +192,7 @@ __constant__ float INIT_OFFSET[12] = {
 
         -9.9f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
-
+*/
 // gfrp_b
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
@@ -242,19 +243,53 @@ __constant__ float INIT_OFFSET[12] = {
         -8.67f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
 };
 */
+
 // cube
-/*
-inline constexpr double SRC_OBJ_DISTANCE = 500.0;
-inline constexpr double SRC_DETECT_DISTANCE = 1000.0;
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 360;
+inline constexpr int NUM_DETECT_U = 16;
+inline constexpr int NUM_DETECT_V = 16;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
-inline constexpr int NUM_PROJ = 500;
+inline constexpr int NUM_VOXEL = 16;
 
-inline constexpr int NUM_DETECT_U = 200;
-inline constexpr int NUM_DETECT_V = 200;
-inline constexpr double DETECTOR_SIZE = 1.0;
+__constant__ float elemR[36] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
 
-inline constexpr int NUM_VOXEL = 400;
-*/
+                                0.700048f, -0.003474f, 0.714087f,
+                                0.000183f, 0.999989f, 0.004685f,
+                                -0.714095f, -0.003149f, 0.700041f,
+
+                                0.005468f, -0.007380f, 0.999958f,
+                                -0.006565f, 0.999951f, 0.007416f,
+                                -0.999964f, -0.006605f, 0.005419f,
+
+                                -0.704603f, -0.010584f, 0.709523f,
+                                -0.010676f, 0.999934f, 0.004314f,
+                                -0.709522f, -0.004535f, -0.704669f
+};
+
+__constant__ float elemT[12] = {0.0f, 0.0f, 0.0f,
+
+                                -0.279611f, -0.013316f, -0.195849f,
+
+                                -0.581047f, -0.017550f, -0.097045f,
+
+                                -0.845615f, -0.037505f, 0.146098f,
+};
+
+__constant__ float INIT_OFFSET[12] = {
+        // -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -10.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -9.43f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        -9.9f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f
+};
 
 __managed__ float basisVector[21] = {
         0.57735f, 0.57735f, 0.57735f,
@@ -265,7 +300,6 @@ __managed__ float basisVector[21] = {
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
 };
-
 
 /*
 __managed__ float basisVector[21] = {
