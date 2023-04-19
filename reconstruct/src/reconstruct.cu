@@ -177,6 +177,7 @@ namespace XTT {
             for (int i = 0; i < NUM_BASIS_VECTOR; i++)
                 voxel[i].forEach([](float value) -> float { return 0.0f; });
         }
+
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
@@ -235,8 +236,7 @@ namespace XTT {
 
                             // forwardProj process
                             for (int y = 0; y < sizeV[1]; y++) {
-                                // iterate basis vector in forwardProjXTT
-
+                                // 回転行列に従って3方向散乱係数の順投影
                                 forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
                                                                cond, y, n, ep1, devGeom);
                                 cudaDeviceSynchronize();
@@ -245,10 +245,10 @@ namespace XTT {
                             // ratio process
                             if (method == Method::ART)
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
-                                                                &devSino[lenD * cond], devGeom, n, nullptr);
+                                                                &devSino[lenD * cond], devGeom, n, loss1);
                             else
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                             loss1);
+                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
+                                                             devGeom, n, loss1);
                             cudaDeviceSynchronize();
                         }
                     }
@@ -294,8 +294,8 @@ namespace XTT {
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
-        Volume<float> coef[4];
-        for (int i = 0; i < 4; i++) {
+        Volume<float> coef[5];
+        for (int i = 0; i < 5; i++) {
             coef[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
             cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }

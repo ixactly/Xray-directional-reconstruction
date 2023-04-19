@@ -7,8 +7,8 @@
 
 inline constexpr int blockSize = 32;
 
-inline constexpr int NUM_BASIS_VECTOR = 1;
-inline constexpr int NUM_PROJ_COND = 1;
+inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_PROJ_COND = 6;
 
 // cfrp3 haikou
 /*
@@ -50,7 +50,7 @@ __constant__ float INIT_OFFSET[9] = {
 */
 
 // cfrp_xyz7_mark
-/*
+
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -183,8 +183,8 @@ __constant__ float elemT[12] = {0.0f, 0.0f, 0.0f,
 };
 
 __constant__ float INIT_OFFSET[12] = {
-        // -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
-        3.26f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        // 3.26f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -10.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
@@ -245,14 +245,15 @@ __constant__ float INIT_OFFSET[12] = {
 */
 
 // cube
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
-inline constexpr int NUM_DETECT_U = 16;
-inline constexpr int NUM_DETECT_V = 16;
+inline constexpr int NUM_DETECT_U = 500;
+inline constexpr int NUM_DETECT_V = 500;
 inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
-inline constexpr int NUM_VOXEL = 16;
+inline constexpr int NUM_VOXEL = 500;
 
 __constant__ float elemR[36] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
@@ -281,8 +282,7 @@ __constant__ float elemT[12] = {0.0f, 0.0f, 0.0f,
 };
 
 __constant__ float INIT_OFFSET[12] = {
-        // -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
-        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+        -9.72f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -10.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
@@ -300,8 +300,8 @@ __managed__ float basisVector[21] = {
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
 };
+*/
 
-/*
 __managed__ float basisVector[21] = {
         0.666667f, 0.666667f, -0.333333f,
         -0.333333f, 0.666667f, 0.666667f,
@@ -311,7 +311,6 @@ __managed__ float basisVector[21] = {
         -0.19245f, -0.19245f, 0.96225f,
         0.96225f, -0.19245f, -0.19245f,
 };
-*/
 
 // x-z plane xtt
 /*

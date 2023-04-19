@@ -187,9 +187,9 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                         2 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_z
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // theta
+                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        4 * (sizeV[0] * sizeV[1] * sizeV[2])],
+                        4 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin
     };
 
     /*
@@ -209,9 +209,8 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
         // Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
 
         // float vkm = abs(S * G);
-        const int idxVoxel =
-                coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                i * (sizeV[0] * sizeV[1] * sizeV[2]);
+        const int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                            i * (sizeV[0] * sizeV[1] * sizeV[2]);
 
         Vector3f S(0.0f, 0.0f, 0.0f);
         S[i] = 1.0f;
@@ -276,7 +275,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 
     Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+    for (int i = 0; i < 3; i++) {
         // calculate immutable geometry
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
@@ -301,7 +300,6 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
         devVoxelTmp[idxVoxel] += backward;
 
     }
-
 }
 
 __both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float cos, float sin) {
@@ -392,8 +390,13 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     } else if (cos < -1.0f) {
         cos = -1.0f;
         sin = 0.0f;
-    } else  if (sin > 1.0f) {
+    }
+    if (sin > 1.0f) {
         sin = 1.0f;
+        cos = 0.0f;
+    } else if (sin < -1.0f) {
+        sin = -1.0f;
+        cos = 0.0f;
     }
 
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -427,9 +430,9 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                 Vector3f zx(v[0], 0.0f, -v[2]);
                 Vector3f zy(0.0f, v[1], -v[2]);
 
-                const float coef[4] = {
+                const float coef[5] = {
                         coefficient[0](x, y, z), coefficient[1](x, y, z),
-                        coefficient[2](x, y, z), coefficient[3](x, y, z)};
+                        coefficient[2](x, y, z), coefficient[3](x, y, z), coefficient[4](x, y, z)};
 
                 Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
