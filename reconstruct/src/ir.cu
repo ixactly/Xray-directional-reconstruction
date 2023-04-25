@@ -329,7 +329,7 @@ __both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float cos, 
 }
 
 __global__ void
-calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom) {
+calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -379,10 +379,14 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     } else {
         base = {0.0f, 0.0f, 1.0f};
     }*/
-
+    Vector3f norm_diff = (R * base).cross(norm);
     Vector3f rotAxis = base.cross(norm);
+    // printf("loss: %lf", norm_diff.norm2());
     float cos = base * norm;
     float sin = rotAxis.norm2();
+    float diff = norm_diff.norm2();
+    // printf("%lf, ", diff);
+    norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
 
     if (cos > 1.0f) {
         cos = 1.0f;
@@ -399,10 +403,6 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
         cos = 0.0f;
     }
 
-    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                3 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
-    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                4 * (sizeV[0] * sizeV[1] * sizeV[2])] = sin;
     /*
     if (isnan(theta))
         printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
@@ -414,6 +414,10 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                 1 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[1];
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                 2 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[2];
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                3 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                4 * (sizeV[0] * sizeV[1] * sizeV[2])] = sin;
 
 }
 
@@ -577,7 +581,8 @@ __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
-        devVoxel[idxVoxel] = sqrt(abs(devVoxel[idxVoxel]));
+
+        devVoxel[idxVoxel] = (devVoxel[idxVoxel] < 0.0f) ? 0.0f : sqrt(devVoxel[idxVoxel]);
     }
 }
 

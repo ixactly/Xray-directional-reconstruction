@@ -170,14 +170,6 @@ namespace XTT {
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
 
-        if (method == Method::MLEM) {
-            for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-                voxel[i].forEach([](float value) -> float { return 0.01f; });
-        } else {
-            for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-                voxel[i].forEach([](float value) -> float { return 0.0f; });
-        }
-
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
@@ -205,26 +197,41 @@ namespace XTT {
             subsetOrder[i] = i;
         }
 
-        float *loss1;
-        cudaMalloc(&loss1, sizeof(float));
-        std::vector<float> proj_loss(iter1 * iter2);
-        std::vector<float> norm_loss(iter1);
-
         // progress bar
         progressbar pbar(iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
         // set scattering vector direction
         // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
 
+        Volume<float> loss_map1 = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        Volume<float> loss_map2 = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        float* devLoss1;
+        float* devLoss2;
+
+        cudaMalloc(&devLoss1, sizeof(float));
+        cudaMalloc(&devLoss2, sizeof(float) * lenV);
+
+        std::vector<float> proj_loss(iter1 * iter2);
+        std::vector<float> norm_loss(iter1);
+
         // main routine
         for (int ep1 = 0; ep1 < iter1; ep1++) {
-            for (int i = 0; i < 3; i++)
-                cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+            cudaMemset(devLoss2, 0.0f, sizeof(float) * lenV);
+            if (ep1 != 0) {
+                for (int y = 0; y < sizeV[1]; y++) {
+                    calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
+                    cudaDeviceSynchronize();
+                }
+                cudaMemcpy(loss_map2.get(), devLoss2, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                norm_loss[ep1] = loss_map2.mean();
+                for (int i = 0; i < 3; i++)
+                    cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+            }
 
             for (int ep2 = 0; ep2 < iter2; ep2++) {
                 std::mt19937_64 get_rand_mt; // fixed seed
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-                cudaMemset(loss1, 0.0f, sizeof(float));
+                cudaMemset(devLoss1, 0.0f, sizeof(float));
                 cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
                 for (int &sub: subsetOrder) {
                     // forwardProj and ratio
@@ -245,10 +252,10 @@ namespace XTT {
                             // ratio process
                             if (method == Method::ART)
                                 projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
-                                                                &devSino[lenD * cond], devGeom, n, loss1);
+                                                                &devSino[lenD * cond], devGeom, n, devLoss1);
                             else
                                 projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
-                                                             devGeom, n, loss1);
+                                                             devGeom, n, devLoss1);
                             cudaDeviceSynchronize();
                         }
                     }
@@ -276,17 +283,35 @@ namespace XTT {
                         cudaDeviceSynchronize();
                     }
                 }
-                cudaMemcpy(proj_loss.data() + ep2 * (ep1 + 1), loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
+                cudaMemcpy(proj_loss.data() + ep1 * iter2 + ep2, devLoss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
                 // std::cout << proj_loss[ep2 * (ep1 + 1)] << std::endl;
             }
+            /*
+            for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+                std::string savefilePathCT =
+                        "../volume_bin/cfrp_xyz7_mark/orth_" + std::to_string(ep1) + "_" + std::to_string(i + 1) + "_" +
+                        // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
+                        std::to_string(NUM_VOXEL) + "x" +
+                        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+                voxel[i].save(savefilePathCT);
+            }
+             */
 
-            // out iter1
+            /*
+            Volume<float> coef[5];
+            for (int i = 0; i < 5; i++) {
+                coef[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+                cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                coef[i].save("../volume_bin/cfrp_xyz7_mark/coef_" + std::to_string(ep1) + "_" + std::to_string(i + 1) + "_" +
+                        std::to_string(NUM_VOXEL) + "x" +
+                        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
+            }
+             */
             for (int y = 0; y < sizeV[1]; y++) {
                 voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
-                calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom);
-                cudaDeviceSynchronize();
             }
+            // out iter2
         }
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
@@ -299,8 +324,8 @@ namespace XTT {
             coef[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
             cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }
-
         convertNormVector(voxel, md, coef);
+
         // need convert phi, theta to direction(size<-mu1 + mu2 / 2)
 
         cudaFree(devProj);
@@ -310,11 +335,15 @@ namespace XTT {
         cudaFree(devVoxelFactor);
         cudaFree(devVoxelTmp);
         cudaFree(devCoef);
+        cudaFree(devLoss1);
+        cudaFree(devLoss2);
 
-        std::ofstream ofs("../python/loss.csv");
+        std::ofstream ofs1("../python/loss1.csv");
+        std::ofstream ofs2("../python/loss2.csv");
         for (auto &e: proj_loss)
-            ofs << e / static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ) << ",";
-
+            ofs1 << e / static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ * NUM_PROJ_COND) << ",";
+        for (auto &e: norm_loss)
+            ofs2 << e << ",";
     }
 
     void newReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
@@ -500,7 +529,7 @@ namespace XTT {
     }
 
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom,
-                int epoch, int batch, Rotate dir, Method method, float lambda) {
+                     int epoch, int batch, Rotate dir, Method method, float lambda) {
         std::cout << "starting reconstruct(XTT)..." << std::endl;
 
         // int rotation = (dir == Rotate::CW) ? -1 : 1;

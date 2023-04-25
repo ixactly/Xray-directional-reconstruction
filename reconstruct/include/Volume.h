@@ -82,6 +82,18 @@ public :
         return data.get();
     }
 
+    T mean() const {
+        double mean = static_cast<T>(0);
+        for (int z = 0; z < sizeZ; z++) {
+            for (int y = 0; y < sizeY; y++) {
+                for (int x = 0; x < sizeX; x++) {
+                    mean += (*this)(x, y, z) / static_cast<double>(sizeX * sizeY * sizeZ);
+                }
+            }
+        }
+        return static_cast<T>(mean);
+    }
+
     void load(const std::string &filename, const int x, const int y, const int z) {
         // impl
         sizeX = x, sizeY = y, sizeZ = z;
