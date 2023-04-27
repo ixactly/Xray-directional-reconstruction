@@ -24,7 +24,6 @@ int main() {
     for (auto &e: angle)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
-
     Volume<float> evalues[3];
     for (auto &e: evalues)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
@@ -72,31 +71,29 @@ int main() {
     }
     */
 
-    /*
     Volume<float> ctArray[1];
     Volume<float> out[3];
     for (auto &e: out)
         // e = Volume<float>(N, N, N);
-        e = Volume<float>(1549, 1569, 386);
+        e = Volume<float>(1549, 1569, 356);
 
     for (int i = 0; i < 1; i++) {
         std::string loadfilePath =
                 //  "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
-                "../../volume_bin/gfrp_vol/KM-GFRP-B-dir-twentyave-phi-rev-1549x1569x386-9.94691403827472um.raw";
-        ctArray[i].load(loadfilePath, 1549, 1569, 386);
+                "../../volume_bin/gfrp_vol/KM-GFRP-A-dir-twentyave-phi-rev-1549x1569x356-9.94691403827472um.raw";
+        ctArray[i].load(loadfilePath, 1549, 1569, 356);
     }
 
-    phi2color(out, ctArray[0], 1549, 1569, 386);
+    phi2color(out, ctArray[0], 1549, 1569, 356);
     for (int i = 0; i < 3; i++) {
         std::string savefilePath =
                 // "../../volume_bin/gfrp_a/direction_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
                 // std::to_string(N) + "x" + std::to_string(N) + ".raw";
-                "../../volume_bin/gfrp_vol/GFRP_B_direction" + std::to_string(i + 1) + "_1549x1569x356.raw";
+                "../../volume_bin/gfrp_vol/GFRP_A_direction" + std::to_string(i + 1) + "_1549x1569x356.raw";
         out[i].save(savefilePath);
     }
-    */
 
-
+/*
     const int N = 500;
     Volume<float> ctArray[3];
     Volume<float> ctRot[3];
@@ -127,7 +124,7 @@ int main() {
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
         color[i].save(savefilePath);
     }
-
+*/
 
     /*
     const int N = 500;

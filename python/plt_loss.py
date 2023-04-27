@@ -2,7 +2,7 @@ import csv
 
 import matplotlib.pyplot as plt
 
-csv_path = 'loss1.csv'
+csv_path = 'loss2.csv'
 
 rows = []
 with open(csv_path) as f:
