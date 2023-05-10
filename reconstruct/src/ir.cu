@@ -303,7 +303,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 }
 
 __both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float cos, float sin) {
-
+    // x, y, zを軸選択、軸と直交となる平面内での回転量で決定できる。not yet
     float eps = 1e-8f;
     if (std::sqrt(x * x + y * y + z * z) < eps) {
         Matrix3f R(1.0f, 0.0f, 0.0f,
@@ -407,7 +407,9 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     if (isnan(theta))
         printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
     */
-    rotAxis.normalize();
+
+    // bigger scattering
+    atan2(rotAxis[0], rotAxis[1]);
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                 0 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[0];
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -418,7 +420,6 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                 3 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                 4 * (sizeV[0] * sizeV[1] * sizeV[2])] = sin;
-
 }
 
 void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volume<float> *coefficient) {

@@ -8,7 +8,7 @@ rows = []
 with open(csv_path) as f:
     reader = csv.reader(f)
     rows = [row for row in reader]
-data = [float(x) for x in rows[0][1:-1]]
+data = [float(x) for x in rows[0][0:-1]]
 plt.plot(data)
-plt.savefig('loss.png')
+plt.savefig('loss2.png')
 plt.show()
