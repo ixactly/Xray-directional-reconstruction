@@ -2,7 +2,7 @@ import csv
 
 import matplotlib.pyplot as plt
 
-csv_path = 'loss2.csv'
+csv_path = 'loss1.csv'
 
 rows = []
 with open(csv_path) as f:
@@ -10,5 +10,5 @@ with open(csv_path) as f:
     rows = [row for row in reader]
 data = [float(x) for x in rows[0][0:-1]]
 plt.plot(data)
-plt.savefig('loss2.png')
+plt.savefig('loss1.png')
 plt.show()

@@ -10,6 +10,10 @@ ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel("x", size=14)
 ax.set_ylabel("y", size=14)
 ax.set_zlabel("z", size=14)
+ax.set_xlim([-1.5, 1.5])
+ax.set_ylim([-1.5, 1.5])
+ax.set_zlim([-1.5, 1.5])
+ax.set_aspect('equal')
 
 # パラメータ分割数
 n = 128
@@ -43,9 +47,6 @@ def ax_plot_circle(phi_list, theta_list, graph, col):
             # 曲線を描画
             graph.plot(x_rot, y_rot, z_rot, color=col)
 
-
-
-
 phi = [0]
 theta = [0]
 ax_plot_circle(phi, theta, ax, "red")
@@ -58,7 +59,6 @@ phi = [np.pi / 2.0]
 theta = [np.pi / 2.0]
 ax_plot_circle(phi, theta, ax, "blue")
 
-""" veiled
 phi = [0]
 theta = [np.pi / 4.0, np.pi * 3 / 4.0]
 ax_plot_circle(phi, theta, ax, "red")
@@ -70,11 +70,12 @@ ax_plot_circle(phi, theta, ax, "green")
 phi = [np.pi / 2.0]
 theta = [np.pi / 4.0, np.pi * 3 / 4.0]
 ax_plot_circle(phi, theta, ax, "blue")
-"""
 
 # conventional
-vert = np.arcsin(1 / np.sqrt(3))
+"""
+vert = np.arccos(1 / np.sqrt(3))
 theta = [vert]
 phi = [np.pi / 4.0, 3 * np.pi / 4.0, 5 * np.pi / 4.0, 7 * np.pi / 4.0]
 ax_plot_circle(phi, theta, ax, "pink")
+"""
 plt.show()
