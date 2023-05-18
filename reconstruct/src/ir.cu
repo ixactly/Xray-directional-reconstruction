@@ -407,8 +407,6 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     if (isnan(theta))
         printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
     */
-
-    // bigger scattering
     atan2(rotAxis[0], rotAxis[1]);
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                 0 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[0];

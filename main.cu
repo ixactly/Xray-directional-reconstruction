@@ -61,7 +61,7 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 1, 6, Rotate::CW, method, 9e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 10, 1, Rotate::CW, Method::MLEM, 9e-3);
-    XTT::orthReconstruct(sinogram, ct, md, geom, 20, 60, 6, Rotate::CW, method, 2e-2);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 15, 70, 6, Rotate::CW, method, 2e-2);
     // IR::reconstruct(sinogram, ct, geom, 4, 6, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
@@ -83,7 +83,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_mark/orth" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7_mark/orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
@@ -93,7 +93,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
                         std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";

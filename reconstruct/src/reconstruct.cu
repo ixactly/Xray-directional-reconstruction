@@ -326,6 +326,11 @@ namespace XTT {
         }
         convertNormVector(voxel, md, coef);
 
+        Volume<float> loss_norm;
+        loss_norm = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        cudaMemcpy(loss_norm.get(), devLoss2, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+        loss_norm.save("../volume_bin/cfrp_xyz7_mark/orth_loss.raw");
+
         // need convert phi, theta to direction(size<-mu1 + mu2 / 2)
 
         cudaFree(devProj);

@@ -8,7 +8,7 @@
 inline constexpr int blockSize = 32;
 
 inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 6;
+inline constexpr int NUM_PROJ_COND = 5;
 
 // cfrp3 haikou
 /*

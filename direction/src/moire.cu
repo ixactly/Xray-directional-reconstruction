@@ -96,8 +96,6 @@ void calcPseudoCT(Volume<float> *dst, const Volume<float> *ct, int size_x, int s
                 dst[2](x, z, y) = ct[2](x, y, z);
                 dst[3](x, z, y) = ct[3](x, y, z);
                  */
-
-
             }
         }
     }
