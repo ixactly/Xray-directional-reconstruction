@@ -205,8 +205,8 @@ namespace XTT {
 
         Volume<float> loss_map1 = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
         Volume<float> loss_map2 = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-        float* devLoss1;
-        float* devLoss2;
+        float *devLoss1;
+        float *devLoss2;
 
         cudaMalloc(&devLoss1, sizeof(float));
         cudaMalloc(&devLoss2, sizeof(float) * lenV);
@@ -283,7 +283,8 @@ namespace XTT {
                         cudaDeviceSynchronize();
                     }
                 }
-                cudaMemcpy(proj_loss.data() + ep1 * iter2 + ep2, devLoss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
+                cudaMemcpy(proj_loss.data() + ep1 * iter2 + ep2, devLoss1, sizeof(float),
+                           cudaMemcpyDeviceToHost); // loss
                 // std::cout << proj_loss[ep2 * (ep1 + 1)] << std::endl;
             }
             /*

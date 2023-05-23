@@ -197,7 +197,7 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
        sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta),
        -sin(theta), 0, cos(theta));
     */
-    Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
     float proj = 0.0f;
 
@@ -273,7 +273,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
     };
 
 
-    Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
     for (int i = 0; i < 3; i++) {
         // calculate immutable geometry
@@ -302,8 +302,9 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
     }
 }
 
-__both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float cos, float sin) {
+__both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin) {
     // x, y, zを軸選択、軸と直交となる平面内での回転量で決定できる。not yet
+    // ideally, onlt store theta, phi
     float eps = 1e-8f;
     if (std::sqrt(x * x + y * y + z * z) < eps) {
         Matrix3f R(1.0f, 0.0f, 0.0f,
@@ -325,6 +326,7 @@ __both__ Matrix3f rodriguesRotationDevice(float x, float y, float z, float cos, 
                   -n_y * sin, n_x * sin, cos);
 
     Matrix3f rot = ((1.0f - cos) * rot1 + rot2);
+
     return rot;
 }
 
@@ -351,7 +353,7 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                         4 * (sizeV[0] * sizeV[1] * sizeV[2])]
     };
 
-    Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
     const float mu[3] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -437,7 +439,7 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                         coefficient[0](x, y, z), coefficient[1](x, y, z),
                         coefficient[2](x, y, z), coefficient[3](x, y, z), coefficient[4](x, y, z)};
 
-                Matrix3f R = rodriguesRotationDevice(coef[0], coef[1], coef[2], coef[3], coef[4]);
+                Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
                 zx = R * zx;
                 zy = R * zy;
