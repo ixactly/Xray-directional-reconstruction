@@ -953,6 +953,101 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
     cudaFree(devGeom);
 }
 
+void forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
+
+    std::cout << "starting forward projection(orth)..." << std::endl;
+
+    int rotation = (dir == Rotate::CW) ? 1 : -1;
+
+    int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+    int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+    int nProj = sizeD[2];
+
+    float mu_strong = 1.0f;
+    float mu_weak = 0.f;
+
+    for (int x = NUM_VOXEL * 2 / 5; x < NUM_VOXEL * 3 / 5; x++) {
+        for (int y = NUM_VOXEL * 2 / 5; y < NUM_VOXEL * 3 / 5; y++) {
+            for (int z = NUM_VOXEL * 1 / 5; z < NUM_VOXEL * 4 / 5; z++) {
+                voxel[0](x+(z-NUM_VOXEL/2), y, z) = voxel[1](x+(z-NUM_VOXEL/2), y, z) = mu_strong;
+                voxel[2](x+(z-NUM_VOXEL/2), y, z) = mu_weak;
+            }
+        }
+    }
+
+    // cudaMalloc
+    float *devProj, *devVoxel, *devCoef;
+    const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
+    const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+
+    cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
+    cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
+    cudaMalloc(&devCoef, sizeof(float) * lenV * 5);
+    cudaMemset(devCoef, 0.0f, sizeof(float) * lenV * 5);
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+        cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+
+    Geometry *devGeom;
+    cudaMalloc(&devGeom, sizeof(Geometry));
+    cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
+
+    // define blocksize
+    dim3 blockV(blockSize, blockSize, 1);
+    dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
+    dim3 blockD(blockSize, blockSize, 1);
+    dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+
+    // set scattering vector direction
+    // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);
+
+    progressbar pbar(NUM_PROJ * NUM_PROJ_COND);
+
+    // change devCoef if you want to rotate fiber direction
+    Volume<float> coef[5];
+    for (auto &e: coef)
+        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    float theta_tmp = 45.0 * M_PI / 180.0;
+    coef[0].forEach([](float dummy) -> float {return 0.0f;});
+    coef[1].forEach([](float dummy) -> float {return 1.0f;});
+    coef[2].forEach([](float dummy) -> float {return 0.0f;});
+    coef[3].forEach([=](float dummy) -> float {return std::cos(theta_tmp);});
+    coef[4].forEach([=](float dummy) -> float {return std::sin(theta_tmp);});
+    /*
+    coef[0].forEach([](float dummy) -> float {return 0.0f;});
+    coef[1].forEach([](float dummy) -> float {return 1.0f;});
+    coef[2].forEach([](float dummy) -> float {return 0.0f;});
+    coef[3].forEach([](float dummy) -> float {return 0.0f;});
+    coef[4].forEach([](float dummy) -> float {return 1.0f;});
+     */
+    for (int i = 0; i < 5; i++) {
+        cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+    }
+    Matrix3f R = rodriguesRotation(0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+    for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+        for (int n = 0; n < NUM_PROJ; n++) {
+            // !!care!! judge from vecSod which plane we chose
+            pbar.update();
+            // forwardProj process
+            for (int y = 0; y < sizeV[1]; y++) {
+                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
+                                               cond, y, n, 0, devGeom);
+                cudaDeviceSynchronize();
+            }
+        }
+    }
+
+    for (int i = 0; i < NUM_PROJ_COND; i++)
+        cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+        cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
+    cudaFree(devProj);
+    cudaFree(devVoxel);
+    cudaFree(devGeom);
+    cudaFree(devCoef);
+}
+
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom) {
     for (int i = 0; i < geom.voxel; i++) {
         for (int j = 0; j < geom.voxel; j++) {

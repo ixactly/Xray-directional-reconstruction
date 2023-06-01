@@ -47,7 +47,7 @@ namespace XTT {
 }
 
 void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
-
+void forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
 
 __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,

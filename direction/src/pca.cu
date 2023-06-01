@@ -36,11 +36,11 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
     Eigen::Matrix3f vectors = ES.eigenvectors();
 
     // (temporary) pick up minimum eigenvector, then normalization
-    Eigen::Vector3f min = vectors.col(0); //.normalized();
+    Eigen::Vector3f min = vectors.col(0).normalized();
 
-    md[0](x, y, z) = mu_mean * min.x();
-    md[1](x, y, z) = mu_mean * min.y();
-    md[2](x, y, z) = mu_mean * min.z();
+    md[0](x, y, z) = std::abs(mu_mean * min.x());
+    md[1](x, y, z) = std::abs(mu_mean * min.y());
+    md[2](x, y, z) = std::abs(mu_mean * min.z());
 
     /*
     md[0](x, y, z) = min.x();

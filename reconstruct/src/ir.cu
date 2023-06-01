@@ -454,7 +454,7 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                 */
 
                 for (int i = 0; i < 3; i++) {
-                    md[i](x, y, z) = mu * norm[i];
+                    md[i](x, y, z) = std::abs(mu * norm[i]);
                 }
             }
         }

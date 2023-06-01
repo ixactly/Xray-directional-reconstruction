@@ -8,7 +8,7 @@
 inline constexpr int blockSize = 32;
 
 inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 5;
+inline constexpr int NUM_PROJ_COND = 6;
 
 // cfrp3 haikou
 /*
@@ -50,7 +50,7 @@ __constant__ float INIT_OFFSET[9] = {
 */
 
 // cfrp_xyz7_mark
-
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -59,7 +59,6 @@ inline constexpr int NUM_DETECT_V = 350;
 inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
 inline constexpr int NUM_VOXEL = 350;
-
 
 __constant__ float elemR[54] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
@@ -99,6 +98,7 @@ __constant__ float elemT[18] = {0.0f, 0.0f, 0.0f,
                                 -0.743207f, -1.481425f, 0.917192f
 };
 
+
 __constant__ float INIT_OFFSET[18] = {
         -9.95f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
@@ -112,7 +112,109 @@ __constant__ float INIT_OFFSET[18] = {
 
         -10.5f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 };
+*/
 
+inline constexpr float SRC_OBJ_DISTANCE = 1003;
+inline constexpr float SRC_DETECT_DISTANCE = 1458;
+inline constexpr int NUM_PROJ = 360;
+inline constexpr int NUM_DETECT_U = 100;
+inline constexpr int NUM_DETECT_V = 100;
+inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
+
+inline constexpr int NUM_VOXEL = 100;
+/*
+__constant__ float elemR[54] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
+
+                                0.064387f, 0.008937f, -0.997885f,
+                                0.021271f, 0.999721f, 0.010326f,
+                                0.997698f, -0.021891f, 0.064179f,
+
+                                0.998553f, 0.049504f, -0.021018f,
+                                -0.022439f, 0.028334f, -0.999347f,
+                                -0.048876f, 0.998372f, 0.029404f,
+
+                                0.040532f, -0.875220f, -0.482024f,
+                                0.814624f, -0.250399f, 0.523153f,
+                                -0.578572f, -0.413872f, 0.702826f,
+
+                                0.796767f, -0.297876f, -0.525768f,
+                                -0.094836f, 0.797644f, -0.595626f,
+                                0.596799f, 0.524437f, 0.607286f,
+
+                                0.645614f, -0.418700f, 0.638650f,
+                                -0.085214f, 0.791575f, 0.605101f,
+                                -0.758895f, -0.445083f, 0.475373f,
+};
+
+__constant__ float elemT[18] = {0.0f, 0.0f, 0.0f,
+
+                                3.187846f, 0.118894f, 2.181062f,
+
+                                1.097470f, 2.889862f, 2.313975f,
+
+                                2.540399f, -1.845656f, 0.654514f,
+
+                                2.785375f, 2.035686f, 0.739872f,
+
+                                -0.743207f, -1.481425f, 0.917192f
+};
+*/
+
+__constant__ float elemR[54] = {1.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f,
+
+                                0.0f, 0.0f, -1.0f,
+                                0.f, 1.0f, 0.f,
+                                1.0f, 0.0f, 0.0f,
+
+                                1.0f, 0.f, 0.0f,
+                                0.0f, 0.0f, -1.0f,
+                                0.0f, 1.0f, 0.0f,
+
+                                0.040532f, -0.875220f, -0.482024f,
+                                0.814624f, -0.250399f, 0.523153f,
+                                -0.578572f, -0.413872f, 0.702826f,
+
+                                0.796767f, -0.297876f, -0.525768f,
+                                -0.094836f, 0.797644f, -0.595626f,
+                                0.596799f, 0.524437f, 0.607286f,
+
+                                0.645614f, -0.418700f, 0.638650f,
+                                -0.085214f, 0.791575f, 0.605101f,
+                                -0.758895f, -0.445083f, 0.475373f,
+};
+
+__constant__ float elemT[18] = {0.0f, 0.0f, 0.0f,
+
+                                0.0f, 0.0f, 0.0f,
+
+                                0.0f, 0.0f, 0.0f,
+
+                                0.0f, 0.0f, 0.0f,
+
+                                0.0f, 0.0f, 0.0f,
+
+                                0.0f, 0.0f, 0.0f,
+};
+
+__constant__ float INIT_OFFSET[18] = {
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+
+        0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
+};
+
+//
 // initial params
 /*
 __constant__ float elemR[27] = {1.0f, 0.0f, 0.0f,

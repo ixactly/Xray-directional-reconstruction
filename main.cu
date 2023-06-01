@@ -1,12 +1,10 @@
 #include <iostream>
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <random>
 #include <chrono>
 #include <Volume.h>
 #include <Params.h>
 #include <Geometry.h>
 #include <reconstruct.cuh>
+#include "parser.h"
 
 int main() {
 
@@ -26,8 +24,10 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
-        // std::string loadfilePath = "../proj_raw_bin/gfrp_a/SC/gfrp_a_ct" + std::to_string(i + 1) + "_" +
+        // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/simulation/proj_fiber_direc_xyz" + std::to_string(i + 1) + "_" +
+
+                // std::string loadfilePath = "../proj_raw_bin/gfrp_a/SC/gfrp_a_ct" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
                                    std::to_string(NUM_PROJ) + ".raw";
 
@@ -36,7 +36,7 @@ int main() {
     }
 
     // load volume
-    Method method = Method::ART;
+    Method method = Method::MLEM;
 
     if (method == Method::MLEM) {
         for (auto &e: ct) {
@@ -59,13 +59,14 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 1, 6, Rotate::CW, method, 9e-3);
-    // XTT::reconstruct(sinogram, ct, md, geom, 10, 1, Rotate::CW, Method::MLEM, 9e-3);
-    XTT::orthReconstruct(sinogram, ct, md, geom, 15, 70, 6, Rotate::CW, method, 2e-2);
+    // XTT::reconstruct(sinogram, ct, md, geom, 60, 6, Rotate::CW, method, 1e-3);
+    // XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 50, 6, Rotate::CW, method, 2e-2);
     // IR::reconstruct(sinogram, ct, geom, 4, 6, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
+    // forwardProjFiber(sinogram, ct, geom, Rotate::CW);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -75,26 +76,28 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/cfrp_xyz7_mark/orth_proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/simulation/proj_fiber_direc_xyz" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-        // sinogram[i].save(savefilePathProj);
+        sinogram[i].save(savefilePathProj);
     }
 
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_mark/orth_art_5proj" + std::to_string(i + 1) + "_" +
+                "../volume_bin/simulation/direc_xyz" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/cfrp_xyz7_mark/orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         ct[i].save(savefilePathCT);
     }
 
-    // save ct volume
+    // save direction volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
+                "../volume_bin/simulation/pca/md_orth_direc_xyz_proj6_" + std::to_string(i + 1) + "_" +
                         std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         md[i].save(savefilePathCT);
