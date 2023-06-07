@@ -84,9 +84,15 @@ public:
 
     __both__ void normalize() {
         T value = sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
-        this->x /= value;
-        this->y /= value;
-        this->z /= value;
+        if (value != 0) {
+            this->x /= value;
+            this->y /= value;
+            this->z /= value;
+        } else {
+            this->x = 0;
+            this->y = 0;
+            this->z = 0;
+        }
     }
 
     __both__ T norm2() {
@@ -129,6 +135,14 @@ public:
         return val[3 * i + j];
     }
 
+    __both__ T &operator[](const int i) {
+        return this->val[i];
+    }
+
+    __both__ T operator[](const int i) const {
+        return this->val[i];
+    }
+
     __both__ Matrix3X operator+(const Matrix3X &rhv) const {
         Matrix3X w(0, 0, 0, 0, 0, 0, 0, 0, 0);
         for (int i = 0; i < 9; i++) {
@@ -150,6 +164,16 @@ public:
                 for (int k = 0; k < 3; k++) {
                     w.val[3 * i + j] += this->val[3 * i + k] * rhv.val[3 * k + j];
                 }
+            }
+        }
+        return w;
+    }
+
+    __both__ friend Matrix3X operator*(const T t, const Matrix3X &rhv) {
+        Matrix3X<T> w(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                    w.val[3 * i + j] = t * rhv.val[3 * i + j];
             }
         }
         return w;

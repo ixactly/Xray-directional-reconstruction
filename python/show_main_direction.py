@@ -1,22 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy import ndarray
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/PCA/CF_MAIND_X_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond1_350x350x350.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/PCA/CF_MAIND_Y_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond2_350x350x350.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz3/PCA/CF_MAIND_Z_256x256x256.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond3_350x350x350.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
-num_voxel = 256
-size = 32
+num_voxel = 350
+size = 50
 skip = int(num_voxel / size)
 eps = 1e-20
 
-# !! x->y, y->z, z->x
 y, z, x = np.meshgrid(np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size))
 
 # u = u_raw.reshape([num_voxel, num_voxel, num_voxel])[::skip, ::skip, ::skip]
@@ -25,8 +23,7 @@ v = v_raw.reshape([num_voxel, num_voxel, num_voxel])
 w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
 
 padding = np.zeros_like(u)
-padding[50:216, 50:216, 50:216] = 1.0
-# padding[135:155, 120:140, 130:150] = 1.0
+padding[120:290, 120:280, 100:250] = 1.0
 u = u * padding
 v = v * padding
 w = w * padding
@@ -35,9 +32,11 @@ u = u[::skip, ::skip, ::skip]
 v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
+# threshold
 eps2 = 0.01
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
+# judge = np.where((np.abs(u.reshape([-1, 1])) + np.abs(v.reshape([-1, 1])) + np.abs(w.reshape([-1, 1]))) / 3 < eps2, 0, 1)
 
 judge = np.concatenate((np.concatenate((np.ones([size**3, 3]), judge), axis=1), np.ones([2 * size**3, 4])), axis=0)
 
@@ -77,6 +76,7 @@ tmp = np.tile(tmp, (size**3, 1))
 
 ax = plt.figure().add_subplot(projection='3d')
 ax.set(xlabel='X', ylabel='Y', zlabel='Z')
-ax.quiver(x, y, z, u, v, w, color=rgba, length=3, normalize=True)
+ax.quiver(x, y, z, u, v, w, color=rgba, length=4, normalize=True)
 
 plt.show()
+

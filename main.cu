@@ -1,7 +1,4 @@
 #include <iostream>
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <random>
 #include <chrono>
 #include <Volume.h>
 #include <Params.h>
@@ -16,19 +13,38 @@ int main() {
 
     // ground truth
     Volume<float> ct[NUM_BASIS_VECTOR];
+    Volume<float> md[3];
     for (auto &e: ct)
+        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    for (auto &e: md)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
-    // sinogram.load("../volume_bin/cube_proj_phantom-500x500x500.raw", NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
 
         std::string loadfilePath = "C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\proj_raw_bin\\CFRP_XYZ3\\CFRP_XYZ3_AXIS" + std::to_string(i + 1) + "_256x256x1080.raw";
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+        sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8; else return value; });
+    }
 
-         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 0.0; else return value; });
+    // load volume
+    Method method = Method::MLEM;
+
+    if (method == Method::MLEM) {
+        for (auto &e: ct) {
+            e.forEach([](float value) -> float { return 0.01; });
+        }
+    }
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        std::string loadfilePath = "../volume_bin/nut/sc_os_art_norm" + std::to_string(i + 1) + "_" +
+                                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" +
+                                   std::to_string(NUM_VOXEL) + ".raw";
+
+        // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        // ct[i].forEach([](float value) -> float { return value * value; });
     }
 
     // measure clock
@@ -36,14 +52,11 @@ int main() {
     start = std::chrono::system_clock::now();
 
     // main function
-    // if you load ct or FDK, turn off initialization of filling 1.0
-    Method reconMethod = Method::ART;
-
-    if (reconMethod == Method::MLEM || reconMethod == Method::XTT) {
-        for (auto& e : ct) {
-            e.forEach([](float value) -> float { return 0.001; });
-        }
-    }
+    // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
+    // XTT::reconstruct(sinogram, ct, md, geom, 60, 6, Rotate::CW, method, 1e-3);
+    // XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 50, 6, Rotate::CW, method, 2e-2);
+    // IR::reconstruct(sinogram, ct, geom, 4, 6, Rotate::CW, method, 0.01);
 
     IR::reconstruct(sinogram, ct, geom, 5, 10, Rotate::CW, reconMethod, 5e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
@@ -52,7 +65,7 @@ int main() {
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
                                       (1000.0 * 1000.0));
-    std::cout << "\n time: " << time << " (s)" << std::endl;
+    std::cout << "\ntime: " << time << " (s)" << std::endl;
 
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {

@@ -82,6 +82,18 @@ public :
         return data.get();
     }
 
+    T mean() const {
+        double mean = static_cast<T>(0);
+        for (int z = 0; z < sizeZ; z++) {
+            for (int y = 0; y < sizeY; y++) {
+                for (int x = 0; x < sizeX; x++) {
+                    mean += (*this)(x, y, z) / static_cast<double>(sizeX * sizeY * sizeZ);
+                }
+            }
+        }
+        return static_cast<T>(mean);
+    }
+
     void load(const std::string &filename, const int x, const int y, const int z) {
         // impl
         sizeX = x, sizeY = y, sizeZ = z;
@@ -89,16 +101,24 @@ public :
         data.reset();
         data = std::make_unique<T[]>(size);
         std::ifstream ifile(filename, std::ios::binary);
-
+        if (!ifile) {
+            std::cout << "file not loaded. please check file path." << std::endl;
+            std::cout << "input path: " + filename << std::endl;
+            return;
+        } else {
+            std::cout << "file loaded correctly, " << filename << std::endl;
+        }
         ifile.read(reinterpret_cast<char *>(data.get()), sizeof(T) * size);
     }
 
-    void save(const std::string &filename) {
+    void save(const std::string &filename) const {
         const int size = sizeX * sizeY * sizeZ;
         std::ofstream ofs(filename, std::ios::binary);
         if (!ofs) {
-            std::cout << "file not opened" << std::endl;
+            std::cout << "file not saved. check file path." << std::endl;
             return;
+        } else {
+            std::cout << "file saved correctly, " << filename << std::endl;
         }
         ofs.write(reinterpret_cast<char *>(data.get()), sizeof(T) * size);
     }

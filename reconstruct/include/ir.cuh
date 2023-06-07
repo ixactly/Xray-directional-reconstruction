@@ -10,7 +10,36 @@
 #include "Volume.h"
 #include "Vec.h"
 
-inline __host__ void setScatterDirecOnXY(float angle, float* vec) {
+__global__ void
+backwardProjXTTbyFiber(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry& geom, int cond,
+                       int y, int p, float* devDirection);
+__global__ void
+forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
+                      int y, int p, float *devDirection);
+
+__global__ void
+projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n);
+
+__global__ void
+forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
+
+__global__ void
+backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp, float *devVoxelFactor,
+             const Geometry *geom, int cond, int y, int n, int it);
+
+__global__ void
+calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss);
+
+__both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin);
+
+void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);
+
+__device__ void
+rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4], const Geometry &geom);
+
+__global__ void voxelSqrtFromSrc(float *hostVoxel, const float *devVoxel,const Geometry *geom, int y);
+
+inline __host__ void setScatterDirecOnXY(float angle, float *vec) {
     vec[0] = std::cos(angle);
     vec[1] = std::sin(angle);
     vec[2] = 0.0f;
@@ -24,7 +53,7 @@ inline __host__ void setScatterDirecOnXY(float angle, float* vec) {
     vec[8] = 1.0f;
 }
 
-inline __host__ void setScatterDirecOn4D(float angle, float* vec) {
+inline __host__ void setScatterDirecOn4D(float angle, float *vec) {
     vec[0] = std::cos(angle);
     vec[1] = std::sin(angle);
     vec[2] = 0.0f;
@@ -46,13 +75,20 @@ inline __host__ void setScatterDirecOn4D(float angle, float* vec) {
     vec[14] = 1.0f;
 }
 
-__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, const int n);
+// mlem
+__global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss);
 
 __global__ void
 voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFactor, const Geometry *geom,
-             const int y);
+             int y);
 
-__global__ void sqrtVoxel(float *devVoxel, const Geometry *geom, const int y);
+// art
+__global__ void
+voxelPlus(float *devVoxel, const float *devVoxelTmp, float alpha, const Geometry *geom, int y);
+
+__global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss);
+
+__global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y);
 
 __global__ void
 forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
@@ -60,7 +96,7 @@ forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
 
 __global__ void
 backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
-                const int y, const int n);
+                int y, int n);
 
 __device__ void
 forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,

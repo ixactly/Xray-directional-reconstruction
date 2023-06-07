@@ -5,14 +5,12 @@ if (debug)
     add_compile_options(-G -g)
 endif()
 add_subdirectory(reconstruct)
-add_executable(3dReconGPU main.cu)
-target_link_libraries(3dReconGPU ir_lib)
-# set_target_properties(3dReconGPU PROPERTIES
- #       CUDA_SEPARABLE_COMPILATION ON)
+add_subdirectory(direction)
+add_executable(recon_exe main.cu)
+target_link_libraries(recon_exe ir_lib pca_lib)
+set_target_properties(recon_exe PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON)
 
-# project(PCA LANGUAGES C CXX)
-# find_package (Eigen3 3.3 REQUIRED NO_MODULE)
-# add_executable(PCA pca/pca.cu)
-# target_link_libraries(PCA Eigen3::Eigen ir_lib)
+
 
 
