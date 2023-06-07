@@ -229,3 +229,4 @@ private:
 };
 */
 #endif //CUDA_EXAMPLE_VOLUME_H
+

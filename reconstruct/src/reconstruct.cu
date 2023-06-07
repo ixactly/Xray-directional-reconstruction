@@ -1,8 +1,3 @@
-//
-// Created by tomokimori on 22/08/30.
-//
-
-#define _USE_MATH_DEFINES
 #include <math.h>
 #include <Geometry.h>
 #include <ir.cuh>
@@ -18,18 +13,18 @@
 
 namespace IR {
     void
-    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch, int batch, Rotate dir,
-                Method method, float lambda) {
+        reconstruct(Volume<float>* sinogram, Volume<float>* voxel, const Geometry& geom, int epoch, int batch, Rotate dir,
+            Method method, float lambda) {
         std::cout << "starting reconstruct(IR)..." << std::endl;
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int sizeV[3] = { voxel[0].x(), voxel[0].y(), voxel[0].z() };
+        int sizeD[3] = { sinogram[0].x(), sinogram[0].y(), sinogram[0].z() };
         int nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devCompare, *devVoxel, *devVoxelFactor, *devVoxelTmp;
+        float* devSino, * devProj, * devCompare, * devVoxel, * devVoxelFactor, * devVoxelTmp;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
@@ -45,10 +40,10 @@ namespace IR {
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
-        float *loss1;
+        float* loss1;
         cudaMalloc(&loss1, sizeof(float));
 
-        Geometry *devGeom;
+        Geometry* devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
@@ -79,7 +74,7 @@ namespace IR {
             std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
             cudaMemset(loss1, 0.0f, sizeof(float));
             cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
-            for (int &sub: subsetOrder) {
+            for (int& sub : subsetOrder) {
                 // forwardProj and ratio
                 for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
@@ -89,18 +84,19 @@ namespace IR {
 
                         // forwardProj process
                         for (int y = 0; y < sizeV[1]; y++) {
-                            forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
+                            forwardProj << <gridV, blockV >> > (&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
-                        projCompare<<<gridD, blockD>>>(&devCompare[lenD * cond], &devSino[lenD * cond],
-                                                       &devProj[lenD * cond], devGeom, n);
+                        projCompare << <gridD, blockD >> > (&devCompare[lenD * cond], &devSino[lenD * cond],
+                            &devProj[lenD * cond], devGeom, n);
                         // ratio process
                         if (method == Method::ART) {
-                            projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                            loss1);
-                        } else {
-                            projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
-                                                         loss1);
+                            projSubtract << <gridD, blockD >> > (&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                loss1);
+                        }
+                        else {
+                            projRatio << <gridD, blockD >> > (&devProj[lenD * cond], &devSino[lenD * cond], devGeom, n,
+                                loss1);
                         }
                         cudaDeviceSynchronize();
                     }
@@ -114,15 +110,16 @@ namespace IR {
                         pbar.update();
                         for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                             int n = rotation * ((sub + batch * subOrder) % nProj);
-                            backwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
-                                                            cond, y, n);
+                            backwardProj << <gridV, blockV >> > (&devProj[lenD * cond], devVoxelTmp, devVoxelFactor, devGeom,
+                                cond, y, n);
                             cudaDeviceSynchronize();
                         }
                     }
                     if (method == Method::ART) {
-                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom, y);
-                    } else {
-                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                        voxelPlus << <gridV, blockV >> > (devVoxel, devVoxelTmp, lambda / (float)subsetSize, devGeom, y);
+                    }
+                    else {
+                        voxelProduct << <gridV, blockV >> > (devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                     }
                     cudaDeviceSynchronize();
                 }
@@ -142,10 +139,6 @@ namespace IR {
         cudaFree(devGeom);
         cudaFree(devVoxelFactor);
         cudaFree(devVoxelTmp);
-
-        // std::ofstream ofs("../python/loss.csv");
-        for (auto &e: losses)
-            ofs << e / static_cast<float>(NUM_DETECT_V * NUM_DETECT_U * NUM_PROJ) << ",";
     }
 }
 
@@ -1115,3 +1108,5 @@ reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geomet
     }
 }
  */
+
+

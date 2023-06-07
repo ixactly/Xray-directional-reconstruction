@@ -2,10 +2,13 @@
 // Created by tomokimori on 23/02/17.
 //
 
+
 #include "moire.cuh"
 #include "Volume.h"
 #include "Params.h"
-#include "cmath"
+#define M_PI 3.14159265
+#include <cmath>
+
 
 float colorIntensity(float phi, float shift) {
     float phi_redef = phi - shift;
