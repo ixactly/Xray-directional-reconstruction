@@ -953,7 +953,8 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
     cudaFree(devGeom);
 }
 
-void forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
+void
+forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, Rotate dir, const Geometry &geom) {
 
     std::cout << "starting forward projection(orth)..." << std::endl;
 
@@ -966,23 +967,24 @@ void forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, const Geome
     float mu_strong = 1.0f;
     float mu_weak = 0.f;
 
-    for (int x = NUM_VOXEL * 2 / 5; x < NUM_VOXEL * 3 / 5; x++) {
+    for (int x = NUM_VOXEL * 1 / 5; x < NUM_VOXEL * 4 / 5; x++) {
         for (int y = NUM_VOXEL * 2 / 5; y < NUM_VOXEL * 3 / 5; y++) {
-            for (int z = NUM_VOXEL * 1 / 5; z < NUM_VOXEL * 4 / 5; z++) {
-                voxel[0](x+(z-NUM_VOXEL/2), y, z) = voxel[1](x+(z-NUM_VOXEL/2), y, z) = mu_strong;
-                voxel[2](x+(z-NUM_VOXEL/2), y, z) = mu_weak;
+            for (int z = NUM_VOXEL * 2 / 5; z < NUM_VOXEL * 3 / 5; z++) {
+                voxel[0](x, y, z) = voxel[1](x, y, z) = mu_strong;
+                voxel[2](x, y, z) = mu_weak;
             }
         }
     }
 
     // cudaMalloc
-    float *devProj, *devVoxel, *devCoef;
+    float *devProj, *devVoxel, *devCoef, *devLoss;
     const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
     const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
     cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
     cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
     cudaMalloc(&devCoef, sizeof(float) * lenV * 5);
+    cudaMalloc(&devLoss, sizeof(float) * lenV);
     cudaMemset(devCoef, 0.0f, sizeof(float) * lenV * 5);
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++)
@@ -1007,23 +1009,50 @@ void forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, const Geome
     Volume<float> coef[5];
     for (auto &e: coef)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-    float theta_tmp = 45.0 * M_PI / 180.0;
-    coef[0].forEach([](float dummy) -> float {return 0.0f;});
-    coef[1].forEach([](float dummy) -> float {return 1.0f;});
-    coef[2].forEach([](float dummy) -> float {return 0.0f;});
-    coef[3].forEach([=](float dummy) -> float {return std::cos(theta_tmp);});
-    coef[4].forEach([=](float dummy) -> float {return std::sin(theta_tmp);});
     /*
-    coef[0].forEach([](float dummy) -> float {return 0.0f;});
-    coef[1].forEach([](float dummy) -> float {return 1.0f;});
-    coef[2].forEach([](float dummy) -> float {return 0.0f;});
-    coef[3].forEach([](float dummy) -> float {return 0.0f;});
-    coef[4].forEach([](float dummy) -> float {return 1.0f;});
+    for (int x = NUM_VOXEL * 1 / 5; x < NUM_VOXEL * 4 / 5; x++) {
+        for (int y = NUM_VOXEL * 2 / 5; y < NUM_VOXEL * 3 / 5; y++) {
+            for (int z = NUM_VOXEL * 2 / 5; z < NUM_VOXEL * 3 / 5; z++) {
+                if (x < NUM_VOXEL * 2 / 5) {
+                    // r->g
+                    float theta = (M_PI / 2.0) * (1.0f - (x - 1 * (float) NUM_VOXEL / 5) / ((float) NUM_VOXEL / 5));
+                    coef[0](x, y, z) = std::cos(theta);
+                    coef[1](x, y, z) = std::sin(theta);
+                    coef[2](x, y, z) = 0.0f;
+                    coef[3](x, y, z) = std::cos(M_PI / 2.0f);
+                    coef[4](x, y, z) = std::sin(M_PI / 2.0f);
+                } else if ( x < NUM_VOXEL * 3 / 5) {
+                    // g->b
+                    float theta = (M_PI /2.0) * (1.0f - (x - 2 * (float) NUM_VOXEL / 5) / ((float) NUM_VOXEL / 5));
+                    coef[0](x, y, z) = 1.0f;
+                    coef[1](x, y, z) = 0.0f;
+                    coef[2](x, y, z) = 0.0f;
+                    coef[3](x, y, z) = std::cos(theta);
+                    coef[4](x, y, z) = std::sin(theta);
+                } else {
+                    // b->r
+                    float theta = (M_PI /2.0) * ((x - 3 * (float) NUM_VOXEL / 5) / ((float) NUM_VOXEL / 5));
+                    coef[0](x, y, z) = 0.0f;
+                    coef[1](x, y, z) = 1.0f;
+                    coef[2](x, y, z) = 0.0f;
+                    coef[3](x, y, z) = std::cos(theta);
+                    coef[4](x, y, z) = std::sin(theta);
+                }
+            }
+        }
+    }
      */
+
+    // -M_PI / 4.0f
+    coef[0].forEach([](float dummy) -> float {return std::cos(M_PI / 4.0f);});
+    coef[1].forEach([](float dummy) -> float {return std::sin(M_PI / 4.0f);});
+    coef[2].forEach([](float dummy) -> float {return 0.0f;});
+    coef[3].forEach([](float dummy) -> float {return std::cos(M_PI / 2.0f);});
+    coef[4].forEach([](float dummy) -> float {return std::sin(M_PI / 2.0f);});
+
     for (int i = 0; i < 5; i++) {
         cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
     }
-    Matrix3f R = rodriguesRotation(0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
     for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
         for (int n = 0; n < NUM_PROJ; n++) {
             // !!care!! judge from vecSod which plane we chose
@@ -1036,11 +1065,10 @@ void forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, const Geome
             }
         }
     }
+    convertNormVector(voxel, md, coef);
 
     for (int i = 0; i < NUM_PROJ_COND; i++)
         cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
     cudaFree(devProj);
     cudaFree(devVoxel);

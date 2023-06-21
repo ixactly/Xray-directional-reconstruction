@@ -40,10 +40,6 @@ public:
         return w;
     }
 
-    __both__ T &operator()(const int i) {
-        return this->val[i];
-    }
-
     __both__ T operator()(const int i) const {
         return this->val[i];
     }
@@ -98,7 +94,6 @@ public:
     __both__ T norm2() {
         return sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
     }
-
 
 private:
     union {
@@ -183,7 +178,7 @@ public:
         Vector3X<T> w(0, 0, 0);
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                w(i) += val[3 * i + j] * rhv(j);
+                w[i] += val[3 * i + j] * rhv[j];
             }
         }
         return w;
@@ -191,7 +186,7 @@ public:
 
     __device__ void print() {
         for (int i = 0; i < 3; i++) {
-            printf("%d: %f, %d: %f, %d: %f\n",3 * i + 0, val[3 * i + 0], 3 * i + 1, val[3 * i + 1], 3 * i + 2, val[3 * i + 2]);
+            printf("%d: %f, %d: %f, %d: %f\n",3 * i + 0, val(3 * i + 0), 3 * i + 1, val(3 * i + 1), 3 * i + 2, val(3 * i + 2));
         }
     }
 

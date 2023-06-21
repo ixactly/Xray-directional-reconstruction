@@ -201,6 +201,12 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
 
     float proj = 0.0f;
 
+    // bool out = (x == 50 && y == 50 && z == 50 && (n == 0 || n == 45));
+    /*
+    if (out)
+        printf("B: (%lf, %lf, %lf), G: (%lf, %lf, %lf)\n", B(0), B(1), B(2), G(0), G(1), G(2));
+        */
+
     for (int i = 0; i < 3; i++) {
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
@@ -215,8 +221,16 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
         Vector3f S(0.0f, 0.0f, 0.0f);
         S[i] = 1.0f;
         S = R * S;
+        /*
+        if (out) {
+            printf("cond: %d, angle: %d, idx: %d, vkm, BxS: %lf, S*G: %lf\n", cond, n, i, B.cross(S).norm2(), abs(S * G));
+            // printf("S: (%lf, %lf, %lf)\n", S(0), S(1), S(2));
+        }*/
 
         float vkm = B.cross(S).norm2() * abs(S * G);
+        // float vkm = abs(S * G);
+        // float vkm = 1.0f;
+
         proj += vkm * vkm * geom->voxSize * ratio * devVoxel[idxVoxel];
         // printf("%d: %lf, %lf\n", i+1, vkm, proj);
     }

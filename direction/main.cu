@@ -9,8 +9,19 @@
 #include <array>
 #include "Pbar.h"
 #include <omp.h>
+#include "tvmin.h"
 
 int main() {
+    // tv minimized
+    /*
+    int N = 350;
+    Volume<float> ct;
+    ct.load("../../volume_bin/cfrp_xyz7_mark/orth_mlem1_" + std::to_string(N) +
+            "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw", N, N, N);
+    totalVariationMinimized(ct, 0.5, 0.03, 40);
+    ct.save("../../volume_bin/cfrp_xyz7_mark/orth_mlem_tv1_" + std::to_string(N) +
+            "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
+            */
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
     for (auto &e: ctArray)
@@ -70,7 +81,7 @@ int main() {
         angle[i].save(saveAnglePath);
     }
     */
-
+    /*
     Volume<float> ctArray[1];
     Volume<float> out[3];
     for (auto &e: out)
@@ -92,6 +103,7 @@ int main() {
                 "../../volume_bin/gfrp_vol/GFRP_A_direction" + std::to_string(i + 1) + "_1549x1569x356.raw";
         out[i].save(savefilePath);
     }
+     */
 
 /*
     const int N = 500;
@@ -125,9 +137,9 @@ int main() {
         color[i].save(savefilePath);
     }
 */
+    // pseudo color composition
 
-    /*
-    const int N = 500;
+    const int N = 512;
     int arrange_index[4] = {3, 2, 1, 4};
     Volume<float> ctArray[6];
     Volume<float> ctRot[4];
@@ -138,7 +150,7 @@ int main() {
 
     for (int i = 0; i < 4; i++) {
         std::string loadfilePath =
-                "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(arrange_index[i]) + "_500x500x500.raw";
+                "../../volume_bin/gfrp_a/km/GFRP_A_SC_VOL" + std::to_string(arrange_index[i]-1) + "_512x512x512.raw";
                 // "../../volume_bin/gfrp_a/pca/main_direction_xtt_" + std::to_string(i + 1) + "_500x500x500.raw";
         ctArray[i].load(loadfilePath, N, N, N);
         ctArray[i].forEach([](float val) -> float {if (val < 1e-3) return 0.0f; else return val;});
@@ -149,15 +161,13 @@ int main() {
 
     calcPseudoCT(color, ctRot, N, N, N);
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         std::string savefilePath =
-                "../../volume_bin/gfrp_a/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+                "../../volume_bin/gfrp_a/km/color_" + std::to_string(i) + "_" + std::to_string(N) + "x" +
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
        color[i].save(savefilePath);
     }
-    color[3].save("../../volume_bin/gfrp_a/int_500x500x500.raw");
-    color[4].save("../../volume_bin/gfrp_a/deg_500x500x500.raw");
-    */
+
 
      /*
     const int N = 1728;
