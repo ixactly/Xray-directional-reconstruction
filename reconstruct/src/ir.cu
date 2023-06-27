@@ -345,7 +345,8 @@ __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float 
 }
 
 __global__ void
-calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss) {
+calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss,
+                 int ep) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -367,8 +368,6 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                         4 * (sizeV[0] * sizeV[1] * sizeV[2])]
     };
 
-    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
-
     const float mu[3] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       0 * (sizeV[0] * sizeV[1] * sizeV[2])],
@@ -376,17 +375,21 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                       1 * (sizeV[0] * sizeV[1] * sizeV[2])],
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
+    int sign = (ep % 2 == 0) ? 1 : -1;
 
     Vector3f zx(mu[0], 0.0f, -mu[2]);
-    Vector3f zy(0.0f, mu[1], -mu[2]);
-
-    zx = R * zx;
-    zy = R * zy;
+    Vector3f zy(0.0f, sign * mu[1], -mu[2]);
 
     Vector3f norm = zx.cross(zy);
     norm.normalize();
 
     Vector3f base = {0.0f, 0.0f, 1.0f};
+    Vector3f norm_half = (norm + base);  // calc mid point
+    // Vector3f norm_half = (norm);
+    norm_half.normalize();
+
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    norm_half = R * norm_half;
     /*
     if (mu[0] >= mu[1] && mu[0] >= mu[2]) {
         base = {1.0f, 0.0f, 0.0f};
@@ -395,12 +398,14 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     } else {
         base = {0.0f, 0.0f, 1.0f};
     }*/
-    Vector3f norm_diff = (R * base).cross(norm);
-    Vector3f rotAxis = base.cross(norm);
+
+    Vector3f norm_diff = base.cross(norm);
+    Vector3f rotAxis = base.cross(norm_half); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy
     // printf("loss: %lf", norm_diff.norm2());
-    float cos = base * norm;
+    float cos = base * norm_half;
     float sin = rotAxis.norm2();
     float diff = norm_diff.norm2();
+
     // printf("%lf, ", diff);
     norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
 
@@ -423,7 +428,7 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     if (isnan(theta))
         printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
     */
-    atan2(rotAxis[0], rotAxis[1]);
+
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                 0 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[0];
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -446,20 +451,13 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                 const float v[3] =
                         {voxel[0](x, y, z), voxel[1](x, y, z), voxel[2](x, y, z)};
 
-                Vector3f zx(v[0], 0.0f, -v[2]);
-                Vector3f zy(0.0f, v[1], -v[2]);
-
                 const float coef[5] = {
                         coefficient[0](x, y, z), coefficient[1](x, y, z),
                         coefficient[2](x, y, z), coefficient[3](x, y, z), coefficient[4](x, y, z)};
 
                 Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
-                zx = R * zx;
-                zy = R * zy;
-
-                Vector3f norm = zx.cross(zy);
-                norm.normalize();
+                Vector3f norm = R * Vector3f(0.0, 0.0, 1.0);
 
                 /*
                 printf("R:\n[%lf, %lf, %lf]\n[%lf, %lf, %lf],\n[%lf, %lf, %lf]\n",
@@ -468,7 +466,7 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                 */
 
                 for (int i = 0; i < 3; i++) {
-                    md[i](x, y, z) = std::abs(mu * norm[i]);
+                    md[i](x, y, z) = mu * std::abs(norm[i]);
                 }
             }
         }
