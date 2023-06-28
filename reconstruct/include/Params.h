@@ -7,18 +7,32 @@
 
 inline constexpr int blockSize = 32;
 
-inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_BASIS_VECTOR = 4;
 inline constexpr int NUM_PROJ_COND = 6;
+
 
 __managed__ float basisVector[21] = {
         0.57735f, 0.57735f, 0.57735f,
-        -0.57735f, 0.57735f, 0.57735f,
-        0.57735f, -0.57735f, 0.57735f,
-        0.57735f, 0.57735f, -0.57735f,
+        0.57735f, -0.57735f, -0.57735f,
+        -0.57735f, 0.57735f, -0.57735f,
+        -0.57735f, -0.57735f, 0.57735f,
         1.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
 };
+
+/*
+__managed__ float basisVector[21] = {
+        0.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 0.0f,
+        -0.5f, 0.866025f, 0.f,
+        -0.5f, -0.866025f, 0.f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+};
+ */
+
 /*
 __managed__ float basisVector[21] = {
         0.666667f, 0.666667f, -0.333333f,

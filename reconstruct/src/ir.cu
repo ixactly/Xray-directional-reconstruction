@@ -207,7 +207,7 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
         printf("B: (%lf, %lf, %lf), G: (%lf, %lf, %lf)\n", B(0), B(1), B(2), G(0), G(1), G(2));
         */
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
         // S->scattering base vector
@@ -216,31 +216,15 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
 
         // float vkm = abs(S * G);
         const int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                            i * (sizeV[0] * sizeV[1] * sizeV[2]);
+                             i * (sizeV[0] * sizeV[1] * sizeV[2]);
 
-        Vector3f S(0.0f, 0.0f, 0.0f);
-        S[i] = 1.0f;
+        Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         S = R * S;
-        /*
-        if (out) {
-            printf("cond: %d, angle: %d, idx: %d, vkm, BxS: %lf, S*G: %lf\n", cond, n, i, B.cross(S).norm2(), abs(S * G));
-            // printf("S: (%lf, %lf, %lf)\n", S(0), S(1), S(2));
-        }*/
 
         float vkm = B.cross(S).norm2() * abs(S * G);
-        // float vkm = abs(S * G);
-        // float vkm = 1.0f;
 
         proj += vkm * vkm * geom->voxSize * ratio * devVoxel[idxVoxel];
-        // printf("%d: %lf, %lf\n", i+1, vkm, proj);
     }
-
-    // printf("angle: (%lf, %lf), back: %lf\n", phi, theta, backward);
-    /*
-    if (isnan(proj)) {
-        printf("proj: (%lf), coef: (%lf, %lf, %lf, %lf)\n",
-               proj, coef[0], coef[1], coef[2], coef[3]);
-    }*/
 
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1 * proj);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2 * proj);
@@ -289,7 +273,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 
     Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // calculate immutable geometry
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
@@ -297,8 +281,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
         // G->grating sensivity vector
         // v_km = (|B_m x S_k|<S_k*G>)^2
 
-        Vector3f S(0.0f, 0.0f, 0.0f);
-        S[i] = 1.0f;
+        Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         S = R * S;
 
         float vkm = B.cross(S).norm2() * abs(S * G);
@@ -345,8 +328,7 @@ __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float 
 }
 
 __global__ void
-calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss,
-                 int ep) {
+calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -368,41 +350,37 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                         4 * (sizeV[0] * sizeV[1] * sizeV[2])]
     };
 
-    const float mu[3] =
+    const float mu[4] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       0 * (sizeV[0] * sizeV[1] * sizeV[2])],
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       1 * (sizeV[0] * sizeV[1] * sizeV[2])],
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                      2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
-    int sign = (ep % 2 == 0) ? 1 : -1;
+                      2 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      3 * (sizeV[0] * sizeV[1] * sizeV[2])]};
 
-    Vector3f zx(mu[0], 0.0f, -mu[2]);
-    Vector3f zy(0.0f, sign * mu[1], -mu[2]);
+    Vector3f norm = (1 / mu[0]) * Vector3f(basisVector[3 * 0 + 0], basisVector[3 * 0 + 1], basisVector[3 * 0 + 2]) +
+                    (1 / mu[1]) * Vector3f(basisVector[3 * 1 + 0], basisVector[3 * 1 + 1], basisVector[3 * 1 + 2]) +
+                    (1 / mu[2]) * Vector3f(basisVector[3 * 2 + 0], basisVector[3 * 2 + 1], basisVector[3 * 2 + 2]) +
+                    (1 / mu[3]) * Vector3f(basisVector[3 * 3 + 0], basisVector[3 * 3 + 1], basisVector[3 * 3 + 2]);
 
-    Vector3f norm = zx.cross(zy);
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        const float eps = 1e-5;
+        if (mu[i] < eps) {
+            norm = 1.0f * Vector3f(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        }
+    }
     norm.normalize();
 
-    Vector3f base = {0.0f, 0.0f, 1.0f};
-    Vector3f norm_half = (norm + base);  // calc mid point
-    // Vector3f norm_half = (norm);
-    norm_half.normalize();
-
     Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
-    norm_half = R * norm_half;
-    /*
-    if (mu[0] >= mu[1] && mu[0] >= mu[2]) {
-        base = {1.0f, 0.0f, 0.0f};
-    } else if (mu[1] >= mu[0] && mu[1] >= mu[2]) {
-        base = {0.0f, 1.0f, 0.0f};
-    } else {
-        base = {0.0f, 0.0f, 1.0f};
-    }*/
+    norm = R * norm;
 
+    Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
     Vector3f norm_diff = base.cross(norm);
-    Vector3f rotAxis = base.cross(norm_half); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy
+    Vector3f rotAxis = base.cross(norm); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy
     // printf("loss: %lf", norm_diff.norm2());
-    float cos = base * norm_half;
+    float cos = base * norm;
     float sin = rotAxis.norm2();
     float diff = norm_diff.norm2();
 
@@ -441,6 +419,79 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
                 4 * (sizeV[0] * sizeV[1] * sizeV[2])] = sin;
 }
 
+__global__ void
+calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    int coord[3] = {x, y, z};
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    const float coef[5] = {
+            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_x
+            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_y
+            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_z
+            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // theta
+            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                        4 * (sizeV[0] * sizeV[1] * sizeV[2])]
+    };
+
+    Vector3f norm(md[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                     0 * (sizeV[0] * sizeV[1] * sizeV[2])],
+                  md[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                     1 * (sizeV[0] * sizeV[1] * sizeV[2])],
+                  md[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                     2 * (sizeV[0] * sizeV[1] * sizeV[2])]);
+
+    norm.normalize();
+
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    norm = R * norm;
+
+    Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
+    Vector3f norm_diff = base.cross(norm);
+    Vector3f rotAxis = base.cross(norm); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy
+    // printf("loss: %lf", norm_diff.norm2());
+    float cos = base * norm;
+    float sin = rotAxis.norm2();
+    float diff = norm_diff.norm2();
+
+    // printf("%lf, ", diff);
+    norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
+
+    if (cos > 1.0f) {
+        cos = 1.0f;
+        sin = 0.0f;
+    } else if (cos < -1.0f) {
+        cos = -1.0f;
+        sin = 0.0f;
+    }
+    if (sin > 1.0f) {
+        sin = 1.0f;
+        cos = 0.0f;
+    } else if (sin < -1.0f) {
+        sin = -1.0f;
+        cos = 0.0f;
+    }
+
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                0 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[0];
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                1 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[1];
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                2 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[2];
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                3 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                4 * (sizeV[0] * sizeV[1] * sizeV[2])] = sin;
+}
+
 void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volume<float> *coefficient) {
     for (int x = 0; x < NUM_VOXEL; x++) {
         for (int y = 0; y < NUM_VOXEL; y++) {
@@ -457,16 +508,17 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
 
                 Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
-                Vector3f norm = R * Vector3f(0.0, 0.0, 1.0);
+                Vector3f norm = R * Vector3f(basisVector[0], basisVector[1], basisVector[2]);
 
                 /*
                 printf("R:\n[%lf, %lf, %lf]\n[%lf, %lf, %lf],\n[%lf, %lf, %lf]\n",
                        R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7], R[8]);
                 printf("base: [%lf, %lf, %lf]\n", base[0], base[1], base[2]);
                 */
+                float sign = (norm[2] >= 0) ? 1.0 : -1.0;
 
                 for (int i = 0; i < 3; i++) {
-                    md[i](x, y, z) = mu * std::abs(norm[i]);
+                    md[i](x, y, z) = sign * mu * norm[i];
                 }
             }
         }
@@ -547,7 +599,8 @@ __global__ void projSubtract(float *devProj, const float *devSino, const Geometr
     // a = b / c;
 }
 
-__global__ void projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n) {
+__global__ void
+projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;

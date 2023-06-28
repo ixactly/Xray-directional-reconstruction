@@ -26,8 +26,10 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
              const Geometry *geom, int cond, int y, int n, int it);
 
 __global__ void
-calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss,
-                 int ep);
+calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss);
+
+__global__ void
+calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
 
 __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin);
 

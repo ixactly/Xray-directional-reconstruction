@@ -160,7 +160,7 @@ namespace XTT {
         int nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
+        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devDirection;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
@@ -169,6 +169,7 @@ namespace XTT {
         cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+        cudaMalloc(&devDirection, sizeof(float) * lenV * 3);
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
@@ -213,6 +214,10 @@ namespace XTT {
 
         std::vector<float> proj_loss(iter1 * iter2);
         std::vector<float> norm_loss(iter1);
+        Volume<float> tmp[3];
+        for (auto &e: tmp) {
+            e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        }
 
         // main routine
         for (int ep1 = 0; ep1 < iter1; ep1++) {
@@ -306,25 +311,45 @@ namespace XTT {
                 voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
             }
+            /*
             for (int y = 0; y < sizeV[1]; y++) {
-                calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2, ep1);
+                calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
+                cudaDeviceSynchronize();
+            } */
+            for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+                cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
+            // calc main direction
+            for (int z = 0; z < NUM_VOXEL; z++) {
+#pragma parallel omp for
+                for (int y = 0; y < NUM_VOXEL; y++) {
+                    for (int x = 0; x < NUM_VOXEL; x++) {
+                        calcEigenVector(voxel, md, tmp, x, y, z);
+                    }
+                }
+            }
+            for (int i = 0; i < 3; i++)
+                cudaMemcpy(&devDirection[i * lenV], md[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+
+            for (int y = 0; y < sizeV[1]; y++) {
+                calcRotation<<<gridV, blockV>>>(devDirection, devCoef, y, devGeom, devLoss2);
                 cudaDeviceSynchronize();
             }
+
             cudaMemcpy(loss_map2.get(), devLoss2, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
             norm_loss[ep1] = loss_map2.mean();
             // ----- end iter2 -----
 
             for (int i = 0; i < NUM_PROJ_COND; i++)
                 cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
-            for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-                cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
 
             Volume<float> coef[5];
             for (int i = 0; i < 5; i++) {
                 coef[i] = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
                 cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
             }
-            convertNormVector(voxel, md, coef);
+             convertNormVector(voxel, md, coef);
 
             // save direction volume
             for (int i = 0; i < 3; i++) {
@@ -377,6 +402,7 @@ namespace XTT {
         cudaFree(devCoef);
         cudaFree(devLoss1);
         cudaFree(devLoss2);
+        cudaFree(devDirection);
 
         std::ofstream ofs1("../python/loss1.csv");
         std::ofstream ofs2("../python/loss2.csv");
@@ -701,7 +727,7 @@ namespace XTT {
 #pragma parallel omp for
             for (int y = 0; y < NUM_VOXEL; y++) {
                 for (int x = 0; x < NUM_VOXEL; x++) {
-                    calcEigenVector(voxel, md, tmp, y, z, x);
+                    calcEigenVector(voxel, md, tmp, x, y, z);
                 }
             }
         }

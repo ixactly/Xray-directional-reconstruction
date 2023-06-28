@@ -59,14 +59,14 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 50, 6, Rotate::CW, method, 1e-3);
+    // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
-    // XTT::orthReconstruct(sinogram, ct, md, geom, 20, 30, 5, Rotate::CW, method, 2e-2);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 30, 5, Rotate::CW, method, 2e-2);
     // IR::reconstruct(sinogram, ct, geom, 4, 6, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
-    forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);
+    // forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -89,7 +89,7 @@ int main() {
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        // ct[i].save(savefilePathCT);
+        ct[i].save(savefilePathCT);
     }
 
     // save direction volume

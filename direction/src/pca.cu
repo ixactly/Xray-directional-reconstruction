@@ -37,10 +37,11 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
 
     // (temporary) pick up minimum eigenvector, then normalization
     Eigen::Vector3f min = vectors.col(0).normalized();
+    float sign = (min.z() >= 0) ? 1.0 : -1.0;
 
-    md[0](x, y, z) = std::abs(mu_mean * min.x());
-    md[1](x, y, z) = std::abs(mu_mean * min.y());
-    md[2](x, y, z) = std::abs(mu_mean * min.z());
+    md[0](x, y, z) = sign * mu_mean * min.x();
+    md[1](x, y, z) = sign * mu_mean * min.y();
+    md[2](x, y, z) = sign * mu_mean * min.z();
 
     /*
     md[0](x, y, z) = min.x();
