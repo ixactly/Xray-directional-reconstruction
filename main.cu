@@ -25,7 +25,7 @@ int main() {
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
-        std::string loadfilePath = "../proj_raw_bin/simulation/proj_fiber_discrete_diag_xyz" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/simulation/proj_fiber_continuous_xyz" + std::to_string(i + 1) + "_" +
 
                 // std::string loadfilePath = "../proj_raw_bin/gfrp_a/SC/gfrp_a_ct" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
@@ -40,7 +40,7 @@ int main() {
 
     if (method == Method::MLEM) {
         for (auto &e: ct) {
-            e.forEach([](float value) -> float { return 0.01; });
+            e.forEach([](float value) -> float { return 0.1; });
         }
     }
 
@@ -61,7 +61,7 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
-    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 30, 5, Rotate::CW, method, 2e-2);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 20, 20, 5, Rotate::CW, method, 5e-2);
     // IR::reconstruct(sinogram, ct, geom, 4, 6, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
@@ -76,7 +76,7 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/simulation/proj_fiber_discrete_diag_xyz" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
+                "../volume_bin/simulation/proj_fiber_continuous_xyz" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
                 std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
         sinogram[i].save(savefilePathProj);
     }
@@ -89,7 +89,7 @@ int main() {
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        ct[i].save(savefilePathCT);
+        // ct[i].save(savefilePathCT);
     }
 
     // save direction volume
@@ -100,7 +100,7 @@ int main() {
                 "../volume_bin/simulation/pca/md_orth_discrete_diag_orth_dump_proj6_" + std::to_string(i + 1) + "_" +
                         std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        md[i].save(savefilePathCT);
+        // md[i].save(savefilePathCT);
     }
 
     return 0;

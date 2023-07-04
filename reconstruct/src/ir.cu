@@ -178,20 +178,11 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
 
     const float ratio = (geom->voxSize * geom->voxSize) /
                         (geom->detSize * (geom->sod / geom->sdd) * geom->detSize * (geom->sod / geom->sdd));
-
-    const float coef[5] = {
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_x
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_y
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // n_z
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        4 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin
-    };
-
+    const float phi_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1 - cos_c * cos_c)};
     /*
     Matrix3f R(cos(phi) * cos(theta), -sin(phi), cos(phi) * sin(theta),
        sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta),
@@ -257,19 +248,11 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
             c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    const float coef[5] = {
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos(phi)
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(phi)
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // cos(theta)
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // sin(theta)
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        4 * (sizeV[0] * sizeV[1] * sizeV[2])]
-    };
-
+    const float phi_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1 - cos_c * cos_c)};
 
     Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
@@ -337,18 +320,12 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
     int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
     int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
 
-    const float coef[5] = {
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        0 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_x
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        1 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_y
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        2 * (sizeV[0] * sizeV[1] * sizeV[2])], // ax_z
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        3 * (sizeV[0] * sizeV[1] * sizeV[2])], // theta
-            coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                        4 * (sizeV[0] * sizeV[1] * sizeV[2])]
-    };
+    const float phi_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1.0f - cos_c * cos_c)};
 
     const float mu[4] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -360,63 +337,80 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       3 * (sizeV[0] * sizeV[1] * sizeV[2])]};
 
-    Vector3f norm = (1 / mu[0]) * Vector3f(basisVector[3 * 0 + 0], basisVector[3 * 0 + 1], basisVector[3 * 0 + 2]) +
-                    (1 / mu[1]) * Vector3f(basisVector[3 * 1 + 0], basisVector[3 * 1 + 1], basisVector[3 * 1 + 2]) +
-                    (1 / mu[2]) * Vector3f(basisVector[3 * 2 + 0], basisVector[3 * 2 + 1], basisVector[3 * 2 + 2]) +
-                    (1 / mu[3]) * Vector3f(basisVector[3 * 3 + 0], basisVector[3 * 3 + 1], basisVector[3 * 3 + 2]);
-
+    /*
+    bool big_than_eps = true;
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        const float eps = 1e-5;
+        const float eps = 1e-6;
         if (mu[i] < eps) {
             norm = 1.0f * Vector3f(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+            big_than_eps = false;
+            break;
         }
     }
+    if (big_than_eps)
+        norm = (1 / mu[0]) * Vector3f(basisVector[3 * 0 + 0], basisVector[3 * 0 + 1], basisVector[3 * 0 + 2]) +
+               (1 / mu[1]) * Vector3f(basisVector[3 * 1 + 0], basisVector[3 * 1 + 1], basisVector[3 * 1 + 2]) +
+               (1 / mu[2]) * Vector3f(basisVector[3 * 2 + 0], basisVector[3 * 2 + 1], basisVector[3 * 2 + 2]) +
+               (1 / mu[3]) * Vector3f(basisVector[3 * 3 + 0], basisVector[3 * 3 + 1], basisVector[3 * 3 + 2]);
+    */
+    float eps = 1e-2;
+
+    Vector3f S1(basisVector[3 * 0 + 0], basisVector[3 * 0 + 1], basisVector[3 * 0 + 2]);
+    Vector3f S2(basisVector[3 * 1 + 0], basisVector[3 * 1 + 1], basisVector[3 * 1 + 2]);
+    Vector3f S3(basisVector[3 * 2 + 0], basisVector[3 * 2 + 1], basisVector[3 * 2 + 2]);
+    Vector3f S4(basisVector[3 * 3 + 0], basisVector[3 * 3 + 1], basisVector[3 * 3 + 2]);
+
+     /*
+    Vector3f S1(1.0, 0.0, 0.0);
+    Vector3f S2(0.0, 1.0, 0.0);
+    Vector3f S3(0.0, 0.0, 1.0);
+      */
+
+    Vector3f norm = (1.0f / (mu[0] + eps)) * S1 + (1.0f / (mu[1] + eps)) * S2 + (1.0f / (mu[2] + eps)) * S3
+            + (1.0f / (mu[3] + eps)) * S4;
+    // (1.0f / (mu[3] + eps)) * Vector3f(basisVector[3 * 3 + 0], basisVector[3 * 3 + 1], basisVector[3 * 3 + 2]);
+    // Vector3f norm = (mu[0]) * S1 + (mu[1]) * S2 + (mu[2]) * S3;
+
     norm.normalize();
+    // Vector3f normal = (1.0f / (mu[0] + eps)) * S1 + (1.0f / (mu[1] + eps)) * S2 + (1.0f / (mu[2] + eps)) * S3;
+    /*
+    bool out = (y == 50 && z == 50);
+    if (out) {
+        printf("x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, normal[0], normal[1], normal[2]);
+        printf("normalized x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, norm[0], norm[1], norm[2]);
+    }*/
 
     Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
     norm = R * norm;
 
     Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
-    Vector3f norm_diff = base.cross(norm);
-    Vector3f rotAxis = base.cross(norm); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy
+    Vector3f norm_diff = (R * base).cross(norm);
+    Vector3f rotAxis = base.cross(norm); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy // mazui?
     // printf("loss: %lf", norm_diff.norm2());
+
+    float dump = 1.0f;
+    norm = norm + dump * base;
+    norm.normalize();
+
     float cos = base * norm;
     float sin = rotAxis.norm2();
     float diff = norm_diff.norm2();
 
     // printf("%lf, ", diff);
     norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
-
-    if (cos > 1.0f) {
-        cos = 1.0f;
-        sin = 0.0f;
-    } else if (cos < -1.0f) {
-        cos = -1.0f;
-        sin = 0.0f;
-    }
-    if (sin > 1.0f) {
-        sin = 1.0f;
-        cos = 0.0f;
-    } else if (sin < -1.0f) {
-        sin = -1.0f;
-        cos = 0.0f;
-    }
-
+    /*
+    if (out)
+    printf("x: %d, cos: %lf, sin: %lf\n", x, cos, sin);
+    */
     /*
     if (isnan(theta))
         printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
     */
 
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                0 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[0];
+                0 * (sizeV[0] * sizeV[1] * sizeV[2])] = atan2(rotAxis[1], rotAxis[0]);
     coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                1 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[1];
-    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                2 * (sizeV[0] * sizeV[1] * sizeV[2])] = rotAxis[2];
-    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                3 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
-    coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                4 * (sizeV[0] * sizeV[1] * sizeV[2])] = sin;
+                1 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
 }
 
 __global__ void
@@ -502,10 +496,9 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                 const float v[3] =
                         {voxel[0](x, y, z), voxel[1](x, y, z), voxel[2](x, y, z)};
 
-                const float coef[5] = {
-                        coefficient[0](x, y, z), coefficient[1](x, y, z),
-                        coefficient[2](x, y, z), coefficient[3](x, y, z), coefficient[4](x, y, z)};
-
+                const float phi_c = coefficient[0](x, y, z);
+                const float cos_c = coefficient[1](x, y, z);
+                const float coef[5] = {std::cos(phi_c), std::sin(phi_c), 0.0f, cos_c, std::sqrt(1.0f - cos_c * cos_c)};
                 Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
 
                 Vector3f norm = R * Vector3f(basisVector[0], basisVector[1], basisVector[2]);

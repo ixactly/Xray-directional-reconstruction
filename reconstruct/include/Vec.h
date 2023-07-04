@@ -6,6 +6,10 @@
 #define INC_3DRECONGPU_VEC_H
 
 #define __both__ __device__ __host__
+
+#include <stdio.h>
+#include <cuda_runtime.h>
+
 template<typename T>
 class Vector3X {
 public:
@@ -85,6 +89,7 @@ public:
             this->y /= value;
             this->z /= value;
         } else {
+            printf("norm zero\n");
             this->x = 0;
             this->y = 0;
             this->z = 0;
