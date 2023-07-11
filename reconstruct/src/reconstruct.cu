@@ -87,7 +87,7 @@ namespace IR {
 
                         // forwardProj process
                         for (int y = 0; y < sizeV[1]; y++) {
-                            forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
+                            forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n); // condにp_arrをかける
                             cudaDeviceSynchronize();
                         }
                         projCompare<<<gridD, blockD>>>(&devCompare[lenD * cond], &devSino[lenD * cond],
@@ -182,8 +182,12 @@ namespace XTT {
         Volume<float> coef[2];
         for (auto &co : coef)
             co = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!
         coef[0].forEach([](float value) -> float { return 0.0f; });
         coef[1].forEach([](float value) -> float { return 1.0f; });
+        // coef[0].forEach([](float value) -> float { return 3.0 * M_PI / 4.0f; });
+        // coef[1].forEach([](float value) -> float { return std::cos(M_PI / 4.0f); });
         cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
         cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
@@ -304,11 +308,12 @@ namespace XTT {
 
             // swap later
             for (int y = 0; y < sizeV[1]; y++) {
-                voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
+                // calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
+                calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
                 cudaDeviceSynchronize();
             }
             for (int y = 0; y < sizeV[1]; y++) {
-                calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
+                voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                 cudaDeviceSynchronize();
             }
 
@@ -344,9 +349,11 @@ namespace XTT {
 
             for (int i = 0; i < 2; i++) {
                 cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                /*
                 coef[i].save("../volume_bin/simulation/coef_" + std::to_string(ep1) + "_" + std::to_string(i + 1) + "_" +
                              std::to_string(NUM_VOXEL) + "x" +
                              std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
+                */
             }
             convertNormVector(voxel, md, coef);
 
@@ -354,8 +361,8 @@ namespace XTT {
             for (int i = 0; i < 3; i++) {
                 std::string savefilePathCT =
                         // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
-                        // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
-                        "../volume_bin/simulation/sequence_discrete/pca/dump1.0_" +
+                        // "../volume_bin/cfrp_xyz7_13axis/sequence/pca/dump0.0_" +
+                        "../volume_bin/simulation/sequence/pca/+x+y+z" +
                         std::to_string(ep1) + "_orth" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 md[i].save(savefilePathCT);
@@ -364,8 +371,9 @@ namespace XTT {
             // save ct volume
             for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
                 std::string savefilePathCT =
-                        "../volume_bin/simulation/sequence_discrete/direc_discrete_iter" + std::to_string(ep1) +
-                        "_orth" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                        "../volume_bin/simulation/sequence/+x+y+z" + std::to_string(ep1) +
+                        // "../volume_bin/cfrp_xyz7_mark/sequence/direc_discrete_iter" + std::to_string(ep1) +
+                        std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 voxel[i].save(savefilePathCT);
             }
@@ -1029,15 +1037,6 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
         voxel[i].forEach([](float value) -> float { return 0.0f; });
     }
 
-    for (int x = NUM_VOXEL * 1 / 5; x < NUM_VOXEL * 4 / 5; x++) {
-        for (int y = NUM_VOXEL * 2 / 5; y < NUM_VOXEL * 3 / 5; y++) {
-            for (int z = NUM_VOXEL * 2 / 5; z < NUM_VOXEL * 3 / 5; z++) {
-                voxel[0](x, y, z) = voxel[1](x, y, z) = mu_strong;
-                voxel[2](x, y, z) = mu_weak;
-            }
-        }
-    }
-
     // cudaMalloc
     float *devProj, *devVoxel, *devCoef, *devLoss;
     const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
@@ -1048,9 +1047,6 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
     cudaMalloc(&devCoef, sizeof(float) * lenV * 2);
     cudaMalloc(&devLoss, sizeof(float) * lenV);
     cudaMemset(devCoef, 0.0f, sizeof(float) * lenV * 2);
-
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-        cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
     Geometry *devGeom;
     cudaMalloc(&devGeom, sizeof(Geometry));
@@ -1110,19 +1106,34 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
             for (int z = NUM_VOXEL * 2 / 5; z < NUM_VOXEL * 3 / 5; z++) {
                 if (x < NUM_VOXEL * 2 / 5) {
                     // r->g
-                    float theta = (M_PI / 4.0);
-                    coef[0](x, y, z) = M_PI / 4.0;
-                    coef[1](x, y, z) = std::cos(M_PI / 2.0f);
+                    /*
+                    coef[0](x, y, z) = -M_PI / 4.0;
+                    coef[1](x, y, z) = std::cos(M_PI / 4.0f);
+
+                    voxel[0](x, y, z) = mu_weak;
+                    voxel[1](x, y, z) = mu_strong;
+                    voxel[2](x, y, z) = mu_strong;
+                     */
                 } else if (x < NUM_VOXEL * 3 / 5) {
                     // g->b
                     float theta = (M_PI / 4.0);
-                    coef[0](x, y, z) = 0.0f;
+                    coef[0](x, y, z) = -1.0f * theta;
                     coef[1](x, y, z) = std::cos(theta);
+
+                    voxel[0](x, y, z) = mu_weak;
+                    voxel[1](x, y, z) = mu_strong;
+                    voxel[2](x, y, z) = mu_strong;
+
                 } else {
                     // b->r
-                    float theta = (M_PI / 4.0);
-                    coef[0](x, y, z) = -M_PI / 2;
-                    coef[1](x, y, z) = std::cos(theta);
+                    /*
+                    coef[0](x, y, z) = -3 * M_PI / 4.0;
+                    coef[1](x, y, z) = std::cos(M_PI / 4.0f);
+
+                    voxel[0](x, y, z) = mu_weak;
+                    voxel[1](x, y, z) = mu_strong;
+                    voxel[2](x, y, z) = mu_strong;
+                     */
                 }
             }
         }
@@ -1136,6 +1147,8 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
     coef[4].forEach([](float dummy) -> float {return std::sin(M_PI / 2.0f);});
      */
 
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+        cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
     for (int i = 0; i < 2; i++) {
         cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
     }

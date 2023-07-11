@@ -89,7 +89,7 @@ public:
             this->y /= value;
             this->z /= value;
         } else {
-            printf("norm zero\n");
+            // printf("norm zero\n");
             this->x = 0;
             this->y = 0;
             this->z = 0;

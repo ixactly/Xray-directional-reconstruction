@@ -24,9 +24,11 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_13axis/AT/cfrp_ax" + std::to_string(i + 1) + "_" +
-                                   std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" +
-                                   std::to_string(NUM_PROJ) + ".raw";
+        // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_13axis/AT/cfrp_ax" + std::to_string(i + 1) + "_" +
+        // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax" + std::to_string(proj_arr[i] + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/simulation/proj_+x+y+z" + std::to_string(i + 1) + "_" +
+        // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
+        std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
 
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8; else return value; });
@@ -37,7 +39,7 @@ int main() {
 
     if (method == Method::MLEM) {
         for (auto &e: ct) {
-            e.forEach([](float value) -> float { return 0.1; });
+            e.forEach([](float value) -> float { return 0.01; });
         }
     }
 
@@ -56,10 +58,10 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
+    // XTT::reconstruct(sinogram, ct, md, geom, 30, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
-    // XTT::orthReconstruct(sinogram, ct, md, geom, 20, 20, 5, Rotate::CW, method, 5e-2);
-    IR::reconstruct(sinogram, ct, geom, 5, 5, Rotate::CW, method, 0.01);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 30, 5, Rotate::CW, method, 5e-2);
+    // IR::reconstruct(sinogram, ct, geom, 5, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
@@ -73,28 +75,29 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/simulation/proj_fiber_continuous_xyz" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
-                std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-        // sinogram[i].save(savefilePathProj);
+                "../volume_bin/simulation/proj_+x+y+z" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U)
+                + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
+        sinogram[i].save(savefilePathProj);
     }
 
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_13axis/at" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/cfrp_xyz7_13axis/xtt" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7_mark/orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
+                "../volume_bin/simulation/answer_vol_" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        ct[i].save(savefilePathCT);
+        // ct[i].save(savefilePathCT);
     }
 
     // save direction volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
                 // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
-                // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
-                "../volume_bin/simulation/pca/md_orth_discrete_diag_orth_dump_proj6_" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/cfrp_xyz7_13axis/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
+                "../volume_bin/simulation/pca/answer_-x-y+z" + std::to_string(i + 1) + "_" +
                         std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         // md[i].save(savefilePathCT);

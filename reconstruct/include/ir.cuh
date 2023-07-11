@@ -31,6 +31,9 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
 __global__ void
 calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
 
+__global__ void
+calcNormalVectorThreeDirec(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss);
+
 __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin);
 
 void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);

@@ -7,21 +7,23 @@
 
 inline constexpr int blockSize = 32;
 
-inline constexpr int NUM_BASIS_VECTOR = 5;
-inline constexpr int NUM_PROJ_COND = 5;
+inline constexpr int NUM_BASIS_VECTOR = 3;
+inline constexpr int NUM_PROJ_COND = 6;
+__managed__ int proj_arr[20] = {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
+};
 
-/*
 __managed__ float basisVector[21] = {
+        0.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
         0.57735f, 0.57735f, 0.57735f,
         0.57735f, -0.57735f, -0.57735f,
         -0.57735f, 0.57735f, -0.57735f,
         -0.57735f, -0.57735f, 0.57735f,
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
 };
- */
 
+/*
 __managed__ float basisVector[21] = {
         0.f, 0.f, 1.0f,
         0.9428090415f, 0.f, -0.333333f,
@@ -31,7 +33,7 @@ __managed__ float basisVector[21] = {
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
 };
-
+*/
 /*
 __managed__ float basisVector[21] = {
         0.0f, 0.0f, 1.0f,
@@ -108,7 +110,7 @@ __managed__ float d_loss_proj;
 __managed__ float d_loss_norm;
 
 // cfrp_xyz7_13axis
-
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1316.5;
 inline constexpr float SRC_DETECT_DISTANCE = 1819.6;
 inline constexpr int NUM_PROJ = 360;
@@ -183,7 +185,7 @@ __constant__ float elemT[39] = {0.0f, 0.0f, 0.0f,
                                 1.420168, -4.183651, -2.556308,
 
                                 -0.926514, -3.452567, -0.163279,
-                                // 6
+                                // 6 is not good
                                 -1.463921, -4.139290, -3.095122,
 
                                 0.913431, -3.494192, -0.306444,
@@ -228,7 +230,7 @@ __constant__ float INIT_OFFSET[39] = {
 
         2.24f * (100.5312 / 1728.0) * (1316.5 / 1819.6), 0.0f, 0.0f,
 };
-
+*/
 // cfrp_xyz7_mark
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
@@ -292,9 +294,8 @@ __constant__ float INIT_OFFSET[18] = {
         -10.5f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 };
 */
-
 // simulation
-/*
+
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -356,7 +357,7 @@ __constant__ float INIT_OFFSET[18] = {
 
         0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 };
-*/
+
 // gfrp_a
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
