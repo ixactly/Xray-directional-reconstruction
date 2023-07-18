@@ -82,9 +82,9 @@ public:
         return w;
     }
 
-    __both__ void normalize() {
+    __both__ void normalize(float eps = 1e-8) {
         T value = sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
-        if (value != 0) {
+        if (value > eps) {
             this->x /= value;
             this->y /= value;
             this->z /= value;

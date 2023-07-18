@@ -26,7 +26,7 @@ int main() {
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_13axis/AT/cfrp_ax" + std::to_string(i + 1) + "_" +
         // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax" + std::to_string(proj_arr[i] + 1) + "_" +
-        std::string loadfilePath = "../proj_raw_bin/simulation/proj_+x+y+z" + std::to_string(i + 1) + "_" +
+        std::string loadfilePath = "../proj_raw_bin/simulation/proj_13axis_+x+y+z" + std::to_string(i + 1) + "_" +
         // std::string loadfilePath = "../proj_raw_bin/cfrp_xyz7_mark/SC/CFRP_XYZ7_AXIS" + std::to_string(i + 1) + "_" +
         std::to_string(NUM_DETECT_U) + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
 
@@ -58,9 +58,9 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 30, 5, Rotate::CW, method, 1e-3);
+    // XTT::reconstruct(sinogram, ct, md, geom, 50, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
-    XTT::orthReconstruct(sinogram, ct, md, geom, 10, 30, 5, Rotate::CW, method, 5e-2);
+    XTT::orthReconstruct(sinogram, ct, md, geom, 15, 30, 5, Rotate::CW, method, 5e-2);
     // IR::reconstruct(sinogram, ct, geom, 5, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
@@ -75,9 +75,9 @@ int main() {
     // save sinogram
     for (int i = 0; i < NUM_PROJ_COND; i++) {
         std::string savefilePathProj =
-                "../volume_bin/simulation/proj_+x+y+z" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U)
+                "../proj_raw_bin/simulation/proj_13axis_+x+y+z" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U)
                 + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-        sinogram[i].save(savefilePathProj);
+        // sinogram[i].save(savefilePathProj);
     }
 
     // save ct volume
@@ -86,7 +86,8 @@ int main() {
                 // "../volume_bin/cfrp_xyz7_13axis/xtt" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7_mark/orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
-                "../volume_bin/simulation/answer_vol_" + std::to_string(i + 1) + "_" +
+                "../volume_bin/simulation/sequence_13axis/xtt_vol" + std::to_string(i + 1) + "_" +
+                // "../volume_bin/simulation/answer_vol_" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         // ct[i].save(savefilePathCT);
@@ -97,7 +98,8 @@ int main() {
         std::string savefilePathCT =
                 // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7_13axis/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
-                "../volume_bin/simulation/pca/answer_-x-y+z" + std::to_string(i + 1) + "_" +
+                // "../proj_raw_bin/simulation/pca/md_13axis_+x+y+z" + std::to_string(i + 1) + "_" +
+                "../volume_bin/simulation/sequence_13axis/pca/md_xtt" + std::to_string(i + 1) + "_" +
                         std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         // md[i].save(savefilePathCT);
