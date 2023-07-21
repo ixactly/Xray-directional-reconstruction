@@ -338,8 +338,8 @@ calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const
                       2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
 
     // float rand_rotate = curand_uniform(&curandStates[z * sizeV[0] + x]);
-    // float rand_rotate = 1.0;
-    float rand_rotate = judge;
+    float rand_rotate = 1.0;
+    // float rand_rotate = judge;
     // printf("rand: %lf\n", judge);
 
     float mu1 = mu[1], mu2 = mu[2];
@@ -525,8 +525,8 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
 }
 
 __global__ void
-meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel, const Geometry *geom, int y,
-              float coef) {
+meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
+              const Geometry *geom, int y, float coef) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel - 1 || x < 1 || z >= geom->voxel - 1 || z < 1) return;
@@ -544,18 +544,19 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
                                              1 * (sizeV[0] * sizeV[1] * sizeV[2])];
                 float sin_theta = sqrt(1.f - cos_theta * cos_theta);
                 float phi = -M_PI / 2.0f + devCoefSrc[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                                     sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                                     0 * (sizeV[0] * sizeV[1] * sizeV[2])];
-                float mu = devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                     sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                     0 * (sizeV[0] * sizeV[1] * sizeV[2])] +
-                            devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                     sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                     1 * (sizeV[0] * sizeV[1] * sizeV[2])] +
-                            devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                     sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                     2 * (sizeV[0] * sizeV[1] * sizeV[2])];
-                norm[cnt] = coef * mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
+                                                      sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                                      0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                float mu = /*devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])] +*/
+                           devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])] +
+                           devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                    2 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                // norm[cnt] = mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
+                norm[cnt] = mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
                 cnt++;
             }
         }
@@ -563,18 +564,25 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
 
     Vector3f norm_cent = norm[13];
     for (int i = 0; i < 13; i++) {
-        if (norm[i] * norm[13] > 0.0f) {
-            norm_cent = norm_cent + norm[i];
-        } else {
-            norm_cent = norm_cent - norm[i];
+        if (norm[i] * norm[13] > 0.707106f) {
+            norm_cent = norm_cent + coef * norm[i];
+        } else if (norm[i] * norm[13] < -0.707106f){
+            norm_cent = norm_cent - coef * norm[i];
         }
-        if (norm[26-i] * norm[13] > 0.0f) {
-            norm_cent = norm_cent + norm[26-i];
-        } else {
-            norm_cent = norm_cent - norm[26-i];
+        if (norm[26 - i] * norm[13] > 0.707106f) {
+            norm_cent = norm_cent + coef * norm[26 - i];
+        } else if (norm[26 - i] * norm[13] < -0.707106f) {
+            norm_cent = norm_cent - coef * norm[26 - i];
         }
     }
+
     norm_cent.normalize(1e-8);
+    if (norm_cent[2] < 0.0f) {
+        norm_cent[0] = -norm_cent[0];
+        norm_cent[1] = -norm_cent[1];
+        norm_cent[2] = -norm_cent[2];
+    }
+
     Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
     Vector3f rotAxis = base.cross(norm_cent);
     float cos = base * norm_cent;
@@ -684,7 +692,7 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
                 float sign = (norm[2] >= 0) ? 1.0 : -1.0;
 
                 for (int i = 0; i < 3; i++) {
-                    md[i](x, y, z) = sign * mu * norm[i];
+                    md[i](x, y, z) = mu * norm[i];
                 }
             }
         }
@@ -814,7 +822,7 @@ __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
 
-        devVoxel[idxVoxel] = (devVoxel[idxVoxel] < 0.0f) ? 0.0f : sqrt(devVoxel[idxVoxel]);
+        devVoxel[idxVoxel] = (devVoxel[idxVoxel] < 0.0f) ? sqrt(-devVoxel[idxVoxel]) : sqrt(devVoxel[idxVoxel]);
     }
 }
 
@@ -1006,31 +1014,30 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
 
     Rotate = condR * Rotate; // no need
     offset = Rotate * offset;
-    Vector3f vecSod(0.0f, geom.sod, 0.0f);
-    Vector3f base1(1.0f, 0.0f, 0.0f);
-    Vector3f base2(0.0f, 0.0f, -1.0f);
+    Vector3f origin2src(0.0f, geom.sod, 0.0f);
+    Vector3f baseU(1.0f, 0.0f, 0.0f);
+    Vector3f baseV(0.0f, 0.0f, 1.0f); // 0, 0, -1 is correct
 
-    vecSod = Rotate * vecSod;
+    // this origin is rotation center
+    origin2src = Rotate * origin2src;
 
-    Vector3f vecVoxel(
+    Vector3f origin2voxel(
             (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
             (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
             (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
 
-    // Source to voxel center
-    Vector3f src2cent(-vecSod[0], -vecSod[1], -vecSod[2]);
     // Source to voxel
-    Vector3f src2voxel(vecVoxel[0] + src2cent[0],
-                       vecVoxel[1] + src2cent[1],
-                       vecVoxel[2] + src2cent[2]);
+    Vector3f src2voxel(origin2voxel[0] - origin2src[0],
+                       origin2voxel[1] - origin2src[1],
+                       origin2voxel[2] - origin2src[2]);
 
     // src2voxel and plane that have vecSod norm vector
     // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
-    const float coeff = -(vecSod * vecSod) / (vecSod * src2voxel); // -(n * s) / (n * v)
-    Vector3f p = vecSod + coeff * src2voxel;
+    const float coeff = -(origin2src * origin2src) / (origin2src * src2voxel); // -(n * s) / (n * v)
+    Vector3f p = origin2src + coeff * src2voxel;
 
-    u = (p * (Rotate * base1)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[0]);
-    v = (p * (Rotate * base2)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[1]);
+    u = (p * (Rotate * baseU)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[0]);
+    v = (p * (Rotate * baseV)) * (geom.sdd / geom.sod) / geom.detSize + 0.5f * (float) (sizeD[1]);
 
     B = src2voxel;
     B.normalize();
