@@ -35,7 +35,7 @@ int main() {
     }
 
     // load volume
-    Method method = Method::ART;
+    Method method = Method::MLEM;
 
     if (method == Method::MLEM) {
         for (auto &e: ct) {
@@ -60,7 +60,8 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 5, Rotate::CW, method, 1e-3);
-    XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
+    // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
+    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 10, 15, 5, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);

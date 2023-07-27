@@ -38,6 +38,14 @@ __global__ void
 calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const Geometry *geom, float *norm_loss,
                            curandState *curandStates, float judge);
 
+__global__ void
+calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss,
+                                  float *devEstimate, int iter);
+
+__global__ void
+calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const Geometry *geom,
+                                  float *norm_loss, const float *devEstimate);
+
 __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin);
 
 void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);
