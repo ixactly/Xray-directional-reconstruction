@@ -10,7 +10,7 @@ add_subdirectory(reconstruct)
 add_subdirectory(direction)
 add_subdirectory(utility)
 
-add_executable(recon_exe main.cu parser.cuh)
+add_executable(recon_exe main.cu)
 target_link_libraries(recon_exe ir_lib pca_lib util_lib)
 set_target_properties(recon_exe PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)

@@ -4,7 +4,7 @@
 #include <params.h>
 #include <geometry.h>
 #include <reconstruct.cuh>
-#include "parser.cuh"
+#include <params.h>
 
 int main() {
 

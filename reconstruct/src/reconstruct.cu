@@ -53,10 +53,10 @@ namespace IR {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         // forwardProj, divide, backwardProj proj
         int subsetSize = (nProj + batch - 1) / batch;
@@ -200,13 +200,13 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         curandState* devStates;
-        int threadNum = blockSize * (int) ((sizeV[0] + blockSize - 1) / blockSize);
+        int threadNum = BLOCK_SIZE * (int) ((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE);
         cudaMalloc((void **)(&devStates), threadNum * threadNum * threadNum * sizeof(curandState));
             setup_rand<<<gridV, blockV>>>(devStates, threadNum, 0);
         // forwardProj, divide, backwardProj proj
@@ -501,10 +501,10 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         // forwardProj, divide, backwardProj proj
         int subsetSize = (nProj + batch - 1) / batch;
@@ -671,10 +671,10 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         // forwardProj, divide, backwardProj proj
         int subsetSize = (nProj + batch - 1) / batch;
@@ -820,10 +820,10 @@ namespace XTT {
         cudaMalloc(&devGeom, sizeof(Geometry));
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         // forwardProj, divide, backwardProj proj
         int subsetSize = (nProj + batch - 1) / batch;
@@ -967,13 +967,13 @@ namespace XTT {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         curandState* devStates;
-        int threadNum = blockSize * (int) ((sizeV[0] + blockSize - 1) / blockSize);
+        int threadNum = BLOCK_SIZE * (int) ((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE);
         cudaMalloc((void **)(&devStates), threadNum * threadNum * threadNum * sizeof(curandState));
         setup_rand<<<gridV, blockV>>>(devStates, threadNum, 0);
         // forwardProj, divide, backwardProj proj
@@ -1385,10 +1385,10 @@ namespace FDK {
         cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
         // define blocksize
-        dim3 blockV(blockSize, blockSize, 1);
-        dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-        dim3 blockD(blockSize, blockSize, 1);
-        dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
         // progress bar
 
@@ -1455,8 +1455,8 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
     cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
     // define blocksize
-    dim3 blockV(blockSize, blockSize, 1);
-    dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
+    dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
     // forwardProj, divide, backwardProj proj
     // progress bar
@@ -1524,10 +1524,10 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
     cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
 
     // define blocksize
-    dim3 blockV(blockSize, blockSize, 1);
-    dim3 gridV((sizeV[0] + blockSize - 1) / blockSize, (sizeV[2] + blockSize - 1) / blockSize, 1);
-    dim3 blockD(blockSize, blockSize, 1);
-    dim3 gridD((sizeD[0] + blockSize - 1) / blockSize, (sizeD[1] + blockSize - 1) / blockSize, 1);
+    dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+    dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
     // set scattering vector direction
     // setScatterDirecOn4D(2.0f * (float) M_PI * scatter_angle_xy / 360.0f, basisVector);

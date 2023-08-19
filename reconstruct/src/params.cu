@@ -2,15 +2,19 @@
 // Created by tomokimori on 23/08/17.
 //
 
-#ifndef INC_3DRECONGPU_PARSER_CUH
-#define INC_3DRECONGPU_PARSER_CUH
-
 #include <json.h>
 #include <params.h>
+#include <iostream>
 #include <string>
+#include <fstream>
 
 // global variables are now not constant due to implement problem
 using json = nlohmann::json;
+
+int BLOCK_SIZE;
+__managed__ int NUM_BASIS_VECTOR;
+__managed__ int NUM_PROJ_COND;
+
 float SRC_OBJ_DISTANCE;
 float SRC_DETECT_DISTANCE;
 int NUM_PROJ;
@@ -22,27 +26,21 @@ int NUM_VOXEL;
 __constant__ float elemR[117];
 __constant__ float elemT[39];
 __constant__ float INIT_OFFSET[39];
+__managed__ int proj_arr[20];
 
-__managed__ int proj_arr[20] = {
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
-};
-
-__managed__ float basisVector[21] = {
-        0.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.57735f, 0.57735f, 0.57735f,
-        0.57735f, -0.57735f, -0.57735f,
-        -0.57735f, 0.57735f, -0.57735f,
-        -0.57735f, -0.57735f, 0.57735f,
-};
+__managed__ float basisVector[21];
 __constant__ float fdThresh = 0.99f;
+const float scatter_angle_xy = 0.0f;
 __managed__ float d_loss_proj;
 __managed__ float d_loss_norm;
 
-inline void init_params(const std::string& tag) {
+void init_params(const std::string& tag) {
     std::ifstream f("../utility/settings.json");
     json data = json::parse(f);
+
+    BLOCK_SIZE = data["recon_variable"]["blockSize"];
+    NUM_BASIS_VECTOR = data["recon_variable"]["vector"];
+    NUM_PROJ_COND = data["recon_variable"]["condition"];
 
     SRC_OBJ_DISTANCE = data[tag]["sod"];
     SRC_DETECT_DISTANCE = data[tag]["sdd"];
@@ -58,6 +56,11 @@ inline void init_params(const std::string& tag) {
     std::vector<float> vTrans = data[tag]["vecTrans"];
     std::vector<float> recon = data[tag]["areaTrans"];
     std::vector<float> offset = data[tag]["offset"];
+    std::vector<float> base = data["recon_variable"]["base"];
+
+    for (int i = 0; i < 3 * NUM_BASIS_VECTOR; i++) {
+        basisVector[i] = base[i];
+    }
     for (int i = 0; i < proj_cond; i++) {
         vTrans[3 * i + 0] += recon[0];
         vTrans[3 * i + 1] += recon[1];
@@ -81,8 +84,3 @@ inline void init_params(const std::string& tag) {
     // std::cout << mRot[0] << std::endl;
     // std::cout <<  typeid(decltype(data[tag]["matrixRot"])).name();
 }
-
-
-
-
-#endif //INC_3DRECONGPU_PARSER_CUH

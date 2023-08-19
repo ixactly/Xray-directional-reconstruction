@@ -5,15 +5,30 @@
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
 
-inline constexpr int blockSize = 32;
-inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 3;
+extern int BLOCK_SIZE;
+extern __managed__ int NUM_BASIS_VECTOR;
+extern __managed__ int NUM_PROJ_COND;
 
+extern float SRC_OBJ_DISTANCE;
+extern float SRC_DETECT_DISTANCE;
+extern int NUM_PROJ;
+extern int NUM_DETECT_U;
+extern int NUM_DETECT_V;
+extern float DETECTOR_SIZE;
+extern int NUM_VOXEL;
+
+extern __constant__ float elemR[117];
+extern __constant__ float elemT[39];
+extern __constant__ float INIT_OFFSET[39];
 extern __managed__ int proj_arr[20];
 extern __managed__ float basisVector[21];
 extern __constant__ float fdThresh;
+
+extern const float scatter_angle_xy;
 extern __managed__ float d_loss_proj;
 extern __managed__ float d_loss_norm;
+
+void init_params(const std::string& tag);
 
 /*
 __managed__ float basisVector[21] = {
@@ -95,22 +110,6 @@ __managed__ float basisVector[21] = {
         0.5f, 0.0f, -0.866025f,
 };
 */
-
-inline constexpr float scatter_angle_xy = 0.0f;
-
-// cfrp_xyz7_13axis
-
-extern float SRC_OBJ_DISTANCE;
-extern float SRC_DETECT_DISTANCE;
-extern int NUM_PROJ;
-extern int NUM_DETECT_U;
-extern int NUM_DETECT_V;
-extern float DETECTOR_SIZE;
-extern int NUM_VOXEL;
-
-extern __constant__ float elemR[117];
-extern __constant__ float elemT[39];
-extern __constant__ float INIT_OFFSET[39];
 
 // cfrp_xyz7_mark
 /*
