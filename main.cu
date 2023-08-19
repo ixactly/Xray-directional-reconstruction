@@ -1,12 +1,15 @@
 #include <iostream>
 #include <chrono>
-#include <Volume.h>
-#include <Params.h>
-#include <Geometry.h>
+#include <volume.h>
+#include <params.h>
+#include <geometry.h>
 #include <reconstruct.cuh>
-#include "parser.h"
+#include "parser.cuh"
 
 int main() {
+
+    std::string nametag = "cfrp_7d_13rot";
+    init_params(nametag);
 
     Volume<float> sinogram[NUM_PROJ_COND];
     for (auto &e: sinogram)
@@ -58,11 +61,11 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
+    // XTT::reconstruct(sinogram, ct, md, geom, 4, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 10, 15, 5, Rotate::CW, method, 1e-1);
-    // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
+    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 1, 1, 5, Rotate::CW, method, 1e-1);
+    IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
@@ -84,14 +87,14 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                "../volume_bin/cfrp_xyz7_13axis/xtt" + std::to_string(i + 1) + "_" +
+                "../volume_bin/cfrp_xyz7_13axis/sc_tmp" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7_mark/orth_art_5proj" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/cfrp_xyz7/xtt" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/simulation/sequence_13axis/xtt_vol" + std::to_string(i + 1) + "_" +
                 // "../volume_bin/simulation/answer_vol_" + std::to_string(i + 1) + "_" +
                 std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        // ct[i].save(savefilePathCT);
+        ct[i].save(savefilePathCT);
     }
 
     // save direction volume

@@ -3,8 +3,8 @@
 //
 
 #include "moire.cuh"
-#include "Volume.h"
-#include "Params.h"
+#include "volume.h"
+#include "params.h"
 #include "cmath"
 
 float colorIntensity(float phi, float shift) {

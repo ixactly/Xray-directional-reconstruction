@@ -1,10 +1,10 @@
 //
 // Created by tomokimori on 22/07/20.
 //
-#include <Geometry.h>
+#include <geometry.h>
 #include <ir.cuh>
 #include <random>
-#include <Params.h>
+#include <params.h>
 #include <cmath>
 
 
@@ -1197,7 +1197,7 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     // need to modify
     // need multiply Rotate matrix (axis and rotation geom) to vecSod
     Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
-
+    // printf("%lf\n", elemR[0]);
     Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
                    elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
                    elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);

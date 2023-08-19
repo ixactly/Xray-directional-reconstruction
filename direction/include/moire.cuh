@@ -5,8 +5,8 @@
 #ifndef INC_3DRECONGPU_MOIRE_CUH
 #define INC_3DRECONGPU_MOIRE_CUH
 
-#include "Volume.h"
-#include "Params.h"
+#include "volume.h"
+#include "params.h"
 
 void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int size_x, int size_y, int size_z);
 void calcPseudoCT(Volume<float> *dst, const Volume<float> *ct, int size_x, int size_y, int size_z);

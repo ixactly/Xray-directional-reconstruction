@@ -3,8 +3,8 @@
 //
 
 #include "pca.cuh"
-#include "Params.h"
-#include "Vec.h"
+#include "params.h"
+#include "vec.h"
 #include <Eigen/Dense>
 #include <Eigen/LU>
 

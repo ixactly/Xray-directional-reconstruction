@@ -8,3 +8,5 @@ project(PCA LANGUAGES CUDA C CXX)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 add_executable(pca_exe main.cu)
 target_link_libraries(pca_exe Eigen3::Eigen pca_lib)
+set_target_properties(pca_exe
+        PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

@@ -4,10 +4,10 @@
 #include "pca.cuh"
 #include "moire.cuh"
 #include <iostream>
-#include "Params.h"
+#include "params.h"
 #include <Eigen/Dense>
 #include <array>
-#include "Pbar.h"
+#include "progressbar.h"
 #include <omp.h>
 #include "tvmin.h"
 

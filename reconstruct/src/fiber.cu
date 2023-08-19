@@ -3,11 +3,11 @@
 //
 
 #include <fiber.cuh>
-#include <Vec.h>
-#include <Geometry.h>
+#include <vec.h>
+#include <geometry.h>
 #include <ir.cuh>
 #include <random>
-#include <Params.h>
+#include <params.h>
 #include <cuda_runtime.h>
 
 __device__ void forwardFiberModel(const int coord[4], float *devProj, const float *devVoxel,

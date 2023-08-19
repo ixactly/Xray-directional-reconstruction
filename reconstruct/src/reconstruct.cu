@@ -1,15 +1,15 @@
 //
 // Created by tomokimori on 22/08/30.
 //
-#include <Geometry.h>
+#include <geometry.h>
 #include <ir.cuh>
 #include <fdk.cuh>
 #include <fiber.cuh>
 #include <random>
 #include <memory>
-#include <Pbar.h>
-#include <Params.h>
-#include <Volume.h>
+#include <progressbar.h>
+#include <params.h>
+#include <volume.h>
 #include <omp.h>
 #include <pca.cuh>
 #include <reconstruct.cuh>
@@ -1144,7 +1144,7 @@ namespace XTT {
                 for (int i = 0; i < 3; i++) {
                     std::string savefilePathCT =
                             // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
-                            "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_est" +
+                            "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_est_tmp" +
                             // "../volume_bin/simulation/sequence_13axis/pca/+x+y+z_filt_rand_all" +
                             std::to_string(2 * direc + ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                             std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
@@ -1157,7 +1157,7 @@ namespace XTT {
                     std::string savefilePathCT =
                             // "../volume_bin/simulation/sequence_13axis/+x+y+z_filt_rand_all" + std::to_string(ep1) +
                             // "../volume_bin/cfrp_xyz7_mark/sequence/direc_discrete_iter" + std::to_string(ep1) +
-                            "../volume_bin/cfrp_xyz7_13axis/sequence/est" + std::to_string(2 * direc + ep1 + 1) +
+                            "../volume_bin/cfrp_xyz7_13axis/sequence/est_tmp" + std::to_string(2 * direc + ep1 + 1) +
                             "_orth" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                             std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                     voxel[i].save(savefilePathCT);

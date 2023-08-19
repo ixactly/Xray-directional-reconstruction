@@ -2,11 +2,11 @@
 // Created by tomokimori on 22/11/11.
 //
 
-#include <Geometry.h>
+#include <geometry.h>
 #include <fdk.cuh>
 #include <random>
-#include <Params.h>
-#include <Vec.h>
+#include <params.h>
+#include <vec.h>
 
 __global__ void calcWeight(float *weight, const Geometry *geom) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;

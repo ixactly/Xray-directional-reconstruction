@@ -5,9 +5,9 @@
 #ifndef INC_3DRECONGPU_RECONSTRUCT_CUH
 #define INC_3DRECONGPU_RECONSTRUCT_CUH
 
-#include "Volume.h"
-#include "Vec.h"
-#include "Geometry.h"
+#include "volume.h"
+#include "vec.h"
+#include "geometry.h"
 
 enum class Method {
     XTT,

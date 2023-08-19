@@ -5,8 +5,8 @@
 #ifndef INC_3DRECONGPU_MLEM_CUH
 #define INC_3DRECONGPU_MLEM_CUH
 
-#include "Volume.h"
-#include "Vec.h"
+#include "volume.h"
+#include "vec.h"
 #include <curand_kernel.h>
 #include <curand.h>
 #include <cuda_runtime.h>
