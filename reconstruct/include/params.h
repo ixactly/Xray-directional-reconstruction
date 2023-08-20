@@ -4,6 +4,11 @@
 
 #ifndef CUDA_EXAMPLE_PARAMS_H
 #define CUDA_EXAMPLE_PARAMS_H
+#include <string>
+
+extern std::string PROJ_PATH;
+extern std::string VOLUME_PATH;
+extern std::string DIRECTION_PATH;
 
 extern int BLOCK_SIZE;
 extern __managed__ int NUM_BASIS_VECTOR;
@@ -174,6 +179,7 @@ __constant__ float INIT_OFFSET[18] = {
         -10.5f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 };
 */
+
 // simulation1
 /*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
