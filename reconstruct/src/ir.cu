@@ -522,7 +522,7 @@ calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const 
 
 __global__ void
 calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss,
-                           float *devEstimate, int iter) {
+                                  float *devEstimate, int iter) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -547,21 +547,6 @@ calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const 
                       2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
 
     float mu1 = mu[1], mu2 = mu[2];
-
-    if (iter == 0) {
-        mu1 = mu[1];
-        mu2 = mu[2];
-    } else if (iter == 1) {
-        mu1 = -mu[1];
-        mu2 = mu[2];
-    } else if (iter == 2) {
-        mu1 = -mu[1];
-        mu2 = -mu[2];
-    } else {
-        mu1 = mu[1];
-        mu2 = -mu[2];
-    }
-
     Vector3f vec1(mu[0] * basisVector[3 * 0 + 0] - mu1 * basisVector[3 * 1 + 0],
                   mu[0] * basisVector[3 * 0 + 1] - mu1 * basisVector[3 * 1 + 1],
                   mu[0] * basisVector[3 * 0 + 2] - mu1 * basisVector[3 * 1 + 2]);
@@ -571,19 +556,8 @@ calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const 
 
     Vector3f norm = vec1.cross(vec2);
     norm.normalize();
-    // Vector3f normal = (1.0f / (mu[0] + eps)) * S1 + (1.0f / (mu[1] + eps)) * S2 + (1.0f / (mu[2] + eps)) * S3;
-    /*
-    bool out = (y == 50 && z == 50);
-    if (out) {
-        printf("x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, normal[0], normal[1], normal[2]);
-        printf("normalized x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, norm[0], norm[1], norm[2]);
-    }
-    */
 
-    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
-
-    Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
-
+    Vector3f base(0.f, 0.f, 1.f);
     float dump = 0.0f;
     norm = norm + dump * base;
     if (norm[2] < 0.0f) {
@@ -595,14 +569,13 @@ calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const 
 
     float cos = base * norm;
     float est = devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                0 * (sizeV[0] * sizeV[1] * sizeV[2])];
-    if (cos > est){
+                            0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    if (cos > est) {
         devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                     0 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
         devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                     1 * (sizeV[0] * sizeV[1] * sizeV[2])] = (float) iter;
     }
-
 }
 
 
@@ -740,12 +713,12 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
                 float mu = /*devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
                                     sizeV[0] * sizeV[1] * (coord[2] - k) +
                                     0 * (sizeV[0] * sizeV[1] * sizeV[2])] +*/
-                           devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])] +
-                           devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                    2 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                        devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                 sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                 1 * (sizeV[0] * sizeV[1] * sizeV[2])] +
+                        devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                 sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                 2 * (sizeV[0] * sizeV[1] * sizeV[2])];
                 // norm[cnt] = mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
                 norm[cnt] = mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
                 cnt++;
@@ -757,7 +730,7 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
     for (int i = 0; i < 13; i++) {
         if (norm[i] * norm[13] > 0.707106f) {
             norm_cent = norm_cent + coef * norm[i];
-        } else if (norm[i] * norm[13] < -0.707106f){
+        } else if (norm[i] * norm[13] < -0.707106f) {
             norm_cent = norm_cent - coef * norm[i];
         }
         if (norm[26 - i] * norm[13] > 0.707106f) {

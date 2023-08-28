@@ -6,7 +6,6 @@
 #include <reconstruct.cuh>
 
 int main() {
-
     std::string nametag = "cfrp_7d_13rot";
     init_params(nametag);
 
@@ -60,8 +59,8 @@ int main() {
     // XTT::reconstruct(sinogram, ct, md, geom, 4, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 1, 1, 5, Rotate::CW, method, 1e-1);
-    IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
+    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 5, 10, 5, Rotate::CW, method, 1e-1);
+    // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
@@ -86,7 +85,7 @@ int main() {
                 VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x"
                 + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
-        ct[i].save(savefilePathCT);
+        // ct[i].save(savefilePathCT);
     }
 
     // save direction volume

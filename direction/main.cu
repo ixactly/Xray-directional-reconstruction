@@ -13,15 +13,15 @@
 
 int main() {
     // tv minimized
-    /*
-    int N = 350;
+
+    int N = 192;
     Volume<float> ct;
-    ct.load("../../volume_bin/cfrp_xyz7_mark/orth_mlem1_" + std::to_string(N) +
+    ct.load("../../volume_bin/cfrp_xyz7_13axis/sc_tmp1_" + std::to_string(N) +
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw", N, N, N);
-    totalVariationMinimized(ct, 0.5, 0.03, 40);
-    ct.save("../../volume_bin/cfrp_xyz7_mark/orth_mlem_tv1_" + std::to_string(N) +
+    totalVariationMinimized(ct, 0.5, 0.01, 40);
+    ct.save("../../volume_bin/cfrp_xyz7_13axis/sc_tv0015_" + std::to_string(N) +
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
-            */
+
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
     for (auto &e: ctArray)
@@ -138,7 +138,7 @@ int main() {
     }
 */
     // pseudo color composition
-
+    /*
     const int N = 512;
     int arrange_index[4] = {3, 2, 1, 4};
     Volume<float> ctArray[6];
@@ -167,6 +167,7 @@ int main() {
                 std::to_string(N) + "x" + std::to_string(N) + ".raw";
        color[i].save(savefilePath);
     }
+     */
 
 
      /*
