@@ -9,6 +9,7 @@ endif()
 add_subdirectory(reconstruct)
 add_subdirectory(direction)
 add_subdirectory(utility)
+add_subdirectory(solver)
 
 add_executable(recon_exe main.cu)
 target_link_libraries(recon_exe ir_lib pca_lib util_lib)
