@@ -54,7 +54,7 @@
 #include <stdio.h>            // printf
 #include <stdlib.h>           // EXIT_FAILURE
 #include "spMat.h"
-#include "operation.h"
+#include "operation_blas.h"
 
 #define CHECK_CUDA(func)                                                       \
 {                                                                              \

@@ -9,11 +9,13 @@
 #include <array>
 #include "progressbar.h"
 #include <omp.h>
-#include "tvmin.h"
+#include "quadfilt.h"
+#include "ir.cuh"
 
 int main() {
-    // tv minimized
 
+    // tv minimized
+    /*
     int N = 192;
     Volume<float> ct;
     ct.load("../../volume_bin/cfrp_xyz7_13axis/sc_tmp1_" + std::to_string(N) +
@@ -21,6 +23,8 @@ int main() {
     totalVariationMinimized(ct, 0.5, 0.01, 40);
     ct.save("../../volume_bin/cfrp_xyz7_13axis/sc_tv0015_" + std::to_string(N) +
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
+    */
+
 
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];

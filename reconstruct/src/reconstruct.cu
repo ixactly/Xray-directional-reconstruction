@@ -15,6 +15,7 @@
 #include <reconstruct.cuh>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include "quadfilt.h"
 
 namespace IR {
     void
@@ -1204,15 +1205,25 @@ namespace XTT {
                                                                      devLoss2, devEstimate);
                 cudaDeviceSynchronize();
             }
+            for (int i = 0; i < 2; i++)
+                cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
 
             std::string xyz[] = {"x", "y", "z"};
+            // filtering
+            /*
+            // quadlicFormFilterCPU(voxel, coef);
+            for (int i = 0; i < 2; i++)
+                cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+            */
+
+            /*
             for (int filt = 0; filt < 2; filt++) {
                 for (int y = 1; y < sizeV[1] - 1; y++) {
                     meanFiltFiber<<<gridV, blockV>>>(devCoef, devCoefTmp, devVoxel, devGeom, y, 1.0f);
                     cudaDeviceSynchronize();
                 }
                 cudaMemcpy(devCoef, devCoefTmp, sizeof(float) * lenV * 2, cudaMemcpyDeviceToDevice);
-            }
+            }*/
 
             cudaMemcpy(loss_map2.get(), devLoss2, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
             norm_loss[ep1] = loss_map2.mean();
@@ -1226,23 +1237,25 @@ namespace XTT {
 
             convertNormVector(voxel, md, coef);
             // save direction volume
+            for (int i = 0; i < 2; i++) {
+                std::string savefilePathCT =
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/coef_tvmin" +
+                        std::to_string(ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
+                        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+                coef[i].save(savefilePathCT);
+            }
             for (int i = 0; i < 3; i++) {
                 std::string savefilePathCT =
-                        // "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_filt2_est_3proj" +
-                        // "../volume_bin/simulation/sequence_13axis/pca/+x+y+z_filt_rand_all" +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_tvmin" +
                         std::to_string(ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 md[i].save(savefilePathCT);
             }
-
             // save ct volume
             for (int i = 0; i < 3; i++) {
                 cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
                 std::string savefilePathCT =
-                        // "../volume_bin/simulation/sequence_13axis/+x+y+z_filt_rand_all" + std::to_string(ep1) +
-                        // "../volume_bin/cfrp_xyz7_mark/sequence/direc_discrete_iter" + std::to_string(ep1) +
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_filt2_est_3proj" + std::to_string(ep1 + 1) +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_tvmin" + std::to_string(ep1 + 1) +
                         "_orth" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 voxel[i].save(savefilePathCT);

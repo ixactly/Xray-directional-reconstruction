@@ -104,15 +104,38 @@ add_executable(${ROUTINE}_example)
 target_sources(${ROUTINE}_example
         PUBLIC ${PROJECT_SOURCE_DIR}/${ROUTINE}_example.cpp
         ${PROJECT_SOURCE_DIR}/include/spMat.h
-        ${PROJECT_SOURCE_DIR}/src/operation.cpp
-        ${PROJECT_SOURCE_DIR}/include/operation.h
+        ${PROJECT_SOURCE_DIR}/src/operation_blas.cpp
+        ${PROJECT_SOURCE_DIR}/include/operation_blas.h
 )
 
 find_package(CUDAToolkit)
 target_include_directories(${ROUTINE}_example
         PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
         ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/../reconstruct/include
 )
 target_link_libraries(${ROUTINE}_example
         PRIVATE CUDA::cudart CUDA::cusparse
 )
+
+project("solver"
+        DESCRIPTION  "GPU-Accelerated Sparse Linear Algebra"
+        LANGUAGES   C CXX CUDA)
+
+add_library(solver)
+target_sources(solver
+        PUBLIC ${PROJECT_SOURCE_DIR}/src/tvmin.cpp
+)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(CUDAToolkit)
+target_include_directories(solver
+        PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+        ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/../reconstruct/include
+)
+target_link_libraries(solver
+        PRIVATE CUDA::cudart CUDA::cusparse Eigen3::Eigen
+)
+set_target_properties(pca_exe
+        PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+

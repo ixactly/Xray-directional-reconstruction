@@ -2,7 +2,7 @@
 // Created by tomokimori on 23/08/31.
 //
 
-#include "operation.h"
+#include "operation_blas.h"
 void spmv(float alpha, csrSpMat& matA, DnVec& vecX, float beta, DnVec* vecY, cusparseHandle_t handle) {
     // allocate an external buffer if needed
 

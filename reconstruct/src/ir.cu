@@ -307,7 +307,6 @@ __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float 
                   -n_y * sin, n_x * sin, cos);
 
     Matrix3f rot = ((1.0f - cos) * rot1 + rot2);
-
     return rot;
 }
 
@@ -379,7 +378,7 @@ calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const
     Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
     norm = R * norm;
 
-    Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
+    Vector3f base(0.f, 0.f, 1.f);
 
     float dump = 0.0f;
     norm = norm + dump * base;
@@ -484,7 +483,7 @@ calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const 
     Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
     norm = R * norm;
 
-    Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
+    Vector3f base(0.f, 0.f, 1.f);
 
     float dump = 0.0f;
     norm = norm + dump * base;

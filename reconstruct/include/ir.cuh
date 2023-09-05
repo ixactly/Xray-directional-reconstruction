@@ -7,6 +7,7 @@
 
 #include "volume.h"
 #include "vec.h"
+#include "geometry.h"
 #include <curand_kernel.h>
 #include <curand.h>
 #include <cuda_runtime.h>
