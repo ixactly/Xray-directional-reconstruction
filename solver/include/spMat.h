@@ -35,11 +35,11 @@ public :
         cusparseDestroyDnVec(vec);
     }
 
-    cusparseDnVecDescr_t* get() {
+    cusparseDnVecDescr_t *get() {
         return &vec;
     }
 
-    void toHost(float* h_values) {
+    void toHost(float *h_values) {
         cudaMemcpy(h_values, d_values, rows * sizeof(float), cudaMemcpyDeviceToHost);
     }
 
@@ -54,18 +54,25 @@ class csrSpMat {
 public :
     csrSpMat(int rows, int cols, int nnz, int *h_offsets, int *h_columns, float *h_values) :
             rows(rows), cols(cols), nnz(nnz) {
-        cudaMalloc((void **) &d_offsets, (rows + 1) * sizeof(int));
-        cudaMalloc((void **) &d_columns, nnz * sizeof(int));
-        cudaMalloc((void **) &d_values, nnz * sizeof(float));
+        if (nnz != 0) {
+            cudaMalloc((void **) &d_offsets, (rows + 1) * sizeof(int));
+            cudaMalloc((void **) &d_columns, nnz * sizeof(int));
+            cudaMalloc((void **) &d_values, nnz * sizeof(float));
 
-        cudaMemcpy(d_offsets, h_offsets, (rows + 1) * sizeof(int), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_values, h_values, nnz * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_columns, h_columns, nnz * sizeof(int), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_offsets, h_offsets, (rows + 1) * sizeof(int), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_values, h_values, nnz * sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_columns, h_columns, nnz * sizeof(int), cudaMemcpyHostToDevice);
 
-        cusparseCreateCsr(&mat, rows, cols, nnz,
-                          d_offsets, d_columns, d_values,
-                          CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
-                          CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+            cusparseCreateCsr(&mat, rows, cols, nnz,
+                              d_offsets, d_columns, d_values,
+                              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                              CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+        } else {
+            cusparseCreateCsr(&mat, rows, cols, nnz,
+                              nullptr, nullptr, nullptr,
+                              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                              CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+        }
     }
 
     ~csrSpMat() {
@@ -75,8 +82,21 @@ public :
         cusparseDestroySpMat(mat);
     }
 
-    cusparseSpMatDescr_t* get() {
+    cusparseSpMatDescr_t *get() {
         return &mat;
+    }
+
+    void setValues() {
+        int64_t num_rows, num_cols, nnz_tmp;
+        if (nnz != 0) {
+            cusparseSpMatGetSize(mat, &num_rows, &num_cols, &nnz_tmp);
+            this->rows = num_rows, this->cols = num_cols, this->nnz = nnz_tmp;
+            // allocate matrix C
+            cudaMalloc((void **) &d_offsets, (num_rows + 1) * sizeof(int));
+            cudaMalloc((void **) &d_columns, nnz * sizeof(int));
+            cudaMalloc((void **) &d_values, nnz * sizeof(float));
+            cusparseCsrSetPointers(mat, d_offsets, d_columns, d_values);
+        }
     }
 
     static void createHandle() {
@@ -92,10 +112,10 @@ public :
      */
     static cusparseHandle_t handle;
 
-private :
-    const int rows;
-    const int cols;
-    const int nnz;
+// private :
+    int rows;
+    int cols;
+    int nnz;
 
     int *d_offsets, *d_columns;
     float *d_values;
@@ -103,4 +123,5 @@ private :
     cusparseSpMatDescr_t mat;
 
 };
+
 #endif //ADMM_HOSTCSRMAT_H

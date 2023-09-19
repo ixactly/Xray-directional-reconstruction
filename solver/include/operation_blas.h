@@ -7,7 +7,7 @@
 
 #include "spMat.h"
 
-void spmv(float alpha, csrSpMat& matA, DnVec& vecX, float beta, DnVec* vecY, cusparseHandle_t handle);
+void spmv(float alpha, csrSpMat& matA, DnVec& vecX, float beta, DnVec* vecY, cusparseOperation_t op, cusparseHandle_t handle);
 // sparseMat * sparseMat -> cusparseSpGEMM()
-void spgemm();
+void spgemm(float alpha, cusparseOperation_t opA, csrSpMat& matA, cusparseOperation_t opB, csrSpMat& matB, float beta, csrSpMat& matC, cusparseHandle_t handle);
 #endif //SPMV_CSR_EXAMPLE_OPERATION_H

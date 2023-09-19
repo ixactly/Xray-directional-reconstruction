@@ -92,7 +92,7 @@
 # Users Notice.
 cmake_minimum_required(VERSION 3.9)
 
-set(ROUTINE spmv_csr)
+set(ROUTINE spmm_csr)
 
 project("${ROUTINE}_example"
         DESCRIPTION  "GPU-Accelerated Sparse Linear Algebra"
@@ -115,7 +115,7 @@ target_include_directories(${ROUTINE}_example
         ${PROJECT_SOURCE_DIR}/../reconstruct/include
 )
 target_link_libraries(${ROUTINE}_example
-        PRIVATE CUDA::cudart CUDA::cusparse
+        PRIVATE CUDA::cudart CUDA::cusparse CUDA::cublas
 )
 
 project("solver"
@@ -128,14 +128,15 @@ target_sources(solver
 )
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(CUDAToolkit)
+find_package(OpenMP)
 target_include_directories(solver
         PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/../reconstruct/include
 )
 target_link_libraries(solver
-        PRIVATE CUDA::cudart CUDA::cusparse Eigen3::Eigen
+        PRIVATE CUDA::cudart CUDA::cusparse CUDA::cublas Eigen3::Eigen OpenMP::OpenMP_CXX
 )
-set_target_properties(pca_exe
+set_target_properties(solver
         PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 

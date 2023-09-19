@@ -183,7 +183,7 @@ int main(void) {
     csrSpMat matAc(A_num_rows, A_num_cols, A_nnz, hA_csrOffsets, hA_columns, hA_values);
     DnVec vecXc(A_num_rows, hX), vecYc(A_num_cols, hY);
 
-    spmv(alpha, matAc, vecXc, beta, &vecYc, csrSpMat::handle);
+    spmv(alpha, matAc, vecXc, beta, &vecYc, CUSPARSE_OPERATION_NON_TRANSPOSE, csrSpMat::handle);
     vecYc.toHost(hY);
 
     int correct = 1;
