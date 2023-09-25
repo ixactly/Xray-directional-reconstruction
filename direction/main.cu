@@ -26,7 +26,6 @@ int main() {
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
 
 
-
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
     for (auto &e: ctArray)

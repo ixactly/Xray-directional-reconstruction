@@ -5,6 +5,7 @@
 #include "tvmin_cuda.h"
 #include "spMat.h"
 #include <Eigen/SparseCore>
+#include <Eigen/IterativeLinearSolvers>
 #include <volume.h>
 
 void makeSpMatLhsOnTV(Volume<float> &vol, float rho, float lambda, int iter) {
@@ -59,6 +60,9 @@ void makeSpMatLhsOnTV(Volume<float> &vol, float rho, float lambda, int iter) {
     Eigen::SparseMatrix<float, Eigen::RowMajor> lhs = I + rho * F.transpose() * F;
     lhs.makeCompressed();
 
+    Eigen::IncompleteCholesky<float, Eigen::Lower> ichol;
+    ichol.compute(lhs);
+    Eigen::Matrix3f Lower = ichol.matrixL();
     int nnz = lhs.nonZeros();
     float *value = lhs.valuePtr();
     int *colInd = lhs.innerIndexPtr();
@@ -68,6 +72,49 @@ void makeSpMatLhsOnTV(Volume<float> &vol, float rho, float lambda, int iter) {
         std::cout << value[i] << std::endl;
     }
 }
-void totalVariationDenoiseCUDA(float* volume, csrSpMat& matF, float rho, float lambda, int iter) {
+void totalVariationDenoiseCUDA(float* volume, int voxN, csrSpMat& matA, csrSpMat& matL, csrSpMat& matF, float rho, float lambda, int iter) {
 
+
+//    // calculate iteration
+//    for (int i = 0; i < iter; i++) {
+//        Eigen::VectorXf rhs = F.transpose() * (rho * yy - uu) + xx0;
+//        xx = solver.solve(rhs);
+//
+//        Eigen::VectorXf Fxx = F * xx;
+//        for (int j = 0; j < yy.size(); j++) {
+//            float z = Fxx(j) + uu(j) / rho;
+//            yy(j) = z > 0 ? std::max(z - lambda / rho, 0.0f) : std::min(z + lambda / rho, 0.0f);
+//            uu(j) += rho * (Fxx(j) - yy(j));
+//        }
+//    }
+//    for (int z = 0; z < vol.z(); z++) {
+//        for (int y = 0; y < vol.y(); y++) {
+//            for (int x = 0; x < vol.x(); x++) {
+//                vol(x, y, z) = xx(co(x, y, z));
+//            }
+//        }
+//    }
+    DnVec xx0(voxN, volume);
+    DnVec yy(3 * voxN, 1.0f);
+    DnVec uu(3 * voxN, 1.0f);
+
+    for (int i = 0; i < iter; i++) {
+        // Eigen::VectorXf rhs = F.transpose() * (rho * yy - uu) + xx0;
+        // xx = solver.solve(rhs);
+        // solver -> cg_GPU();
+        Eigen::VectorXf Fxx = F * xx; // spgemm(matF, xx)
+        for (int j = 0; j < yy.size(); j++) {
+            float z = Fxx(j) + uu(j) / rho;
+            yy(j) = z > 0 ? std::max(z - lambda / rho, 0.0f) : std::min(z + lambda / rho, 0.0f);
+            uu(j) += rho * (Fxx(j) - yy(j));
+        } // __global__ calculation();
+    }
+
+    for (int z = 0; z < vol.z(); z++) {
+        for (int y = 0; y < vol.y(); y++) {
+            for (int x = 0; x < vol.x(); x++) {
+                vol(x, y, z) = xx(co(x, y, z));
+            }
+        }
+    } // cudamemcpy(xx, vol)
 }

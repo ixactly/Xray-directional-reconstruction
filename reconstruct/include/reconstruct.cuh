@@ -80,7 +80,7 @@ inline void test_quadfilt() {
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         voxel[i].load(loadfilePathCT, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
-    quadlicFormFilterCPU(voxel, coef);
+    quadlicFormFilterCPU(voxel, coef, 0.1);
     convertNormVector(voxel, md, coef);
 
     for (int i = 0; i < 3; i++) {
@@ -89,6 +89,13 @@ inline void test_quadfilt() {
                 std::to_string(1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
         md[i].save(savefilePathCT);
+    }
+    for (int i = 0; i < 3; i++) {
+        std::string savefilePathCT =
+                "../volume_bin/cfrp_xyz7_13axis/sequence/volume_quadfilt" +
+                std::to_string(1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
+                std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+        voxel[i].save(savefilePathCT);
     }
 }
 #endif //INC_3DRECONGPU_RECONSTRUCT_CUH

@@ -7,5 +7,5 @@
 
 #include "volume.h"
 
-void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient);
+void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient, float lambda);
 #endif //INC_3DRECONGPU_QUADFILT_H

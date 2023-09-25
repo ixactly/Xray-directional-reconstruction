@@ -29,6 +29,14 @@ public :
 
         cusparseCreateDnVec(&vec, rows, d_values, CUDA_R_32F);
     }
+    DnVec(int rows, float value) : rows(rows) {
+        cudaMalloc((void **) &d_values, rows * sizeof(float));
+        std::vector<float> h_values(rows);
+        std::fill(h_values.begin(), h_values.end(), value);
+        cudaMemcpy(d_values, h_values.data(), rows * sizeof(float), cudaMemcpyHostToDevice);
+
+        cusparseCreateDnVec(&vec, rows, d_values, CUDA_R_32F);
+    }
 
     ~DnVec() {
         cudaFree(d_values);

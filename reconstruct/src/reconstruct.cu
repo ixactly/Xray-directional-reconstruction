@@ -1210,11 +1210,9 @@ namespace XTT {
 
             std::string xyz[] = {"x", "y", "z"};
             // filtering
-            /*
-            // quadlicFormFilterCPU(voxel, coef);
+            quadlicFormFilterCPU(voxel, coef, 0.01);
             for (int i = 0; i < 2; i++)
                 cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-            */
 
             /*
             for (int filt = 0; filt < 2; filt++) {
@@ -1239,14 +1237,14 @@ namespace XTT {
             // save direction volume
             for (int i = 0; i < 2; i++) {
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/coef_tvmin" +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/coef_tvmin0.01" +
                         std::to_string(ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 coef[i].save(savefilePathCT);
             }
             for (int i = 0; i < 3; i++) {
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_tvmin" +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_tvmin0.01" +
                         std::to_string(ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 md[i].save(savefilePathCT);
@@ -1255,7 +1253,7 @@ namespace XTT {
             for (int i = 0; i < 3; i++) {
                 cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_tvmin" + std::to_string(ep1 + 1) +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_tvmin0.01" + std::to_string(ep1 + 1) +
                         "_orth" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 voxel[i].save(savefilePathCT);

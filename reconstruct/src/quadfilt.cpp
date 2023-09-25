@@ -8,14 +8,13 @@
 #include <Eigen/LU>
 #include "tvmin.h"
 
-void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient) {
+void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient, float lambda) {
     Volume<float> quadElement[6];
     for (auto &e : quadElement) {
         e = Volume<float>(voxel[0].x(), voxel[1].y(), voxel[2].z());
     }
 
     for (int x_idx = 0; x_idx < voxel[0].x(); x_idx++) {
-#pragma omp parallel for
         for (int y_idx = 0; y_idx < voxel[0].y(); y_idx++) {
             for (int z_idx = 0; z_idx < voxel[0].z(); z_idx++) {
 
@@ -59,17 +58,19 @@ void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient) {
                 }
                  */
                 Eigen::Matrix3f Sigma;
+/*
                 Sigma << mu[0], 0.0f, 0.0f,
                          0.0f, mu[1], 0.0f,
                          0.0f, 0.0f, mu[2];
-
-                /*
-                Sigma << 1.0f, 0.0f, 0.0f,
-                        0.0f, 1.0f, 0.0f,
+*/
+                float mu_mean = mu[0] + mu[1] + mu[2];
+                Sigma << mu_mean, 0.0f, 0.0f,
+                        0.0f, mu_mean, 0.0f,
                         0.0f, 0.0f, 0.0f;
-                */
+
                 Eigen::Matrix3f Quad = rot.transpose() * Sigma * rot;
 
+                /*
                 if (x_idx == 50 && y_idx == 90 && z_idx == 50) {
                     printf("(%d, %d, %d) \n", x_idx, y_idx, z_idx);
                     std::cout << "System Matrix" << std::endl;
@@ -77,7 +78,7 @@ void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient) {
                     std::cout << "Rotation Matrix" << std::endl;
                     std::cout << rot << std::endl;
                 }
-
+                */
                 quadElement[0](x_idx, y_idx, z_idx) = Quad(0, 0);
                 quadElement[1](x_idx, y_idx, z_idx) = Quad(1, 1);
                 quadElement[2](x_idx, y_idx, z_idx) = Quad(2, 2);
@@ -87,14 +88,14 @@ void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient) {
             }
         }
     }
+    // std::cout << "in total variation" << std::endl;
     // total variation minimized, eigenvalue decompose, rotation to coefficient
-
     for (auto & e : quadElement)
-        totalVariationMinimized(e, 3.0, 0.05, 40);
+        totalVariationMinimized(e, 3.0, lambda, 20);
 
     // decompose
     for (int x_idx = 0; x_idx < voxel[0].x(); x_idx++) {
-#pragma omp parallel for
+// #pragma omp parallel for // sus
         for (int y_idx = 0; y_idx < voxel[0].y(); y_idx++) {
             for (int z_idx = 0; z_idx < voxel[0].z(); z_idx++) {
                 Eigen::Matrix3f Quad;
@@ -114,18 +115,19 @@ void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient) {
 
                 Eigen::Vector3f base(0.f, 0.f, 1.0f);
                 Eigen::Vector3f rotAx = norm.cross(base);
-
-                if (x_idx == 50 && y_idx == 90 && z_idx == 50) {
-                    printf("(%d, %d, %d) \n", x_idx, y_idx, z_idx);
-                    std::cout << "EigenVectors" << std::endl << vectors << std::endl;
-                    std::cout << "EigenValues" << std::endl << values << std::endl;
-                }
+//
+//                if (x_idx == 50 && y_idx == 90 && z_idx == 50) {
+//                    printf("(%d, %d, %d) \n", x_idx, y_idx, z_idx);
+//                    std::cout << "EigenVectors" << std::endl << vectors << std::endl;
+//                    std::cout << "EigenValues" << std::endl << values << std::endl;
+//                }
 
                 coefficient[0](x_idx, y_idx, z_idx) = std::atan2(rotAx[1], rotAx[0]);
                 coefficient[1](x_idx, y_idx, z_idx) = norm.dot(base);
-                voxel[0](x_idx, y_idx, z_idx) = values[2];
-                voxel[1](x_idx, y_idx, z_idx) = values[0];
-                voxel[2](x_idx, y_idx, z_idx) = values[1];
+
+                voxel[0](x_idx, y_idx, z_idx) = values[1];
+                voxel[1](x_idx, y_idx, z_idx) = values[2];
+                voxel[2](x_idx, y_idx, z_idx) = values[0];
             }
         }
     }
