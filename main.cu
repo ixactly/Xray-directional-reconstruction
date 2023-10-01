@@ -4,9 +4,10 @@
 #include <params.h>
 #include <geometry.h>
 #include <reconstruct.cuh>
+#include <poisson_cpu.h>
 
 int main() {
-    std::string nametag = "cfrp_7d_13rot";
+    std::string nametag = "phaseCT";
     init_params(nametag);
 
     Volume<float> sinogram[NUM_PROJ_COND];
@@ -29,11 +30,18 @@ int main() {
                 + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
 
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-        sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8; else return value; });
     }
 
-    // load volume
-    Method method = Method::MLEM;
+    Method method = Method::ART;
+    if (method == Method::MLEM) {
+        for (int i = 0; i < NUM_PROJ_COND; i++) {
+            std::string loadfilePath = PROJ_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U)
+                                       + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
+
+            sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+            sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8; else return value; });
+        }
+    }
 
     if (method == Method::MLEM) {
         for (auto &e: ct) {
@@ -41,6 +49,7 @@ int main() {
         }
     }
 
+    /*
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string loadfilePath = "../volume_bin/nut/sc_os_art_norm" + std::to_string(i + 1) + "_" +
                                    std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" +
@@ -49,6 +58,16 @@ int main() {
         // ct[i].load(loadfilePath, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
         // ct[i].forEach([](float value) -> float { return value * value; });
     }
+    */
+    /*
+    Volume<float> grad[NUM_BASIS_VECTOR * 3];
+    for (int i = 0; i < NUM_BASIS_VECTOR * 3; i++) {
+        std::string loadfilePath = VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL+1) + "x"
+                                   + std::to_string(NUM_VOXEL+1) + "x" + std::to_string(NUM_VOXEL+1) + ".raw";
+        grad[i].load(loadfilePath, NUM_VOXEL+1, NUM_VOXEL+1, NUM_VOXEL+1);
+    }
+    poissonImageEdit(*ct, grad, 100000);
+    */
 
     // measure clock
     std::chrono::system_clock::time_point start, end;
@@ -56,15 +75,19 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 4, 5, Rotate::CW, method, 1e-3);
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 4, 10, 5, Rotate::CW, method, 1e-1);
+    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 4, 10, 5, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
 
+    // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
+    // IR::gradReconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, Method::ART, 1e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
     // forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);
+
+    // Volume<float> phase_proj(NUM_DETECT_U-2, NUM_DETECT_V-2, NUM_PROJ);
+    // makePhaseImage(phase_proj, sinogram[0]);
 
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
@@ -84,8 +107,7 @@ int main() {
         std::string savefilePathCT =
                 VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x"
                 + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-
-        // ct[i].save(savefilePathCT);
+        ct[i].save(savefilePathCT);
     }
 
     // save direction volume
@@ -96,7 +118,6 @@ int main() {
         // md[i].save(savefilePathCT);
     }
 
-    test_quadfilt();
     return 0;
 }
 

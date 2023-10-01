@@ -26,15 +26,20 @@ enum class Rotate {
 namespace IR {
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel,
                      const Geometry &geom, int epoch, int batch, Rotate dir, Method method, float lambda = 1e-2);
+    void gradReconstruct(Volume<float> *sinogram, Volume<float> *voxel, Geometry &geom, int epoch, int batch, Rotate dir,
+                    Method method, float lambda);
 }
 
 namespace FDK {
+    void gradReconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
+
     void reconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
 }
 
 namespace XTT {
     void
-    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int epoch, int batch, Rotate dir,
+    reconstruct(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, const Geometry &geom, int epoch,
+                int batch, Rotate dir,
                 Method method, float lambda = 1e-2);
 
     void
@@ -47,13 +52,16 @@ namespace XTT {
     void fiberModelReconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, int epoch,
                                int batch, Rotate dir, Method method, float lambda = 1e-2);
 
-    void orthTwiceReconstruct(Volume<float> *sinogram, Volume<float> voxel[3], Volume<float> md[3], const Geometry &geom,
-                              int iter1, int iter2, int batch, Rotate dir, Method method, float lambda);
+    void
+    orthTwiceReconstruct(Volume<float> *sinogram, Volume<float> voxel[3], Volume<float> md[3], const Geometry &geom,
+                         int iter1, int iter2, int batch, Rotate dir, Method method, float lambda);
 }
 
 void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir);
+
 void
 forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *md, Rotate dir, const Geometry &geom);
+
 void compareXYZTensorVolume(Volume<float> *voxel, const Geometry &geom);
 
 __host__ void reconstructDebugHost(Volume<float> &sinogram, Volume<float> &voxel, const Geometry &geom, const int epoch,
@@ -98,4 +106,19 @@ inline void test_quadfilt() {
         voxel[i].save(savefilePathCT);
     }
 }
+
+inline void makePhaseImage(Volume<float>& proj_dst, const Volume<float>& proj_src) {
+    for (int n = 0; n < proj_src.z(); n++) {
+        for (int v = 0; v < proj_src.y()-2; v++) {
+            for (int u = 0; u < proj_src.x()-2; u++) {
+                proj_dst(u, v, n) = proj_src(u+2, v, n) - proj_src(u, v, n);
+            }
+        }
+    }
+    std::string savefilePathCT =
+            "../volume_bin/phase_lens/difference_cfrp1_" + std::to_string(NUM_DETECT_U-2) + "x" +
+            std::to_string(NUM_DETECT_V-2) + "x" + std::to_string(NUM_PROJ) + ".raw";
+    proj_dst.save(savefilePathCT);
+}
+
 #endif //INC_3DRECONGPU_RECONSTRUCT_CUH

@@ -38,9 +38,17 @@ public:
 
     __both__ Vector3X operator-(const Vector3X &rhv) const {
         Vector3X w;
-        w.x = this->x - rhv.y;
+        w.x = this->x - rhv.x;
         w.y = this->y - rhv.y;
         w.z = this->z - rhv.z;
+        return w;
+    }
+
+    __both__ Vector3X operator-() const {
+        Vector3X w;
+        w.x = -this->x;
+        w.y = -this->y;
+        w.z = -this->z;
         return w;
     }
 
@@ -151,10 +159,12 @@ public:
         return w;
     }
 
-    __both__ Matrix3X operator-() {
-        for (auto &e: val) {
-            e = -e;
+    __both__ Matrix3X operator-() const {
+        Matrix3X w(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        for (int i = 0; i < 9; i++) {
+            w.val[i] = -this->val[i];
         }
+        return w;
     }
 
     __both__ Matrix3X operator*(const Matrix3X &rhv) const {
