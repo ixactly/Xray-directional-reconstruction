@@ -909,18 +909,16 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        const int idxVoxel =
-                x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
-        const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
+    const int idxVoxel =
+            x + geom->voxel * y + geom->voxel * geom->voxel * z;
+    const int idxOnPlane = x + geom->voxel * z;
 
-        devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 0.0f :
-                             devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
+    devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 0.0f :
+                         devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
 
-        if (isnan(devVoxel[idxVoxel])) {
-            printf("voxel: %lf, tmp: %lf, fact: %lf\n", devVoxel[idxVoxel], devVoxelTmp[idxOnPlane],
-                   devVoxelFactor[idxOnPlane]);
-        }
+    if (isnan(devVoxel[idxVoxel])) {
+        printf("voxel: %lf, tmp: %lf, fact: %lf\n", devVoxel[idxVoxel], devVoxelTmp[idxOnPlane],
+               devVoxelFactor[idxOnPlane]);
     }
 }
 
@@ -956,12 +954,11 @@ voxelPlus(float *devVoxel, const float *devVoxelTmp, float alpha, const Geometry
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
-                x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
-        const int idxOnPlane = x + geom->voxel * z + geom->voxel * geom->voxel * i;
+                x + geom->voxel * y + geom->voxel * geom->voxel * z;
+        const int idxOnPlane = x + geom->voxel * z;
         devVoxel[idxVoxel] = devVoxel[idxVoxel] + alpha * devVoxelTmp[idxOnPlane];
-    }
+
 }
 
 __global__ void voxelSqrtFromSrc(float *hostVoxel, const float *devVoxel, const Geometry *geom, int y) {
@@ -1015,8 +1012,8 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
     const float ratio = (geom.voxSize * geom.voxSize) /
                         (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
     const int idxVoxel =
-            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-            cond * (sizeV[0] * sizeV[1] * sizeV[2]);
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
+
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
               c1 * geom.voxSize * ratio * devVoxel[idxVoxel]);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
@@ -1050,7 +1047,7 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
             (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    const int idxVoxel = coord[0] + sizeV[0] * coord[2] + cond * (sizeV[0] * sizeV[1]);
+    const int idxVoxel = coord[0] + sizeV[0] * coord[2];
     const float numBack = c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                           c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                           c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
