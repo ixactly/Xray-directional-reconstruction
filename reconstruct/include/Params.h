@@ -8,10 +8,10 @@
 inline constexpr int blockSize = 32;
 
 inline constexpr int NUM_BASIS_VECTOR = 3;
-inline constexpr int NUM_PROJ_COND = 6;
+inline constexpr int NUM_PROJ_COND = 3;
 
 // cfrp3 haikou
-/*
+
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 1080;
@@ -47,7 +47,6 @@ __constant__ float INIT_OFFSET[9] = {
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 
         -3.15f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f};
-*/
 
 // cfrp_xyz7_mark
 /*
@@ -114,6 +113,7 @@ __constant__ float INIT_OFFSET[18] = {
 };
 */
 
+/*
 inline constexpr float SRC_OBJ_DISTANCE = 1003;
 inline constexpr float SRC_DETECT_DISTANCE = 1458;
 inline constexpr int NUM_PROJ = 360;
@@ -122,7 +122,7 @@ inline constexpr int NUM_DETECT_V = 100;
 inline constexpr float DETECTOR_SIZE = 100.5312 / 1344.0;
 
 inline constexpr int NUM_VOXEL = 100;
-/*
+
 __constant__ float elemR[54] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f,
@@ -160,7 +160,7 @@ __constant__ float elemT[18] = {0.0f, 0.0f, 0.0f,
 
                                 -0.743207f, -1.481425f, 0.917192f
 };
-*/
+
 
 __constant__ float elemR[54] = {1.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f,
@@ -213,7 +213,8 @@ __constant__ float INIT_OFFSET[18] = {
 
         0.0f * (100.5312 / 1344.0) * (1003.0 / 1458.0), 0.0f, 0.0f,
 };
-
+*
+* 
 //
 // initial params
 /*
@@ -402,8 +403,9 @@ __managed__ float basisVector[21] = {
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
 };
-*/
 
+
+*/
 __managed__ float basisVector[21] = {
         0.666667f, 0.666667f, -0.333333f,
         -0.333333f, 0.666667f, 0.666667f,
@@ -413,6 +415,7 @@ __managed__ float basisVector[21] = {
         -0.19245f, -0.19245f, 0.96225f,
         0.96225f, -0.19245f, -0.19245f,
 };
+
 
 // x-z plane xtt
 /*

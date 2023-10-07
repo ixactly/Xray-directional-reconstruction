@@ -2,13 +2,12 @@
 // Created by tomokimori on 23/02/17.
 //
 
-
+#define _USE_MATH_DEFINES
 #include "moire.cuh"
 #include "Volume.h"
 #include "Params.h"
-#define M_PI 3.14159265
 #include <cmath>
-
+#include <math.h>
 
 float colorIntensity(float phi, float shift) {
     float phi_redef = phi - shift;
@@ -86,7 +85,6 @@ void calcPseudoCT(Volume<float> *dst, const Volume<float> *ct, int size_x, int s
                 // r, g, b
 
                 dst[0](x, y, z) = colorIntensity(phi, 0.0f);
-                // dst[0](x, z, y) = a * ct[0](x, y, z);
                 dst[1](x, y, z) = colorIntensity(phi, M_PI / 3.0f);
                 dst[2](x, y, z) = colorIntensity(phi, 2.0f * M_PI / 3.0f);
                 dst[3](x, y, z) = a;

@@ -54,11 +54,11 @@ int main() {
 	// main function
 	// XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
 	// XTT::reconstruct(sinogram, ct, md, geom, 60, 6, Rotate::CW, method, 1e-3);
-	// XTT::reconstruct(sinogram, ct, md, geom, 5, 1, Rotate::CW, method, 1e-3);
-	XTT::orthReconstruct(sinogram, ct, md, geom, 10, 50, 6, Rotate::CW, reconMethod, 2e-2);
+	XTT::reconstruct(sinogram, ct, md, geom, 20, 6, Rotate::CW, reconMethod, 1e-3);
+	// XTT::orthReconstruct(sinogram, ct, md, geom, 10, 50, 6, Rotate::CW, reconMethod, 2e-2);
 	// IR::reconstruct(sinogram, ct, geom, 4, 6, Rotate::CW, method, 0.01);
 
-	IR::reconstruct(sinogram, ct, geom, 5, 10, Rotate::CW, reconMethod, 5e-2);
+	// IR::reconstruct(sinogram, ct, geom, 5, 10, Rotate::CW, reconMethod, 5e-2);
 	// FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
 	// calcurate main direction
 
@@ -89,6 +89,15 @@ int main() {
 		ct[i].save(savefilePath2);
 	}
 
+	// save direction volume
+	for (int i = 0; i < 3; i++) {
+		std::string savefilePathCT =
+			// "../volume_bin/cfrp_xyz7_mark/pca/main_direction_orth_art_5proj" + std::to_string(i + 1) + "_" +
+			// "../volume_bin/cfrp_xyz7_mark/pca/main_direction_xtt_" + std::to_string(i + 1) + "_" +
+			"C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\MD_CF_XYZ3_SC_ART" + std::to_string(i + 1) + "_" +
+			std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+		md[i].save(savefilePathCT);
+	}
 
 	return 0;
 }
