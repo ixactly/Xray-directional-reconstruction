@@ -15,6 +15,7 @@
 #include <reconstruct.cuh>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include <omp.h>
 #include "quadfilt.h"
 
 namespace IR {
@@ -644,6 +645,7 @@ namespace XTT {
         float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+        const long lenP = sizeV[0] * sizeV[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
@@ -730,10 +732,13 @@ namespace XTT {
                             cudaDeviceSynchronize();
                         }
                     }
-                    if (method == Method::ART) {
-                        voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom, y);
-                    } else {
-                        voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                    for (int vec = 0; vec < NUM_BASIS_VECTOR; vec++) {
+                        if (method == Method::ART) {
+                            voxelPlus<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec], lambda / (float) subsetSize, devGeom, y);
+                        } else {
+                            voxelProduct<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                            &devVoxelFactor[lenP * vec], devGeom, y);
+                        }
                     }
                     cudaDeviceSynchronize();
                 }
@@ -759,7 +764,7 @@ namespace XTT {
         }
         // calc main direction
         for (int z = 0; z < NUM_VOXEL; z++) {
-#pragma parallel omp for
+#pragma omp parallel for
             for (int y = 0; y < NUM_VOXEL; y++) {
                 for (int x = 0; x < NUM_VOXEL; x++) {
                     calcEigenVector(voxel, md, tmp, x, y, z);
@@ -926,20 +931,19 @@ namespace XTT {
         float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devDirection, *devEstimate;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+        const long lenP = sizeV[0] * sizeV[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
         cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-        cudaMalloc(&devDirection, sizeof(float) * lenV * 3);
         cudaMalloc(&devEstimate, sizeof(float) * lenV * 2);
 
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-
         // store theta, phi on polar coordination to devDirection
         float *devCoef, *devCoefTmp;
         cudaMalloc(&devCoef, sizeof(float) * lenV * 2);
@@ -1062,16 +1066,18 @@ namespace XTT {
                                 cudaDeviceSynchronize();
                             }
                         }
-                        if (method == Method::ART) {
-                            voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom,
-                                                         y);
-                        } else {
-                            voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                        for (int vec = 0; vec < NUM_BASIS_VECTOR; vec++) {
+                            if (method == Method::ART) {
+                                voxelPlus<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                             lambda / (float) subsetSize, devGeom, y);
+                            } else {
+                                voxelProduct<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                                &devVoxelFactor[lenP * vec], devGeom, y);
+                            }
                         }
                         cudaDeviceSynchronize();
                     }
                 }
-                cudaMemcpy(proj_loss.data() + ep1 * iter2 + ep2, devLoss1, sizeof(float), cudaMemcpyDeviceToHost);
                 // ----- end iter1 ----- //
             }
 
@@ -1092,8 +1098,6 @@ namespace XTT {
                 }
             }
             std::string xyz[] = {"x", "y", "z"};
-            cudaMemcpy(loss_map2.get(), devLoss2, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-            norm_loss[ep1] = loss_map2.mean();
 
             for (int i = 0; i < NUM_PROJ_COND; i++)
                 cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
@@ -1112,10 +1116,12 @@ namespace XTT {
             // ----- end iter2 -----
         }
 
-        coef[0].forEach([](float value) -> float { return 0.0f; });
-        coef[1].forEach([](float value) -> float { return 1.0f; });
-        cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-        cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+        if (iter1 != 0) {
+            coef[0].forEach([](float value) -> float { return 0.0f; });
+            coef[1].forEach([](float value) -> float { return 1.0f; });
+            cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+            cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+        }
 
         for (int ep1 = 0; ep1 < iter1; ep1++) {
             for (int i = 0; i < 3; i++) {
@@ -1153,6 +1159,7 @@ namespace XTT {
                                 projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
                                                              devGeom, n, devLoss1);
                             cudaDeviceSynchronize();
+
                         }
                     }
 
@@ -1170,12 +1177,16 @@ namespace XTT {
                                 cudaDeviceSynchronize();
                             }
                         }
-                        if (method == Method::ART) {
-                            voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize,
-                                                         devGeom, y);
-                        } else {
-                            voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
+                        for (int vec = 0; vec < NUM_BASIS_VECTOR; vec++) {
+                            if (method == Method::ART) {
+                                voxelPlus<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                             lambda / (float) subsetSize, devGeom, y);
+                            } else {
+                                voxelProduct<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                                &devVoxelFactor[lenP * vec], devGeom, y);
+                            }
                         }
+                        cudaDeviceSynchronize();
                         cudaDeviceSynchronize();
                     }
                 }
@@ -1201,7 +1212,8 @@ namespace XTT {
 
             std::string xyz[] = {"x", "y", "z"};
             // filtering
-            quadlicFormFilterCPU(voxel, coef, 0.01);
+            // quadlicFormFilterCPU(voxel, coef, 0.01);
+
             for (int i = 0; i < 2; i++)
                 cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
 
@@ -1260,7 +1272,6 @@ namespace XTT {
         cudaFree(devCoef);
         cudaFree(devLoss1);
         cudaFree(devLoss2);
-        cudaFree(devDirection);
         cudaFree(devCoefTmp);
         cudaFree(devStates);
         cudaFree(devEstimate);

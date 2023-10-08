@@ -981,7 +981,6 @@ __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         const int idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
-
         devVoxel[idxVoxel] = (devVoxel[idxVoxel] < 0.0f) ? sqrt(-devVoxel[idxVoxel]) : sqrt(devVoxel[idxVoxel]);
     }
 }
