@@ -1,17 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond1_350x350x350.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_nofilt1_x_192x192x192.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond2_350x350x350.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_nofilt1_y_192x192x192.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_mark/pca/main_direction_5cond3_350x350x350.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_nofilt1_z_192x192x192.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
-num_voxel = 350
-size = 50
+num_voxel = 192
+size = 32
 skip = int(num_voxel / size)
 eps = 1e-20
 
@@ -23,7 +23,7 @@ v = v_raw.reshape([num_voxel, num_voxel, num_voxel])
 w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
 
 padding = np.zeros_like(u)
-padding[120:290, 120:280, 100:250] = 1.0
+padding[40:160, 50:160, 36:150] = 1.0
 u = u * padding
 v = v * padding
 w = w * padding
@@ -33,7 +33,7 @@ v = v[::skip, ::skip, ::skip]
 w = w[::skip, ::skip, ::skip]
 
 # threshold
-eps2 = 0.01
+eps2 = 0.175
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 # judge = np.where((np.abs(u.reshape([-1, 1])) + np.abs(v.reshape([-1, 1])) + np.abs(w.reshape([-1, 1]))) / 3 < eps2, 0, 1)
@@ -58,9 +58,9 @@ u += eps
 v += eps
 w += eps
 
-r = np.abs(w / (np.sqrt(u**2 + v**2 + w**2))).reshape([-1, 1])
+r = np.abs(u / (np.sqrt(u**2 + v**2 + w**2))).reshape([-1, 1])
 g = np.abs(v / (np.sqrt(u**2 + v**2 + w**2))).reshape([-1, 1])
-b = np.abs(u / (np.sqrt(u**2 + v**2 + w**2))).reshape([-1, 1])
+b = np.abs(w / (np.sqrt(u**2 + v**2 + w**2))).reshape([-1, 1])
 a = np.ones_like(r)
 
 tmp = np.zeros([1, 4])
@@ -76,6 +76,13 @@ tmp = np.tile(tmp, (size**3, 1))
 
 ax = plt.figure().add_subplot(projection='3d')
 ax.set(xlabel='X', ylabel='Y', zlabel='Z')
+# ax.set_facecolor((0, 0, 0, 1))
+ax.w_xaxis.set_pane_color((0., 0., 0., 1.))
+ax.w_yaxis.set_pane_color((0., 0., 0., 1.))
+ax.w_zaxis.set_pane_color((0., 0., 0., 1.))
+ax.set_xticks([])
+ax.set_yticks([])
+ax.set_zticks([])
 ax.quiver(x, y, z, u, v, w, color=rgba, length=4, normalize=True)
 
 plt.show()

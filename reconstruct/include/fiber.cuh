@@ -5,8 +5,8 @@
 #ifndef PCA_FIBER_CUH
 #define PCA_FIBER_CUH
 
-#include "Geometry.h"
-#include "Vec.h"
+#include "geometry.h"
+#include "vec.h"
 
 __global__ void forwardProjFiber(float *devProj, float *devVoxel, Geometry *geom, int cond,
                                  int y, int n);

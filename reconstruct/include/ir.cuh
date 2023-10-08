@@ -7,8 +7,12 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "Volume.h"
-#include "Vec.h"
+#include "volume.h"
+#include "vec.h"
+#include "geometry.h"
+#include <curand_kernel.h>
+#include <curand.h>
+#include <cuda_runtime.h>
 
 __global__ void
 backwardProjXTTbyFiber(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry& geom, int cond,
@@ -30,6 +34,21 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 __global__ void
 calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss);
 
+__global__ void
+calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
+
+__global__ void
+calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const Geometry *geom, float *norm_loss,
+                           curandState *curandStates, float judge);
+
+__global__ void
+calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss,
+                                  float *devEstimate, int iter);
+
+__global__ void
+calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const Geometry *geom,
+                                  float *norm_loss, const float *devEstimate);
+
 __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin);
 
 void convertNormVector(const Volume<float> *voxel, Volume<float>* md, const Volume<float> *coefficient);
@@ -38,6 +57,12 @@ __device__ void
 rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4], const Geometry &geom);
 
 __global__ void voxelSqrtFromSrc(float *hostVoxel, const float *devVoxel,const Geometry *geom, int y);
+
+__global__ void setup_rand(curandState *state, int num_thread, int y);
+
+__global__ void
+meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel, const Geometry *geom, int y,
+              float coef);
 
 inline __host__ void setScatterDirecOnXY(float angle, float *vec) {
     vec[0] = std::cos(angle);

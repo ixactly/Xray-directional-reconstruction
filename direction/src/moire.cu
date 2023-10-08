@@ -4,10 +4,9 @@
 
 #define _USE_MATH_DEFINES
 #include "moire.cuh"
-#include "Volume.h"
-#include "Params.h"
-#include <cmath>
-#include <math.h>
+#include "volume.h"
+#include "params.h"
+#include "cmath"
 
 float colorIntensity(float phi, float shift) {
     float phi_redef = phi - shift;

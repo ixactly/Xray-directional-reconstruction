@@ -6,6 +6,10 @@
 #define INC_3DRECONGPU_VEC_H
 
 #define __both__ __device__ __host__
+
+#include <stdio.h>
+#include <cuda_runtime.h>
+
 template<typename T>
 class Vector3X {
 public:
@@ -38,10 +42,6 @@ public:
         w.y = this->y - rhv.y;
         w.z = this->z - rhv.z;
         return w;
-    }
-
-    __both__ T &operator()(const int i) {
-        return this->val[i];
     }
 
     __both__ T operator()(const int i) const {
@@ -82,13 +82,14 @@ public:
         return w;
     }
 
-    __both__ void normalize() {
+    __both__ void normalize(float eps = 1e-8) {
         T value = sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
-        if (value != 0) {
+        if (value > eps) {
             this->x /= value;
             this->y /= value;
             this->z /= value;
         } else {
+            // printf("norm zero\n");
             this->x = 0;
             this->y = 0;
             this->z = 0;
@@ -98,7 +99,6 @@ public:
     __both__ T norm2() {
         return sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
     }
-
 
 private:
     union {
@@ -183,7 +183,7 @@ public:
         Vector3X<T> w(0, 0, 0);
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                w(i) += val[3 * i + j] * rhv(j);
+                w[i] += val[3 * i + j] * rhv[j];
             }
         }
         return w;
@@ -191,7 +191,7 @@ public:
 
     __device__ void print() {
         for (int i = 0; i < 3; i++) {
-            printf("%d: %f, %d: %f, %d: %f\n",3 * i + 0, val[3 * i + 0], 3 * i + 1, val[3 * i + 1], 3 * i + 2, val[3 * i + 2]);
+            printf("%d: %f, %d: %f, %d: %f\n",3 * i + 0, val(3 * i + 0), 3 * i + 1, val(3 * i + 1), 3 * i + 2, val(3 * i + 2));
         }
     }
 

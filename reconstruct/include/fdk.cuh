@@ -6,7 +6,7 @@
 #ifndef PCA_FDK_CUH
 #define PCA_FDK_CUH
 
-#include "Geometry.h"
+#include "geometry.h"
 #include "fdk.cuh"
 
 __device__ void
