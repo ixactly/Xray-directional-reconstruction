@@ -2,7 +2,7 @@ import csv
 
 import matplotlib.pyplot as plt
 
-csv_path = '230512loss2_art3060'
+csv_path = 'loss1'
 
 rows = []
 with open(csv_path + ".csv") as f:

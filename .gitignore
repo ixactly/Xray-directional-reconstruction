@@ -41,6 +41,7 @@ CMakeFiles
 cmake_install.cmake
 Makefile
 out
+Eigen
 
 # CLion
 .idea

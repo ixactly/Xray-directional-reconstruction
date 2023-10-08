@@ -4,11 +4,10 @@
 
 
 #include "moire.cuh"
-#include "Volume.h"
-#include "Params.h"
 #define M_PI 3.14159265
 #include <cmath>
-
+#include "volume.h"
+#include "params.h"
 
 float colorIntensity(float phi, float shift) {
     float phi_redef = phi - shift;

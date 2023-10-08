@@ -6,8 +6,11 @@
 #define _USE_MATH_DEFINES
 
 #include <Geometry.h>
+#include <geometry.h>
 #include <fdk.cuh>
 #include <random>
+#include <params.h>
+#include <vec.h>
 #include <Params.h>
 #include <Vec.h>
 #include <math.h>
