@@ -16,8 +16,8 @@
 
   "env_km_bike" : {
     "proj_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC",
-    "vol_path": "C:\\Users\\m1411\\source\\repos\\3dreconGPU\\volume_bin\\CFRP_XYZ7\\cf_gf_bike_SC_VOL",
-    "colCT_path": "C:\\Users\\m1411\\source\\repos\\3dreconGPU\\volume_bin\\CFRP_XYZ7\\cf_gf_bike_SC_VOL",
+    "vol_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
+    "colCT_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
     "direc_path": "none",
     "sod": 1316.5,
     "sdd": 1819.6,
