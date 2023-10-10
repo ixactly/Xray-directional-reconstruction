@@ -14,6 +14,7 @@ using json = nlohmann::json;
 std::string PROJ_PATH;
 std::string VOLUME_PATH;
 std::string DIRECTION_PATH;
+std::string COLCT_PATH;
 
 int BLOCK_SIZE;
 __managed__ int NUM_BASIS_VECTOR;
@@ -39,12 +40,13 @@ __managed__ float d_loss_proj;
 __managed__ float d_loss_norm;
 
 void init_params(const std::string& tag) {
-    std::ifstream f("../utility/settings.json");
+    std::ifstream f(R"(C:\Users\m1411\CLionProjects\Xray-directional-reconstruction\utility\settings.json)");
     json data = json::parse(f);
 
     PROJ_PATH = data[tag]["proj_path"];
     VOLUME_PATH = data[tag]["vol_path"];
     DIRECTION_PATH = data[tag]["direc_path"];
+    COLCT_PATH = data[tag]["colCT_path"];
 
     BLOCK_SIZE = data["recon_variable"]["blockSize"];
     NUM_BASIS_VECTOR = data["recon_variable"]["vector"];

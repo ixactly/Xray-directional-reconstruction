@@ -4,7 +4,9 @@
 
 
 #include "moire.cuh"
+
 #define M_PI 3.14159265
+
 #include <cmath>
 #include "volume.h"
 #include "params.h"
@@ -58,11 +60,13 @@ void calcSinFittingLimited(const Volume<float> ct[4], Volume<float> out[3], int 
     }
 }
 
-void flipAxis(Volume<float> &dst, const Volume<float> &src, int size_x, int size_y, int size_z) {
-    for (int x = 0; x < size_x; x++) {
-        for (int y = 0; y < size_y; y++) {
-            for (int z = 0; z < size_z; z++) {
-                dst(x, size_z - z, y) = src(x, y, z);
+void flipAxis(Volume<float> &dst, const Volume<float> &src, int64_t size_x, int64_t size_y, int64_t size_z) {
+    for (int64_t z = 0; z < size_z; z++) {
+        // std::cout << "(" << z * size_x * size_y << "): " << dst(1000, 1000, z) << std::endl;
+        for (int64_t y = 0; y < size_y; y++) {
+            for (int64_t x = 0; x < size_x; x++) {
+                dst(x, (size_z - 1) - z, y) = src(x, y, z);
+                // dst(x, (size_z - 1) - z, y) = src(x, y, z);
             }
         }
     }

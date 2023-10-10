@@ -14,9 +14,96 @@
 #include "tvmin.h"
 
 int main() {
+    //--2309 edit by kido (start)--//
+    //const int N = 512;
+    int N;
+    //--2309 edit by kido (end)--//
+    //
+//	int arrange_index[4] = { 3, 2, 1, 4 };
+    int arrange_index[4] = {1, 2, 3, 4};
+    Volume<float> ctArray[4];
+    Volume<float> ctRot[4];
+    Volume<float> color[6];
 
+    //--2309 edit by kido (start)--//
+    std::cout << "OK-1" << std::endl;
+
+    // -- edit by mori-- //
+    // initialize();
+    std::string nametag = "env_km_bike";
+    init_params(nametag);
+    N = NUM_VOXEL;
+
+    std::cout << "VOXEL=" << std::endl;
+    std::cout << N << std::endl;
+
+    std::cout << "OK0" << std::endl;
+    //--2309 edit by kido (end)--//
+
+    for (auto &e: color)
+        e.set(N, N, N);
+
+    //--2309 edit by kido (start)--//
+    //for (int i = 0; i < 4; i++) {
+    //std::string loadfilePath =
+    //		"C:\\Users\\talbot\\source\\repos\\3dreconGPU\\data\\230609_gijihaikou_ct_test\\document_copy\\PLAIN_WEAVE_CFRP_SC_VOL"
+    //			+ std::to_string(arrange_index[i] - 1) + "_" + std::to_string(N) + "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw";
+    //		ctArray[i].load(loadfilePath, N, N, N);
+    //		ctArray[i].forEach([](float val) -> float {if (val < 1e-3) return 0.0f; else return val; });
+    //		ctRot[i] = Volume<float>(N, N, N);
+    //		flipAxis(ctRot[i], ctArray[i], N, N, N);
+    //		// ctArray[i].load(loadfilePath, N, N, N);
+    //}
+
+    std::cout << "OK1" << std::endl;
+
+    for (int i = 0; i < 4; i++) {
+        // std::string loadfilePath = STR_Path_mae + std::to_string(arrange_index[i] - 1) + STR_Path_ato;
+        std::string loadfilePath = COLCT_PATH + std::to_string(arrange_index[i] - 1)
+                + "_" + std::to_string(N) + "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw";
+        std::cout << "loadfilePath=" << std::endl;
+        std::cout << loadfilePath << std::endl;
+
+        ctArray[i].load(loadfilePath, N, N, N);
+        ctArray[i].forEach([](float val) -> float { if (val < 0.0f) return 0.0f; else return val; });
+        ctRot[i].set(N, N, N);
+        flipAxis(ctRot[i], ctArray[i], N, N, N);
+        // ctArray[i].load(loadfilePath, N, N, N);
+    }
+
+    std::cout << "OK2" << std::endl;
+    //--2309 edit by kido (end)--//
+
+    calcPseudoCT(color, ctRot, N, N, N);
+
+    //--2309 edit by kido (start)--//
+    std::cout << "OK3" << std::endl;
+
+    //for (int i = 0; i < 6; i++) {
+    //	std::string savefilePath =
+    //		"C:\\Users\\talbot\\source\\repos\\3dreconGPU\\data\\230609_gijihaikou_ct_test\\document_copy\\PLAIN_WEAVE_CFRP_SC_COLOR"
+    //		+ std::to_string(i) + "_" + std::to_string(N) + "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw";
+    //	color[i].save(savefilePath);
+    //}
+
+    for (int i = 0; i < 6; i++) {
+        std::string savefilePath = COLCT_PATH + "_COLOR"
+                                   + std::to_string(i) + "_" + std::to_string(N) + "x" + std::to_string(N) + "x" +
+                                   std::to_string(N) + ".raw";
+
+        printf("savefilePath:\n");
+        std::cout << savefilePath << std::endl;
+
+        color[i].save(savefilePath);
+    }
+    //--2309 edit by kido (end)--//
+
+
+
+
+    // ---------------------- comment out ------------------------------------
     // tv minimized
-
+    /*
     int N = 192;
     Volume<float> ct;
     ct.load("../../volume_bin/cfrp_xyz7_13axis/sc_tmp1_" + std::to_string(N) +
@@ -24,7 +111,7 @@ int main() {
     totalVariationMinimized(ct, 0.5, 0.01, 40);
     ct.save("../../volume_bin/cfrp_xyz7_13axis/sc_tv0015_" + std::to_string(N) +
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
-
+    */
 
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
@@ -174,35 +261,35 @@ int main() {
      */
 
 
-     /*
-    const int N = 1728;
-    Volume<float> ctArray[4];
-    Volume<float> ctRot[3];
-    Volume<float> angle[2];
-    Volume<float> color[6];
+    /*
+   const int N = 1728;
+   Volume<float> ctArray[4];
+   Volume<float> ctRot[3];
+   Volume<float> angle[2];
+   Volume<float> color[6];
 
-    for (auto &e: angle)
-        e = Volume<float>(N, N, 1);
-    for (auto &e: color)
-        e = Volume<float>(N, N, 1);
+   for (auto &e: angle)
+       e = Volume<float>(N, N, 1);
+   for (auto &e: color)
+       e = Volume<float>(N, N, 1);
 
-    for (int i = 0; i < 4; i++) {
-        std::string loadfilePath =
-                // "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
-                "../../proj_raw_bin/gfrp_sc/SC_" + std::to_string(i + 1) + ".raw";
-        ctArray[i].load(loadfilePath, N, N, 1);
-        // ctArray[i].load(loadfilePath, N, N, N);
-    }
+   for (int i = 0; i < 4; i++) {
+       std::string loadfilePath =
+               // "../../volume_bin/gfrp_a/gfrp_sc_iter15_ir" + std::to_string(i + 1) + "_500x500x500.raw";
+               "../../proj_raw_bin/gfrp_sc/SC_" + std::to_string(i + 1) + ".raw";
+       ctArray[i].load(loadfilePath, N, N, 1);
+       // ctArray[i].load(loadfilePath, N, N, N);
+   }
 
-    calcPseudoCT(color, ctArray, N, N, 1);
+   calcPseudoCT(color, ctArray, N, N, 1);
 
-    for (int i = 0; i < 3; i++) {
-        std::string savefilePath =
-                "../../volume_bin/gfrp_sc/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
-                std::to_string(N) + "x" + std::to_string(1) + ".raw";
-        color[i].save(savefilePath);
-    }
-    color[5].save("../../volume_bin/gfrp_sc/phi_500x500x500.raw");
-   */
+   for (int i = 0; i < 3; i++) {
+       std::string savefilePath =
+               "../../volume_bin/gfrp_sc/color_" + std::to_string(i + 1) + "_" + std::to_string(N) + "x" +
+               std::to_string(N) + "x" + std::to_string(1) + ".raw";
+       color[i].save(savefilePath);
+   }
+   color[5].save("../../volume_bin/gfrp_sc/phi_500x500x500.raw");
+  */
     // rodriguesRotation(1.0, 1.0, 1.0, M_PI / 3.0);
 }

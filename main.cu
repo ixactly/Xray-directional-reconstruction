@@ -6,7 +6,7 @@
 #include <reconstruct.cuh>
 
 int main() {
-    std::string nametag = "cfrp_7d_6rot";
+    std::string nametag = "env_km_bike";
     init_params(nametag);
 
     std::vector<Volume<float>> sinogram(NUM_PROJ_COND);
@@ -25,7 +25,7 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string loadfilePath = PROJ_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U)
+        std::string loadfilePath = PROJ_PATH + std::to_string(i) + "_" + std::to_string(NUM_DETECT_U)
                 + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
 
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
@@ -61,7 +61,7 @@ int main() {
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
     // XTT::orthTwiceReconstruct(sinogram.data(), ct.data(), md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
-    IR::reconstruct(sinogram.data(), ct.data(), geom, 1, 5, Rotate::CW, method, 0.01);
+    IR::reconstruct(sinogram.data(), ct.data(), geom, 10, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
@@ -83,7 +83,7 @@ int main() {
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         std::string savefilePathCT =
-                VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x"
+                VOLUME_PATH + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x"
                 + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
 
         ct[i].save(savefilePathCT);
@@ -92,9 +92,9 @@ int main() {
     // save direction volume
     for (int i = 0; i < 3; i++) {
         std::string savefilePathCT =
-                DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                DIRECTION_PATH + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        md[i].save(savefilePathCT);
+        // md[i].save(savefilePathCT);
     }
 
     return 0;

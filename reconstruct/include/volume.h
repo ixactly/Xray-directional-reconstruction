@@ -63,8 +63,7 @@ public :
     // ref data (mutable)
 
     T &operator()(int64_t x, int64_t y, int64_t z) {
-        T& val = data[z * (sizeX * sizeY) + y * (sizeX) + x];
-        return val;
+        return data[z * (sizeX * sizeY) + y * (sizeX) + x];
     }
 
     T operator()(int64_t x, int64_t y, int64_t z) const {
@@ -118,6 +117,12 @@ public :
             std::cout << "file loaded correctly, " << filename << std::endl;
         }
         ifile.read(reinterpret_cast<char *>(data.get()), sizeof(T) * size);
+
+        /*
+        for (int64_t z_idx = 0; z_idx < z; z_idx++) {
+            ifile.read(reinterpret_cast<char *>(data.get() + z_idx * (x * y)), sizeof(T) * (x * y));
+            std::cout << z_idx << std::endl;
+        } */
     }
 
     void save(const std::string &filename) const {
@@ -138,25 +143,25 @@ public :
     }
 
     void forEach(const std::function<T(T)> &f) {
-        for (int z = 0; z < sizeZ; z++) {
-            for (int y = 0; y < sizeY; y++) {
-                for (int x = 0; x < sizeX; x++) {
-                    int64_t idx = static_cast<int64_t>(x + sizeX * y + sizeX * sizeY * z);
+        for (int64_t z = 0; z < sizeZ; z++) {
+            for (int64_t y = 0; y < sizeY; y++) {
+                for (int64_t x = 0; x < sizeX; x++) {
+                    int64_t idx = x + sizeX * y + sizeX * sizeY * z;
                     data[idx] = f(data[idx]);
                 }
             }
         }
     }
 
-    int x() const {
+    int64_t x() const {
         return sizeX;
     }
 
-    int y() const {
+    int64_t y() const {
         return sizeY;
     }
 
-    int z() const {
+    int64_t z() const {
         return sizeZ;
     }
 

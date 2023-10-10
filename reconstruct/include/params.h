@@ -9,6 +9,7 @@
 extern std::string PROJ_PATH;
 extern std::string VOLUME_PATH;
 extern std::string DIRECTION_PATH;
+extern std::string COLCT_PATH;
 
 extern int BLOCK_SIZE;
 extern __managed__ int NUM_BASIS_VECTOR;
