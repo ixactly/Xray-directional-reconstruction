@@ -4,6 +4,7 @@
 
 
 #include "moire.cuh"
+#include <omp.h>
 
 #define M_PI 3.14159265
 
@@ -73,7 +74,9 @@ void flipAxis(Volume<float> &dst, const Volume<float> &src, int64_t size_x, int6
 }
 
 void calcPseudoCT(Volume<float> *dst, const Volume<float> *ct, int size_x, int size_y, int size_z) {
+
     for (int x = 0; x < size_x; x++) {
+#pragma omp parallel for
         for (int y = 0; y < size_y; y++) {
             for (int z = 0; z < size_z; z++) {
                 const float I[4] = {ct[0](x, y, z), ct[1](x, y, z), ct[2](x, y, z), ct[3](x, y, z)};
