@@ -49,6 +49,8 @@ cmake-build-debug
 cmake-build-release
 cmake-build-minsizerel
 cmake-build-relwithdebinfo
+cmake-build-debug-visual-studio
+cmake-build-release-visual-studio
 
 external/glfwlib
 external/eigen-*

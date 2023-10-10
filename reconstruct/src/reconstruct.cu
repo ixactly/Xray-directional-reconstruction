@@ -10,6 +10,7 @@
 #include <progressbar.h>
 #include <params.h>
 #include <volume.h>
+#include <algorithm>
 #include <omp.h>
 #include <pca.cuh>
 #include <reconstruct.cuh>
@@ -26,18 +27,17 @@ namespace IR {
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
-        int nProj = sizeD[2];
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t nProj = sizeD[2];
 
         // cudaMalloc
         float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
-        const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
-        const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+        const int64_t lenV = sizeV[0] * sizeV[1] * sizeV[2];
+        const int64_t lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD);
         cudaMalloc(&devProj, sizeof(float) * lenD); // memory can be small to subsetSize
-//        cudaMalloc(&devCompare, sizeof(float) * lenD);
         cudaMalloc(&devVoxel, sizeof(float) * lenV);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1]);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1]);
@@ -78,7 +78,6 @@ namespace IR {
 
             for (int ep = 0; ep < epoch; ep++) {
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
-                cudaMemset(loss1, 0.0f, sizeof(float));
                 cudaMemset(devProj, 0.0f, sizeof(float) * lenD);
                 for (int &sub: subsetOrder) {
                     // forwardProj and ratio
@@ -92,8 +91,7 @@ namespace IR {
                             forwardProj<<<gridV, blockV>>>(devProj, devVoxel, devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
-//                        projCompare<<<gridD, blockD>>>(&devCompare[lenD * cond], &devSino[lenD * cond],
-//                                                       &devProj[lenD * cond], devGeom, n);
+
                         // ratio process
                         if (method == Method::ART) {
                             projSubtract<<<gridD, blockD>>>(devProj, devSino, devGeom, n, loss1);
@@ -123,12 +121,10 @@ namespace IR {
                         cudaDeviceSynchronize();
                     }
                 }
-                cudaMemcpy(losses.data() + ep, loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
+                // cudaMemcpy(losses.data() + ep, loss1, sizeof(float), cudaMemcpyDeviceToHost); // loss
             }
             cudaMemcpy(voxel[cond].get(), devVoxel, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }
-
-
 
         cudaFree(devProj);
         cudaFree(devSino);
@@ -431,7 +427,6 @@ namespace XTT {
         cudaFree(devCoef);
         cudaFree(devLoss1);
         cudaFree(devLoss2);
-        cudaFree(devDirection);
         cudaFree(devCoefTmp);
         cudaFree(devStates);
 
@@ -590,7 +585,6 @@ namespace XTT {
                 }
 
                 for (int z = 0; z < NUM_VOXEL; z++) {
-#pragma parallel omp for
                     for (int y = 0; y < NUM_VOXEL; y++) {
                         for (int x = 0; x < NUM_VOXEL; x++) {
                             calcEigenVector(voxel, md, tmp, y, z, x);
@@ -923,7 +917,7 @@ namespace XTT {
         int nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devDirection, *devEstimate;
+        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devEstimate;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
         const long lenP = sizeV[0] * sizeV[2];

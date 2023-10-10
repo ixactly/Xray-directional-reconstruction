@@ -56,7 +56,7 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry &geom, int cond,
         // S->scattering base vector
         // G->grating sensivity vector
 
-        const int idxVoxel =
+        const int64_t idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         float vkm = B.cross(S).norm2() * abs(S * G);
@@ -118,7 +118,7 @@ backwardProjXTTbyFiber(float *devProj, float *devVoxelTmp, float *devVoxelFactor
         float vkm = B.cross(S).norm2() * abs(S * G);
         // float vkm = abs(S * G);
 
-        const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
+        const int64_t idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *
                                   devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
@@ -207,7 +207,7 @@ forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int
         // Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
 
         // float vkm = abs(S * G);
-        const int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+        const int64_t idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                              i * (sizeV[0] * sizeV[1] * sizeV[2]);
 
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
@@ -271,7 +271,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
         float vkm = B.cross(S).norm2() * abs(S * G);
         //float vkm = abs(S * G);
 
-        const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
+        const int64_t idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                vkm * vkm * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                vkm * vkm * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
@@ -694,9 +694,9 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel - 1 || x < 1 || z >= geom->voxel - 1 || z < 1) return;
 
-    int coord[3] = {x, y, z};
-    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
-    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+    int64_t coord[3] = {x, y, z};
+    int64_t sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int64_t sizeD[3] = {geom->detect, geom->detect, geom->nProj};
     Vector3f norm[27];
     int cnt = 0;
     for (int i = -1; i < 2; i++) {
@@ -763,9 +763,9 @@ calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, f
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    int coord[3] = {x, y, z};
-    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
-    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+    int64_t coord[3] = {x, y, z};
+    int64_t sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int64_t sizeD[3] = {geom->detect, geom->detect, geom->nProj};
 
     const float coef[5] = {
             coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -884,12 +884,12 @@ backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry
 }
 
 __global__ void projRatio(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss) {
-    const int u = blockIdx.x * blockDim.x + threadIdx.x;
-    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
     float threshold = 2.0f;
-    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    const int64_t idx = u + geom->detect * v + geom->detect * geom->detect * (long) abs(n);
     atomicAdd(loss, abs(devSino[idx] - devProj[idx]));
     // printf("%lf\n", *loss);
     // const float div = devSino[idx] / devProj[idx];
@@ -905,13 +905,13 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
 
 __global__ void
 voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFactor, const Geometry *geom, int y) {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-    const int idxVoxel =
+    const int64_t idxVoxel =
             x + geom->voxel * y + geom->voxel * geom->voxel * z;
-    const int idxOnPlane = x + geom->voxel * z;
+    const int64_t idxOnPlane = x + geom->voxel * z;
 
     devVoxel[idxVoxel] = (devVoxelFactor[idxOnPlane] == 0.0f) ? 0.0f :
                          devVoxel[idxVoxel] * devVoxelTmp[idxOnPlane] / devVoxelFactor[idxOnPlane];
@@ -923,11 +923,11 @@ voxelProduct(float *devVoxel, const float *devVoxelTmp, const float *devVoxelFac
 }
 
 __global__ void projSubtract(float *devProj, const float *devSino, const Geometry *geom, int n, float *loss) {
-    const int u = blockIdx.x * blockDim.x + threadIdx.x;
-    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
-    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    const int64_t idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     atomicAdd(loss, abs(devSino[idx] - devProj[idx]));
     // const float div = devSino[idx] / devProj[idx];
     devProj[idx] = devSino[idx] - devProj[idx];
@@ -940,7 +940,7 @@ projCompare(float *devCompare, const float *devSino, const float *devProj, const
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
 
-    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    const int64_t idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
     // const float div = devSino[idx] / devProj[idx];
     // devCompare[idx] = devSino[idx] - devProj[idx];
     devCompare[idx] = devSino[idx] / devProj[idx];
@@ -950,36 +950,36 @@ projCompare(float *devCompare, const float *devSino, const float *devProj, const
 
 __global__ void
 voxelPlus(float *devVoxel, const float *devVoxelTmp, float alpha, const Geometry *geom, int y) {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
-        const int idxVoxel =
+        const int64_t idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z;
-        const int idxOnPlane = x + geom->voxel * z;
+        const int64_t idxOnPlane = x + geom->voxel * z;
         devVoxel[idxVoxel] = devVoxel[idxVoxel] + alpha * devVoxelTmp[idxOnPlane];
 
 }
 
 __global__ void voxelSqrtFromSrc(float *hostVoxel, const float *devVoxel, const Geometry *geom, int y) {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        const int idxVoxel =
+        const int64_t idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         hostVoxel[idxVoxel] = sqrt(abs(devVoxel[idxVoxel]));
     }
 }
 
 __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
-        const int idxVoxel =
+        const int64_t idxVoxel =
                 x + geom->voxel * y + geom->voxel * geom->voxel * z + (geom->voxel * geom->voxel * geom->voxel) * i;
         devVoxel[idxVoxel] = (devVoxel[idxVoxel] < 0.0f) ? sqrt(-devVoxel[idxVoxel]) : sqrt(devVoxel[idxVoxel]);
     }
@@ -989,8 +989,8 @@ __device__ void
 forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
                 const Geometry &geom, int cond) {
 
-    int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
-    int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
+    int64_t sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
+    int64_t sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     float u, v;
     Vector3f B, G;
@@ -1000,18 +1000,19 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
         return;
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
-    int intU = floor(u_tmp), intV = floor(v_tmp);
+    int64_t intU = floor(u_tmp), intV = floor(v_tmp);
     float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
             c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
             c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    const int n = abs(coord[3]);
+    const int64_t n = abs(coord[3]);
 
     const float ratio = (geom.voxSize * geom.voxSize) /
                         (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
-    const int idxVoxel =
+    const int64_t idxVoxel =
             coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
+    // printf("idx: %lld\n", idxVoxel);
 
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
               c1 * geom.voxSize * ratio * devVoxel[idxVoxel]);
@@ -1021,14 +1022,15 @@ forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
               c3 * geom.voxSize * ratio * devVoxel[idxVoxel]);
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
               c4 * geom.voxSize * ratio * devVoxel[idxVoxel]);
+
 }
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
                  const Geometry &geom, int cond) {
 
-    int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
-    int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
+    int64_t sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
+    int64_t sizeD[3] = {geom.detect, geom.detect, geom.nProj};
 
     float u, v;
     Vector3f B, G;
@@ -1037,16 +1039,16 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
     if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
         return;
 
-    const int n = abs(coord[3]);
+    const int64_t n = abs(coord[3]);
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
-    int intU = floor(u_tmp), intV = floor(v_tmp);
+    int64_t intU = floor(u_tmp), intV = floor(v_tmp);
     float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV), c2 =
             (u_tmp - (float) intU) * (v_tmp - (float) intV),
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)), c4 =
             (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
 
-    const int idxVoxel = coord[0] + sizeV[0] * coord[2];
+    const int64_t idxVoxel = coord[0] + sizeV[0] * coord[2];
     const float numBack = c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                           c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                           c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
@@ -1073,7 +1075,7 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
     const int n = abs(coord[3]);
 
     float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
-    int intU = floor(u_tmp), intV = floor(v_tmp);
+    int64_t intU = floor(u_tmp), intV = floor(v_tmp);
     float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
             c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
             c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
@@ -1091,7 +1093,7 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
         Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
         float vkm = B.cross(S).norm2() * abs(S * G);
         // float vkm = abs(S * G);
-        const int idxVoxel =
+        const int64_t idxVoxel =
                 coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                 i * (sizeV[0] * sizeV[1] * sizeV[2]);
         proj += vkm * vkm * geom.voxSize * ratio * devVoxel[idxVoxel];
@@ -1139,7 +1141,7 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
         float vkm = B.cross(S).norm2() * abs(S * G);
         //float vkm = abs(S * G);
 
-        const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
+        const int64_t idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
         const float backForward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
                                   vkm * vkm * c2 *
                                   devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +

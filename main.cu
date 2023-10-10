@@ -6,20 +6,20 @@
 #include <reconstruct.cuh>
 
 int main() {
-    std::string nametag = "cfrp_7d_13rot";
+    std::string nametag = "cfrp_7d_6rot";
     init_params(nametag);
 
-    Volume<float> sinogram[NUM_PROJ_COND];
+    std::vector<Volume<float>> sinogram(NUM_PROJ_COND);
     for (auto &e: sinogram)
-        e = Volume<float>(NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+        e.set(NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
 
     // ground truth
-    Volume<float> ct[NUM_BASIS_VECTOR];
+    std::vector<Volume<float>> ct(NUM_BASIS_VECTOR);
     Volume<float> md[3];
     for (auto &e: ct)
-        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        e.set(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     for (auto &e: md)
-        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        e.set(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
 
@@ -29,7 +29,7 @@ int main() {
                 + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
 
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
-        sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8; else return value; });
+        sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8f; else return value; });
     }
 
     // load volume
@@ -37,7 +37,7 @@ int main() {
 
     if (method == Method::MLEM) {
         for (auto &e: ct) {
-            e.forEach([](float value) -> float { return 0.01; });
+            e.forEach([](float value) -> float { return 0.01f; });
         }
     }
 
@@ -60,8 +60,8 @@ int main() {
 
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
-    // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
+    // XTT::orthTwiceReconstruct(sinogram.data(), ct.data(), md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
+    IR::reconstruct(sinogram.data(), ct.data(), geom, 1, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
@@ -77,7 +77,7 @@ int main() {
 		std::string savefilePath1 =
 				"C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
 				std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-		sinogram[i].save(savefilePath1);
+		// sinogram[i].save(savefilePath1);
 	}
 
     // save ct volume
