@@ -21,6 +21,7 @@ extern int NUM_DETECT_U;
 extern int NUM_DETECT_V;
 extern float DETECTOR_SIZE;
 extern int NUM_VOXEL;
+extern int LOAD_INDEX[100];
 
 extern __constant__ float elemR[117];
 extern __constant__ float elemT[39];

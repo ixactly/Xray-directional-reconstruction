@@ -25,16 +25,14 @@ int main() {
 
     // load sinogram (relative path)
     for (int i = 0; i < NUM_PROJ_COND; i++) {
-        std::string loadfilePath = PROJ_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U)
+        std::string loadfilePath = PROJ_PATH + std::to_string(LOAD_INDEX[i]) + "_" + std::to_string(NUM_DETECT_U)
                 + "x" + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
 
         sinogram[i].load(loadfilePath, NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
         sinogram[i].forEach([](float value) -> float { if (value < 0.0) return 1e-8; else return value; });
     }
 
-    // load volume
     Method method = Method::MLEM;
-
     if (method == Method::MLEM) {
         for (auto &e: ct) {
             e.forEach([](float value) -> float { return 0.01; });
@@ -60,7 +58,7 @@ int main() {
 
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
+    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 3, 40, 5, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
 
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
@@ -85,7 +83,6 @@ int main() {
         std::string savefilePathCT =
                 VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x"
                 + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-
         ct[i].save(savefilePathCT);
     }
 

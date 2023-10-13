@@ -26,6 +26,7 @@ int NUM_DETECT_U;
 int NUM_DETECT_V;
 float DETECTOR_SIZE;
 int NUM_VOXEL;
+int LOAD_INDEX[100];
 
 __constant__ float elemR[117];
 __constant__ float elemT[39];
@@ -65,6 +66,7 @@ void init_params(const std::string& tag) {
     std::vector<float> recon = data[tag]["areaTrans"];
     std::vector<float> offset = data[tag]["offset"];
     std::vector<float> base = data["recon_variable"]["base"];
+    bool sorting = data[tag]["sorting"];
 
     for (int i = 0; i < 3 * NUM_BASIS_VECTOR; i++) {
         basisVector[i] = base[i];
@@ -74,16 +76,24 @@ void init_params(const std::string& tag) {
         vTrans[3 * i + 1] += recon[1];
         vTrans[3 * i + 2] += recon[2];
     }
-    /*
-    float tmp[117];
-    std::memcpy(tmp, &(mRot[0]), mRot.size() * sizeof(float));
-    for (auto &e : tmp) {
-        std::cout << e << " ";
+
+    if (sorting) {
+        std::vector<int> index = data[tag]["index"];
+        for (int i = 0; i < NUM_PROJ_COND; i++) {
+            LOAD_INDEX[i] = index[i] + 1;
+            cudaMemcpyToSymbol(elemR, &(mRot[9 * index[i]]), 9 * sizeof(float), 9 * i * sizeof(float));
+            cudaMemcpyToSymbol(elemT, &(vTrans[3 * index[i]]), 3 * sizeof(float), 3 * i * sizeof(float));
+            cudaMemcpyToSymbol(INIT_OFFSET, &(offset[3 * index[i]]), 3 * sizeof(float), 3 * i * sizeof(float));
+        }
+    } else {
+        for (int i = 0; i < NUM_PROJ_COND; i++) {
+            LOAD_INDEX[i] = i + 1;
+        }
+        cudaMemcpyToSymbol(elemR, &(mRot[0]), mRot.size() * sizeof(float));
+        cudaMemcpyToSymbol(elemT, &(vTrans[0]), vTrans.size() * sizeof(float));
+        cudaMemcpyToSymbol(INIT_OFFSET, &(offset[0]), offset.size() * sizeof(float));
     }
-     */
-    cudaMemcpyToSymbol(elemR, &(mRot[0]), mRot.size() * sizeof(float));
-    cudaMemcpyToSymbol(elemT, &(vTrans[0]), vTrans.size() * sizeof(float));
-    cudaMemcpyToSymbol(INIT_OFFSET, &(offset[0]), offset.size() * sizeof(float));
+
     /*
      * __constant__ float elemR[117];
      * __constant__ float elemT[39];
