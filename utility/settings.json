@@ -1,8 +1,8 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 7,
-    "condition" : 8,
+    "vector" : 1,
+    "condition" : 1,
     "base" : [
       0.0, 0.0, 1.0,
       1.0, 0.0, 0.0,
@@ -15,16 +15,16 @@
   },
 
   "phaseCT" : {
-    "proj_path": "../proj_raw_bin/phase_lens/difference_cfrp",
-    "vol_path": "../volume_bin/phase_lens/vol_gradIR",
+    "proj_path": "../proj_raw_bin/phase_lens/phase_lens",
+    "vol_path": "../volume_bin/phase_lens/lens_vol_grad",
     "direc_path": "none",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
-    "num_det_u": 510,
-    "num_det_v": 510,
+    "num_det_u": 1344,
+    "num_det_v": 1344,
     "det_size": 0.0581777777,
-    "num_voxel": 510,
+    "num_voxel": 512,
     "rot": 1,
     "matrixRot": [
       1.0, 0.0, 0.0,
@@ -38,7 +38,7 @@
       0.00000, 0.0000, 0.0000
     ],
     "offset": [
-      0.11996289, 0.0, 0.0
+      0.0, 0.0, 0.0
     ],
     "sorting": false
   },
