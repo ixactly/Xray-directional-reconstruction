@@ -30,6 +30,17 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
              const Geometry *geom, int cond, int y, int n, int it);
 
 __global__ void
+forwardProjGrad(float *devProj, const float *devVoxel, Geometry *geom, int cond, int y, int n);
+
+__global__ void
+backwardProjGrad(const float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond, int y, int n);
+
+__global__ void
+sinogramGradientCoef(float *devProj, const Geometry *geom, int cond, int n);
+
+
+
+__global__ void
 calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss);
 
 __global__ void
