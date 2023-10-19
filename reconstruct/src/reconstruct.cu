@@ -322,7 +322,7 @@ namespace XTT {
 
             for (int y = 0; y < sizeV[1]; y++) {
                 // calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
-                calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2, devStates,
+                calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devCoef, y, devGeom, devLoss2,
                                                               judge);
                 cudaDeviceSynchronize();
             }
@@ -949,16 +949,23 @@ namespace XTT {
         cudaMalloc(&devCoef, sizeof(float) * lenV * 2);
         cudaMalloc(&devCoefTmp, sizeof(float) * lenV * 2);
         Volume<float> coef[2];
+        Volume<float> coef_tmp[2];
         for (auto &co: coef)
+            co = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+        for (auto &co: coef_tmp)
             co = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
         // !!!!!!!!!!!!!!!!!!!!!!!!!!
         coef[0].forEach([](float value) -> float { return 0.0f; });
         coef[1].forEach([](float value) -> float { return 1.0f; });
-        // coef[0].forEach([](float value) -> float { return 3.0 * M_PI / 4.0f; });
-        // coef[1].forEach([](float value) -> float { return std::cos(M_PI / 4.0f); });
+        coef_tmp[0].forEach([](float value) -> float { return 0.0f; });
+        coef_tmp[1].forEach([](float value) -> float { return 1.0f; });
+
         cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
         cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+
+        // coef[0].forEach([](float value) -> float { return 3.0 * M_PI / 4.0f; });
+        // coef[1].forEach([](float value) -> float { return std::cos(M_PI / 4.0f); });
 
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
@@ -970,10 +977,7 @@ namespace XTT {
         dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
         dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
 
-        curandState *devStates;
         int threadNum = BLOCK_SIZE * (int) ((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        cudaMalloc(&devStates, threadNum * threadNum * threadNum * sizeof(curandState));
-        setup_rand<<<gridV, blockV>>>(devStates, threadNum, 0);
         // forwardProj, divide, backwardProj proj
         int subsetSize = (nProj + batch - 1) / batch;
         std::vector<int> subsetOrder(batch);
@@ -982,7 +986,7 @@ namespace XTT {
         }
 
         // progress bar
-        progressbar pbar((iter1 + 5) * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
+        progressbar pbar(5 * iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
         std::random_device seed_gen;
         std::mt19937 engine(seed_gen());
@@ -1005,259 +1009,165 @@ namespace XTT {
 
         // main routine
         // 5 kai de zyubun
-        for (int ep1 = 0; ep1 < 5; ep1++) {
-            for (int i = 0; i < 3; i++) {
-                cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-            }
-            coef[0].forEach([](float value) -> float { return 0.0f; });
-            coef[1].forEach([](float value) -> float { return 1.0f; });
-            cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-            cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-            float judge = 0.0f;
-            if (ep1 != 0) {
-                judge = 1.0f - (float) (ep1 - 1) * 0.3f;
-                for (int y = 0; y < sizeV[1]; y++) {
-                    calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2,
-                                                                  devStates, judge);
-                    cudaDeviceSynchronize();
+        for (int outer = 0; outer < iter1; outer++) {
+            for (int ep1 = 0; ep1 < 5; ep1++) {
+                if (ep1 != 0) {
+                    for (int i = 0; i < 3; i++) {
+                        cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+                    }
+                    for (int y = 0; y < sizeV[1]; y++) {
+                        calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devCoef, y, devGeom, devLoss2, ep1 - 1);
+                        cudaDeviceSynchronize();
+                    }
                 }
-            }
+                for (int y = 0; y < sizeV[1]; y++) {
+                    fillVolume<<<gridV, blockV>>>(devVoxel, 0.1f, y, devGeom);
+                }
 
-            for (int ep2 = 0; ep2 < iter2; ep2++) {
-                std::shuffle(subsetOrder.begin(), subsetOrder.end(), engine);
-                cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
-                for (int &sub: subsetOrder) {
-                    // forwardProj and ratio
-                    for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                        for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                            int n = rotation * ((sub + batch * subOrder) % nProj);
-                            // !!care!! judge from vecSod which plane we chose
-                            pbar.update();
+                for (int ep2 = 0; ep2 < iter2; ep2++) {
+                    std::shuffle(subsetOrder.begin(), subsetOrder.end(), engine);
+                    cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
+                    for (int &sub: subsetOrder) {
+                        // forwardProj and ratio
+                        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+                            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                                int n = rotation * ((sub + batch * subOrder) % nProj);
+                                // !!care!! judge from vecSod which plane we chose
+                                pbar.update();
 
-                            // forwardProj process
-                            for (int y = 0; y < sizeV[1]; y++) {
-                                // 回転行列に従って3方向散乱係数の順投影
-                                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
-                                                               cond, y, n, ep1, devGeom);
+                                // forwardProj process
+                                for (int y = 0; y < sizeV[1]; y++) {
+                                    // 回転行列に従って3方向散乱係数の順投影
+                                    forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
+                                                                   cond, y, n, ep1, devGeom);
+                                    cudaDeviceSynchronize();
+                                }
+                                // ratio process
+                                if (method == Method::ART)
+                                    projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
+                                                                    &devSino[lenD * cond], devGeom, n, devLoss1);
+                                else
+                                    projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
+                                                                 devGeom, n, devLoss1);
                                 cudaDeviceSynchronize();
                             }
-                            // ratio process
-                            if (method == Method::ART)
-                                projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
-                                                                &devSino[lenD * cond], devGeom, n, devLoss1);
-                            else
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
-                                                             devGeom, n, devLoss1);
+                        }
+
+                        // backwardProj process
+                        for (int y = 0; y < sizeV[1]; y++) {
+                            cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                            cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
+                            for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+                                pbar.update();
+                                for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                                    int n = rotation * ((sub + batch * subOrder) % nProj);
+
+                                    backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devCoef, devVoxelTmp,
+                                                                    devVoxelFactor, devGeom, cond, y, n, ep1);
+                                    cudaDeviceSynchronize();
+                                }
+                            }
+                            for (int vec = 0; vec < NUM_BASIS_VECTOR; vec++) {
+                                if (method == Method::ART) {
+                                    voxelPlus<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                                 lambda / (float) subsetSize, devGeom, y);
+                                } else {
+                                    voxelProduct<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
+                                                                    &devVoxelFactor[lenP * vec], devGeom, y);
+                                }
+                            }
                             cudaDeviceSynchronize();
                         }
                     }
-
-                    // backwardProj process
-                    for (int y = 0; y < sizeV[1]; y++) {
-                        cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                            pbar.update();
-                            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                                int n = rotation * ((sub + batch * subOrder) % nProj);
-
-                                backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devCoef, devVoxelTmp,
-                                                                devVoxelFactor, devGeom, cond, y, n, ep1);
-                                cudaDeviceSynchronize();
-                            }
-                        }
-                        for (int vec = 0; vec < NUM_BASIS_VECTOR; vec++) {
-                            if (method == Method::ART) {
-                                voxelPlus<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
-                                                             lambda / (float) subsetSize, devGeom, y);
-                            } else {
-                                voxelProduct<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
-                                                                &devVoxelFactor[lenP * vec], devGeom, y);
-                            }
-                        }
-                        cudaDeviceSynchronize();
-                    }
+                    // ----- end iter2 ----- //
                 }
-                // ----- end iter1 ----- //
-            }
 
-            // swap later
-            for (int y = 0; y < sizeV[1]; y++) {
-                voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
-                cudaDeviceSynchronize();
-            }
-            if (ep1 == 0) {
-                for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-                    cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-            }
-            if (ep1 != 0) {
+                // swap later
                 for (int y = 0; y < sizeV[1]; y++) {
-                    calcNormalVectorThreeDirecSaveEst<<<gridV, blockV>>>(devVoxel, devCoef, y, devGeom, devLoss2,
-                                                                         devEstimate, ep1 - 1);
+                    voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
                     cudaDeviceSynchronize();
                 }
-            }
-            std::string xyz[] = {"x", "y", "z"};
-
-            for (int i = 0; i < NUM_PROJ_COND; i++)
-                cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
-            for (int i = 0; i < 2; i++) {
-                cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-            }
-            convertNormVector(voxel, md, coef);
-            /*
-            Volume<float> est = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
-            cudaMemcpy(est.get(), &devEstimate[lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-            std::string savefilePathCT =
-                    "../volume_bin/cfrp_xyz7_13axis/sequence/est" + std::to_string(ep1) + "_" + std::to_string(NUM_VOXEL) + "x" +
-                    std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-            est.save(savefilePathCT);
-             */
-            // ----- end iter2 -----
-        }
-
-        if (iter1 != 0) {
-            coef[0].forEach([](float value) -> float { return 0.0f; });
-            coef[1].forEach([](float value) -> float { return 1.0f; });
-            cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-            cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-        }
-
-        for (int ep1 = 0; ep1 < iter1; ep1++) {
-            for (int i = 0; i < 3; i++) {
-                voxel[i].forEach([](float value) -> float { return 0.1f; });
-                cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-            }
-            cudaMemset(devLoss2, 0.0f, sizeof(float) * lenV);
-            float judge = dist(engine);
-
-            for (int ep2 = 0; ep2 < iter2; ep2++) {
-                std::shuffle(subsetOrder.begin(), subsetOrder.end(), engine);
-                cudaMemset(devLoss1, 0.0f, sizeof(float));
-                cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
-                for (int &sub: subsetOrder) {
-                    // forwardProj and ratio
-                    for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                        for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                            int n = rotation * ((sub + batch * subOrder) % nProj);
-                            // !!care!! judge from vecSod which plane we chose
-                            pbar.update();
-
-                            // forwardProj process
-                            for (int y = 0; y < sizeV[1]; y++) {
-                                // 回転行列に従って3方向散乱係数の順投影
-                                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
-                                                               cond, y, n, ep1, devGeom);
-                                cudaDeviceSynchronize();
-                            }
-
-                            // ratio process
-                            if (method == Method::ART)
-                                projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond],
-                                                                &devSino[lenD * cond], devGeom, n, devLoss1);
-                            else
-                                projRatio<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond],
-                                                             devGeom, n, devLoss1);
-                            cudaDeviceSynchronize();
-
-                        }
-                    }
-
-                    // backwardProj process
+                if (ep1 != 0) {
                     for (int y = 0; y < sizeV[1]; y++) {
-                        cudaMemset(devVoxelFactor, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        cudaMemset(devVoxelTmp, 0, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
-                        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
-                            pbar.update();
-                            for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                                int n = rotation * ((sub + batch * subOrder) % nProj);
-
-                                backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devCoef, devVoxelTmp,
-                                                                devVoxelFactor, devGeom, cond, y, n, ep1);
-                                cudaDeviceSynchronize();
-                            }
-                        }
-                        for (int vec = 0; vec < NUM_BASIS_VECTOR; vec++) {
-                            if (method == Method::ART) {
-                                voxelPlus<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
-                                                             lambda / (float) subsetSize, devGeom, y);
-                            } else {
-                                voxelProduct<<<gridV, blockV>>>(&devVoxel[lenV * vec], &devVoxelTmp[lenP * vec],
-                                                                &devVoxelFactor[lenP * vec], devGeom, y);
-                            }
-                        }
+                        updateEstimation<<<gridV, blockV>>>(devVoxel, y, devGeom, devLoss2, devEstimate, ep1 - 1);
                         cudaDeviceSynchronize();
-                        cudaDeviceSynchronize();
+                    }
+                } else {
+                    for (int i = 0; i < 3; i++) {
+                        cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
                     }
                 }
-                cudaMemcpy(proj_loss.data() + ep1 * iter2 + ep2, devLoss1, sizeof(float),
-                           cudaMemcpyDeviceToHost); // loss
-                // std::cout << proj_loss[ep2 * (ep1 + 1)] << std::endl;
-                // ----- end iter1 ----- //
+                cudaMemcpy(coef_tmp[0].get(), &devCoef[0], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                cudaMemcpy(coef_tmp[1].get(), &devCoef[lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+                convertNormVector(voxel, md, coef);
+
+                std::string xyz[] = {"x", "y", "z"};
+                // save direction volume
+                /*
+                for (int i = 0; i < 2; i++) {
+                    std::string savefilePathCT =
+                            "../volume_bin/cfrp_xyz7_13axis/sequence/coef" +
+                            std::to_string(ep1 + 1) + "outer" + std::to_string(outer + 1) + "_" + xyz[i] + "_"
+                            + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x"
+                            + std::to_string(NUM_VOXEL) + ".raw";
+                    coef_tmp[i].save(savefilePathCT);
+                }
+                for (int i = 0; i < 3; i++) {
+                    std::string savefilePathCT =
+                            "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md" +
+                            std::to_string(ep1 + 1) + "outer" + std::to_string(outer + 1) + "_" + xyz[i] + "_"
+                            + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x"
+                            + std::to_string(NUM_VOXEL) + ".raw";
+                    md[i].save(savefilePathCT);
+                }
+                // save ct volume
+                for (int i = 0; i < 3; i++) {
+                    std::string savefilePathCT =
+                            "../volume_bin/cfrp_xyz7_13axis/sequence/volume" + std::to_string(ep1 + 1) +
+                            "_orth" + std::to_string(i + 1) + "_" + "outer" + std::to_string(outer + 1) +
+                            "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
+                            std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+                    voxel[i].save(savefilePathCT);
+                }
+*/
+                cudaMemcpy(&devCoef[0], coef[0].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+                cudaMemcpy(&devCoef[lenV], coef[1].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
+
+                // ----- end iter1 -----
             }
-            // swap later
-            for (int y = 0; y < sizeV[1]; y++) {
-                voxelSqrt<<<gridV, blockV>>>(devVoxel, devGeom, y);
-                cudaDeviceSynchronize();
+            for (int i = 0; i < 3; i++) {
+                cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
             }
-            for (int i = 0; i < NUM_BASIS_VECTOR; i++)
-                cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
             for (int y = 0; y < sizeV[1]; y++) {
                 calcNormalVectorThreeDirecWithEst<<<gridV, blockV>>>(devVoxel, devCoef, y, devGeom,
                                                                      devLoss2, devEstimate);
                 cudaDeviceSynchronize();
             }
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 2; i++) {
                 cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-
-            std::string xyz[] = {"x", "y", "z"};
-            // filtering
-            // quadlicFormFilterCPU(voxel, coef, 0.01);
-
-            for (int i = 0; i < 2; i++)
-                cudaMemcpy(&devCoef[i * lenV], coef[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
-
-            /*
-            for (int filt = 0; filt < 2; filt++) {
+            }
+            convertNormVector(voxel, md, coef);
+            for (int filt = 0; filt < 3; filt++) {
                 for (int y = 1; y < sizeV[1] - 1; y++) {
                     meanFiltFiber<<<gridV, blockV>>>(devCoef, devCoefTmp, devVoxel, devGeom, y, 1.0f);
                     cudaDeviceSynchronize();
                 }
                 cudaMemcpy(devCoef, devCoefTmp, sizeof(float) * lenV * 2, cudaMemcpyDeviceToDevice);
-            }*/
-
-            cudaMemcpy(loss_map2.get(), devLoss2, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
-            norm_loss[ep1] = loss_map2.mean();
-            // ----- end iter2 -----
-
-            for (int i = 0; i < NUM_PROJ_COND; i++)
-                cudaMemcpy(sinogram[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
-            for (int i = 0; i < 2; i++) {
-                cudaMemcpy(coef[i].get(), &devCoef[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
             }
-
-            convertNormVector(voxel, md, coef);
-            // save direction volume
-            for (int i = 0; i < 2; i++) {
-                std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/coef_tvmin0.01" +
-                        std::to_string(ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
-                        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-                coef[i].save(savefilePathCT);
-            }
+            std::string xyz[] = {"x", "y", "z"};
             for (int i = 0; i < 3; i++) {
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_tvmin0.01" +
-                        std::to_string(ep1 + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_cond9_outer" +
+                        std::to_string(outer + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 md[i].save(savefilePathCT);
             }
             // save ct volume
             for (int i = 0; i < 3; i++) {
-                cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_tvmin0.01" + std::to_string(ep1 + 1) +
-                        "_orth" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_cond9_" + xyz[i]
+                        + "_" + "outer" + std::to_string(outer + 1) +
+                        "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
                         std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 voxel[i].save(savefilePathCT);
             }
@@ -1269,11 +1179,10 @@ namespace XTT {
         cudaFree(devGeom);
         cudaFree(devVoxelFactor);
         cudaFree(devVoxelTmp);
+        cudaFree(devCoefTmp);
         cudaFree(devCoef);
         cudaFree(devLoss1);
         cudaFree(devLoss2);
-        cudaFree(devCoefTmp);
-        cudaFree(devStates);
         cudaFree(devEstimate);
 
         std::ofstream ofs1("../python/loss1.csv");

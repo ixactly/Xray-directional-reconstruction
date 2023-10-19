@@ -36,16 +36,17 @@ __global__ void
 calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
 
 __global__ void
-calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const Geometry *geom, float *norm_loss,
-                           curandState *curandStates, float judge);
+calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss, int rot);
 
 __global__ void
-calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss,
-                                  float *devEstimate, int iter);
+updateEstimation(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate, int iter);
 
 __global__ void
 calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const Geometry *geom,
                                   float *norm_loss, const float *devEstimate);
+
+__global__ void
+fillVolume(float *devVoxel, float num, int y, const Geometry *geom);
 
 __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float sin);
 

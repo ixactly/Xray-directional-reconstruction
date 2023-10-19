@@ -311,8 +311,7 @@ __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float 
 }
 
 __global__ void
-calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const Geometry *geom, float *norm_loss,
-                           curandState *curandStates, float judge) {
+calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss, int rot) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -336,13 +335,12 @@ calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
 
-    // float rand_rotate = curand_uniform(&curandStates[z * sizeV[0] + x]);
-    float rand_rotate = judge;
     // float rand_rotate = judge;
     // printf("rand: %lf\n", judge);
 
     float mu1 = mu[1], mu2 = mu[2];
 
+    /*
     if (rand_rotate > .75f) {
         mu1 = mu[1];
         mu2 = mu[2];
@@ -355,6 +353,15 @@ calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const
     } else {
         mu1 = mu[1];
         mu2 = -mu[2];
+    }
+     */
+
+    switch (rot) {
+        case 0: mu1 = mu[1], mu2 = mu[2]; break;
+        case 1: mu1 = -mu[1], mu2 = mu[2]; break;
+        case 2: mu1 = -mu[1], mu2 = -mu[2]; break;
+        case 3: mu1 = mu[1], mu2 = -mu[2]; break;
+        default: break;
     }
 
     Vector3f vec1(mu[0] * basisVector[3 * 0 + 0] - mu1 * basisVector[3 * 1 + 0],
@@ -504,14 +511,6 @@ calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const 
 
     // printf("%lf, ", diff);
     norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
-    /*
-    if (out)
-    printf("x: %d, cos: %lf, sin: %lf\n", x, cos, sin);
-    */
-    /*
-    if (isnan(theta))
-        printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
-    */
 
     devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
             0 * (sizeV[0] * sizeV[1] * sizeV[2])] = atan2(rotAxis[1], rotAxis[0]);
@@ -520,8 +519,7 @@ calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const 
 }
 
 __global__ void
-calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss,
-                                  float *devEstimate, int iter) {
+updateEstimation(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate, int iter) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -529,13 +527,6 @@ calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const 
     int coord[3] = {x, y, z};
     int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
     int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
-
-    const float phi_c = devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                                0 * (sizeV[0] * sizeV[1] * sizeV[2])];
-    const float cos_c = devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                                1 * (sizeV[0] * sizeV[1] * sizeV[2])];
-
-    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1.0f - cos_c * cos_c)};
 
     const float mu[3] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -557,8 +548,6 @@ calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const 
     norm.normalize();
 
     Vector3f base(0.f, 0.f, 1.f);
-    float dump = 0.0f;
-    norm = norm + dump * base;
     if (norm[2] < 0.0f) {
         norm[0] = -norm[0];
         norm[1] = -norm[1];
@@ -577,6 +566,15 @@ calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const 
     }
 }
 
+__global__ void
+fillVolume(float *devVoxel, float num, int y, const Geometry *geom) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+    const int idxVoxel =
+            x + geom->voxel * y + geom->voxel * geom->voxel * z;
+    devVoxel[idxVoxel] = num;
+}
 
 __global__ void
 calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss) {
@@ -901,6 +899,7 @@ __global__ void projRatio(float *devProj, const float *devSino, const Geometry *
     if (devProj[idx] > threshold) {
         devProj[idx] = threshold;
     }
+
 }
 
 __global__ void

@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_nofilt1_x_192x192x192.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_outer1_x_192x192x192.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_nofilt1_y_192x192x192.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_outer1_y_192x192x192.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_nofilt1_z_192x192x192.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/sequence/pca/md_outer1_z_192x192x192.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
 num_voxel = 192

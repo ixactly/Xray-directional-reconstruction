@@ -1,8 +1,8 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 3,
-    "condition" : 9,
+    "vector" : 7,
+    "condition" : 8,
     "base" : [
       0.0, 0.0, 1.0,
       1.0, 0.0, 0.0,
@@ -45,8 +45,8 @@
 
   "cfrp_7d_13rot" : {
     "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/vol_9cond",
-    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/tw_xtt_9cond",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/vol_test_9cond",
+    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/cond9_test_xtt",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
@@ -146,7 +146,7 @@
     ],
 
     "index": [
-      0, 1, 2, 7, 8, 9, 10, 11, 12
+      0, 1, 2, 3, 4, 7, 9, 11
     ],
     "sorting" : true
   },
