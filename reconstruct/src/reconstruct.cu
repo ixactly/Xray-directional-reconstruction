@@ -297,7 +297,9 @@ namespace IR {
             cudaMemcpy(sino_tmp[i].get(), &devProj[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
         }
 
-        poissonImageEdit(*voxel, grad, 10000);
+        // poissonImageEdit(*voxel, grad, 10000);
+        poissonSolveLDLT(*voxel, grad);
+
         for (int i = 0; i < NUM_BASIS_VECTOR * 3; i++) {
             std::string savefilePathCT =
                     VOLUME_PATH + "grad" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL + 1) + "x"
@@ -1517,8 +1519,8 @@ namespace FDK {
         for (int i = 0; i < NUM_BASIS_VECTOR * 3; i++) {
             cudaMemcpy(grad[i].get(), &devVoxelGrad[i * lenVp1], sizeof(float) * lenVp1, cudaMemcpyDeviceToHost);
         }
-        poissonImageEdit(*voxel, grad, 10000);
-
+        // poissonImageEdit(*voxel, grad, 1000);
+        poissonSolveLDLT(*voxel, grad);
         for (int i = 0; i < NUM_PROJ_COND; i++)
             cudaMemcpy(sinogram[i].get(), &devSinoFilt[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
         for (int i = 0; i < NUM_BASIS_VECTOR * 3; i++) {

@@ -15,7 +15,7 @@
   },
 
   "phaseCT" : {
-    "proj_path": "../proj_raw_bin/phase_lens/phase_lens",
+    "proj_path": "../proj_raw_bin/phase_lens/lens_dph",
     "vol_path": "../volume_bin/phase_lens/lens_vol_grad",
     "direc_path": "none",
     "sod": 1316.5,
@@ -38,7 +38,7 @@
       0.00000, 0.0000, 0.0000
     ],
     "offset": [
-      0.0, 0.0, 0.0
+      0.13932532244, 0.0, 0.0
     ],
     "sorting": false
   },

@@ -7,5 +7,5 @@
 #include "volume.h"
 
 void poissonImageEdit(Volume<float>& dst, const Volume<float>* src, int loop);
-
+void poissonSolveLDLT(Volume<float>& dst, const Volume<float>* src);
 #endif //INC_3DRECONGPU_POISSON_CPU_H

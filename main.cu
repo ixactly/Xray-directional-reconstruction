@@ -61,7 +61,7 @@ int main() {
     // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
 
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
-    // IR::gradReconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, Method::ART, 1e-2);
+    IR::gradReconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, Method::ART, 2e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
     // forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);
