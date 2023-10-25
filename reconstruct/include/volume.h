@@ -18,14 +18,14 @@
 template<typename T>
 class Volume {
 public :
-    Volume() = default;
+    Volume() { sizeX = 0, sizeY = 0, sizeZ = 0; };
 
-    explicit Volume(int sizeX, int sizeY, int sizeZ)
+    explicit Volume(int64_t sizeX, int64_t sizeY, int64_t sizeZ)
             : sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {
         data = std::make_unique<T[]>(sizeX * sizeY * sizeZ);
     }
 
-    explicit Volume(std::string &filename, int sizeX, int sizeY, int sizeZ)
+    explicit Volume(std::string &filename, int64_t sizeX, int64_t sizeY, int64_t sizeZ)
             : sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {
         // implement
         load(filename, sizeX, sizeY, sizeZ);
@@ -33,13 +33,13 @@ public :
 
     Volume(const Volume &v)
             : sizeX(v.sizeX), sizeY(v.sizeY), sizeZ(v.sizeZ) {
-        const int size = v.sizeX * v.sizeY * v.sizeZ;
+        const int64_t size = v.sizeX * v.sizeY * v.sizeZ;
         std::memcpy(data.get(), v.data.get(), size * sizeof(T));
     }
 
     Volume &operator=(const Volume &v) {
         sizeX = v.sizeX, sizeY = v.sizeY, sizeZ = v.sizeZ;
-        const int size = v.sizeX * v.sizeY * v.sizeZ;
+        const int64_t size = v.sizeX * v.sizeY * v.sizeZ;
         std::memcpy(data.get(), v.data.get(), size * sizeof(T));
 
         return *this;
@@ -61,11 +61,12 @@ public :
     ~Volume() = default;
 
     // ref data (mutable)
-    T &operator()(int x, int y, int z) {
+
+    T &operator()(int64_t x, int64_t y, int64_t z) {
         return data[z * (sizeX * sizeY) + y * (sizeX) + x];
     }
 
-    T operator()(int x, int y, int z) const {
+    T operator()(int64_t x, int64_t y, int64_t z) const {
         return data[z * (sizeX * sizeY) + y * (sizeX) + x];
     }
 
@@ -94,10 +95,17 @@ public :
         return static_cast<T>(mean);
     }
 
-    void load(const std::string &filename, const int x, const int y, const int z) {
+    void set(const int64_t x, const int64_t y, const int64_t z) {
+        sizeX = x, sizeY = y, sizeZ = z;
+        const int64_t size = x * y * z;
+        data.reset();
+        data = std::make_unique<T[]>(size);
+    }
+
+    void load(const std::string &filename, const int64_t x, const int64_t y, const int64_t z) {
         // impl
         sizeX = x, sizeY = y, sizeZ = z;
-        const int size = x * y * z;
+        const int64_t size = x * y * z;
         data.reset();
         data = std::make_unique<T[]>(size);
         std::ifstream ifile(filename, std::ios::binary);
@@ -112,7 +120,7 @@ public :
     }
 
     void save(const std::string &filename) const {
-        const int size = sizeX * sizeY * sizeZ;
+        const int64_t size = sizeX * sizeY * sizeZ;
         std::ofstream ofs(filename, std::ios::binary);
         if (!ofs) {
             std::cout << "file not saved. check file path." << std::endl;
@@ -129,29 +137,30 @@ public :
     }
 
     void forEach(const std::function<T(T)> &f) {
-        for (int z = 0; z < sizeZ; z++) {
-            for (int y = 0; y < sizeY; y++) {
-                for (int x = 0; x < sizeX; x++) {
-                    (*this)(x, y, z) = f((*this)(x, y, z));
+        for (int64_t z = 0; z < sizeZ; z++) {
+            for (int64_t y = 0; y < sizeY; y++) {
+                for (int64_t x = 0; x < sizeX; x++) {
+                    int64_t idx = x + sizeX * y + sizeX * sizeY * z;
+                    data[idx] = f(data[idx]);
                 }
             }
         }
     }
 
-    int x() const {
+    int64_t x() const {
         return sizeX;
     }
 
-    int y() const {
+    int64_t y() const {
         return sizeY;
     }
 
-    int z() const {
+    int64_t z() const {
         return sizeZ;
     }
 
 private :
-    int sizeX, sizeY, sizeZ;
+    int64_t sizeX, sizeY, sizeZ;
     std::unique_ptr<T[]> data = nullptr;
 };
 

@@ -27,8 +27,8 @@ namespace IR {
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -161,8 +161,8 @@ namespace IR {
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -324,14 +324,14 @@ namespace XTT {
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
         float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp, *devDirection;
-        const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
-        const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+        const int64_t lenV = sizeV[0] * sizeV[1] * sizeV[2];
+        const int64_t lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
@@ -633,14 +633,14 @@ namespace XTT {
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
         float *devSino, *devProj, *devVoxel, *hostVoxel, *devVoxelFactor, *devVoxelTmp;
-        const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
-        const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+        const int64_t lenV = sizeV[0] * sizeV[1] * sizeV[2];
+        const int64_t lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
@@ -738,8 +738,7 @@ namespace XTT {
                             }
                         }
                         if (method == Method::ART) {
-                            voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom,
-                                                         y);
+                            voxelPlus<<<gridV, blockV>>>(devVoxel, devVoxelTmp, lambda / (float) subsetSize, devGeom, y);
                         } else {
                             voxelProduct<<<gridV, blockV>>>(devVoxel, devVoxelTmp, devVoxelFactor, devGeom, y);
                         }
@@ -810,8 +809,8 @@ namespace XTT {
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -967,8 +966,8 @@ namespace XTT {
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -1096,8 +1095,8 @@ namespace XTT {
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -1167,6 +1166,7 @@ namespace XTT {
 
         Volume<float> loss_map1 = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
         Volume<float> loss_map2 = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+
         float *devLoss1;
         float *devLoss2;
 
@@ -1382,8 +1382,8 @@ namespace FDK {
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -1462,8 +1462,8 @@ namespace FDK {
 
         int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-        int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-        int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
         int nProj = sizeD[2];
 
         // cudaMalloc
@@ -1549,8 +1549,8 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
 
     int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-    int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-    int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+    int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+    int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
     int nProj = sizeD[2];
 
     // cudaMalloc
@@ -1611,8 +1611,8 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
 
     int rotation = (dir == Rotate::CW) ? 1 : -1;
 
-    int sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
-    int sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+    int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+    int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
     int nProj = sizeD[2];
 
     float mu_strong = 1.0f;
