@@ -142,23 +142,22 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
                     const Geometry &geom, int cond);
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, int cond,
-            int y, int n);
+forwardProj(float *devProj, float *devVoxel, float *devProjFactor, Geometry *geom, int y, int n, int cond);
+
+__global__ void correlationProjByLength(float* devProj, float* devProjFactor, int n, Geometry *geom, int cond);
 
 __global__ void
 backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
              int y, int n);
 
 __device__ void
-forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                const Geometry &geom, int cond);
+forwardonDevice(const int coord[4], float *devProj, float *devProjFactor, const float *devVoxel, const Geometry &geom,
+                int cond);
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
                  const Geometry &geom, int cond);
 
-__device__ void
-rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coord[4],
-           const Geometry &geom);
+
 
 #endif //INC_3DRECONGPU_MLEM_CUH

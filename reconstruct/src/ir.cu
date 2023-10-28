@@ -1030,13 +1030,127 @@ void convertNormVector(const Volume<float> *voxel, Volume<float> *md, const Volu
 }
 
 __global__ void
-forwardProj(float *devProj, float *devVoxel, Geometry *geom, int cond, int y, int n) {
+forwardProj(float *devProj, float *devVoxel, float *devProjFactor, Geometry *geom, int y, int n, int cond) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    forwardonDevice(coord, devProj, devVoxel, *geom, cond);
+    forwardonDevice(coord, devProj, devProjFactor, devVoxel, *geom, cond);
+}
+
+__device__ void
+forwardonDevice(const int coord[4], float *devProj, float *devProjFactor, const float *devVoxel, const Geometry &geom,
+                int cond) {
+
+    int64_t sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
+    int64_t sizeD[3] = {geom.detect, geom.detect, geom.nProj};
+
+    float u, v;
+    Vector3f B, G;
+    rayCasting(u, v, B, G, cond, coord, geom);
+
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
+        return;
+
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
+    int64_t intU = floor(u_tmp), intV = floor(v_tmp);
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
+            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
+            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
+
+    const int64_t n = abs(coord[3]);
+
+    const float ratio = (geom.voxSize * geom.voxSize) /
+                        (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
+    const int64_t idxVoxel =
+            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
+
+    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c1 * ratio * devVoxel[idxVoxel]);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
+              c2 * ratio * devVoxel[idxVoxel]);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c3 * ratio * devVoxel[idxVoxel]);
+    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
+              c4 * ratio * devVoxel[idxVoxel]);
+
+    atomicAdd(&devProjFactor[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3);
+    atomicAdd(&devProjFactor[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4);
+}
+
+__global__ void correlationProjByLength(float* devProj, float* devProjFactor, int n, Geometry *geom, int cond) {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    if (u >= geom->detect || v >= geom->detect) return;
+    // printf("%d, %d\n", u, v);
+    int64_t sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int64_t sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    const float theta = 2.0f * (float) M_PI * (float) n / (float) sizeD[2];
+    Vector3f offset(INIT_OFFSET[3 * cond + 0], INIT_OFFSET[3 * cond + 1], INIT_OFFSET[3 * cond + 2]);
+
+    // need to modify
+    // need multiply Rotate matrix (axis and rotation geom) to vecSod
+    Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
+    // printf("%lf\n", elemR[0]);
+    Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
+                   elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
+                   elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);
+    Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
+
+    Rotate = condR * Rotate;
+    offset = Rotate * offset;
+    // plane - offset[0] - t[0]
+    Vector3f origin2src(0.0f, geom->sod, 0.0f);
+    // (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize
+    Vector3f origin2pix(((float) u - ((float) sizeD[0] - 1.0f) * 0.5f) * geom->detSize, -(geom->sdd - geom->sod),
+                        ((float) v - ((float) sizeD[1] - 1.0f) * 0.5f) * geom->detSize);
+
+    // this origin is rotation center
+    origin2src = Rotate * origin2src;
+    origin2pix = Rotate * origin2pix;
+
+    Vector3f src2pix = origin2src - origin2pix;
+
+    // intersection condition
+    float plane[6] = {-((float) (sizeV[0] + 1) / 2.0f) * geom->voxSize - offset[0] - t[0],
+                      ((float) (sizeV[0] + 1) / 2.0f) * geom->voxSize - offset[0] - t[0],
+                      -((float) (sizeV[1] + 1) / 2.0f) * geom->voxSize - offset[1] - t[1],
+                      ((float) (sizeV[1] + 1) / 2.0f) * geom->voxSize - offset[1] - t[1],
+                      -((float) (sizeV[2] + 1) / 2.0f) * geom->voxSize - offset[2] - t[2],
+                      ((float) (sizeV[2] + 1) / 2.0f) * geom->voxSize - offset[2] - t[2]
+    };
+
+    int cnt = 0;
+    float L = 0;
+    float coord[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    Vector3f pl;
+
+    // search coord on hitting plane
+    for (int p = 0; p < 3; p++) {
+        for (int sign = 0; sign < 2; sign++) {
+            pl = ((plane[2 * p + sign] - origin2src[p]) / src2pix[p]) * src2pix + origin2src;
+            /*if (n == 1 && p == 1) {
+                printf("[idx]: %d, (%lf, %lf, %lf), p: %lf\n", p, pl[0], pl[1], pl[2], (plane[2 * p + sign] - origin2src[p]) / src2pix[p]);
+            }*/
+            if (plane[2 * ((p + 1) % 3)] < pl[(p + 1) % 3] && pl[(p + 1) % 3] < plane[2 * ((p + 1) % 3) + 1] &&
+                plane[2 * ((p + 2) % 3)] < pl[(p + 2) % 3] && pl[(p + 2) % 3] < plane[2 * ((p + 2) % 3) + 1]) {
+                for (int i = 0; i < 3; i++) {
+                    coord[i + 3 * cnt] = pl[i];
+                }
+                cnt++;
+            }
+        }
+    }
+    L = sqrt((coord[0] - coord[3]) * (coord[0] - coord[3]) + (coord[1] - coord[4]) * (coord[1] - coord[4])
+            + (coord[2] - coord[5]) * (coord[2] - coord[5]));
+    const int64_t idx = u + sizeD[0] * v + sizeD[0] * sizeD[1] * n;
+    devProj[idx] *= L / devProjFactor[idx];
+    // devProjFactor[idx] = L;
 }
 
 __global__ void
@@ -1153,43 +1267,7 @@ __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y) {
     }
 }
 
-__device__ void
-forwardonDevice(const int coord[4], float *devProj, const float *devVoxel,
-                const Geometry &geom, int cond) {
 
-    int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
-    int sizeD[3] = {geom.detect, geom.detect, geom.nProj};
-
-    float u, v;
-    Vector3f B, G;
-    rayCasting(u, v, B, G, cond, coord, geom);
-
-    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
-        return;
-
-    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
-    int intU = floor(u_tmp), intV = floor(v_tmp);
-    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
-            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
-            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
-            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
-
-    const int n = abs(coord[3]);
-
-    const float ratio = (geom.voxSize * geom.voxSize) /
-                        (geom.detSize * (geom.sod / geom.sdd) * geom.detSize * (geom.sod / geom.sdd));
-    const int idxVoxel =
-            coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
-
-    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-              c1 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n],
-              c2 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-              c3 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
-              c4 * geom.voxSize * ratio * devVoxel[idxVoxel]);
-}
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, float *devVoxelFactor,
@@ -1343,15 +1421,15 @@ rayCasting(float &u, float &v, Vector3f &B, Vector3f &G, int cond, const int coo
     offset = Rotate * offset;
     Vector3f origin2src(0.0f, geom.sod, 0.0f);
     Vector3f baseU(1.0f, 0.0f, 0.0f);
-    Vector3f baseV(0.0f, 0.0f, 1.0f); // 0, 0, -1 is correct
+    Vector3f baseV(0.0f, 0.0f, 1.0f); // !!!!!!!!!!!!!!!!0, 0, -1 is correct
 
     // this origin is rotation center
     origin2src = Rotate * origin2src;
 
     Vector3f origin2voxel(
-            (2.0f * (float) coord[0] - (float) sizeV[0] + 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
-            (2.0f * (float) coord[1] - (float) sizeV[1] + 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
-            (2.0f * (float) coord[2] - (float) sizeV[2] + 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
+            (2.0f * (float) coord[0] - (float) sizeV[0] - 1.0f) * 0.5f * geom.voxSize - offset[0] - t[0], // -R * offset
+            (2.0f * (float) coord[1] - (float) sizeV[1] - 1.0f) * 0.5f * geom.voxSize - offset[1] - t[1],
+            (2.0f * (float) coord[2] - (float) sizeV[2] - 1.0f) * 0.5f * geom.voxSize - offset[2] - t[2]);
 
     // Source to voxel
     Vector3f src2voxel(origin2voxel[0] - origin2src[0],

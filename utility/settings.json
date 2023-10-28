@@ -44,8 +44,8 @@
   },
 
   "cfrp_7d_13rot" : {
-    "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/vol_test_9cond",
+    "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/AT/cfrp_ax",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/vol_at",
     "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/cond9_test_xtt",
     "sod": 1316.5,
     "sdd": 1819.6,
@@ -53,7 +53,7 @@
     "num_det_u": 512,
     "num_det_v": 512,
     "det_size": 0.0581777777,
-    "num_voxel": 192,
+    "num_voxel": 512,
     "rot": 13,
     "matrixRot": [
       1.0, 0.0, 0.0,
@@ -126,7 +126,7 @@
     ],
 
     "areaTrans": [
-      0.00000, 3.367, 0.0000
+      0.00000, 0.0000, 0.0000
     ],
 
     "offset": [

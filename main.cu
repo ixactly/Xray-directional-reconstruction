@@ -7,7 +7,7 @@
 #include <poisson_cpu.h>
 
 int main() {
-    std::string nametag = "phaseCT";
+    std::string nametag = "cfrp_7d_13rot";
     init_params(nametag);
 
     Volume<float> sinogram[NUM_PROJ_COND];
@@ -58,10 +58,10 @@ int main() {
     // XTT::reconstruct(sinogram, ct, md, geom, 5, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
     // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 4, 10, 5, Rotate::CW, method, 1e-1);
-    // IR::reconstruct(sinogram, ct, geom, 6, 5, Rotate::CW, method, 0.01);
+    IR::reconstruct(sinogram, ct, geom, 10, 5, Rotate::CW, method, 0.01);
 
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
-    IR::gradReconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, Method::ART, 2e-2);
+    // IR::gradReconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, Method::ART, 2e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
     // forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);

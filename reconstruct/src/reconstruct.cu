@@ -29,15 +29,16 @@ namespace IR {
 
         int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
         int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
-        int nProj = sizeD[2];
+        int64_t nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
-        const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
-        const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+        float *devSino, *devProj, *devProjFactor, *devVoxel, *devVoxelFactor, *devVoxelTmp;
+        const int64_t lenV = sizeV[0] * sizeV[1] * sizeV[2];
+        const int64_t lenD = sizeD[0] * sizeD[1] * sizeD[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD);
         cudaMalloc(&devProj, sizeof(float) * lenD); // memory can be small to subsetSize
+        cudaMalloc(&devProjFactor, sizeof(float) * lenD);
 //        cudaMalloc(&devCompare, sizeof(float) * lenD);
         cudaMalloc(&devVoxel, sizeof(float) * lenV);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1]);
@@ -81,6 +82,7 @@ namespace IR {
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
                 cudaMemset(loss1, 0.0f, sizeof(float));
                 cudaMemset(devProj, 0.0f, sizeof(float) * lenD);
+                cudaMemset(devProjFactor, 0.0f, sizeof(float) * lenD);
                 for (int &sub: subsetOrder) {
                     // forwardProj and ratio
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
@@ -90,9 +92,10 @@ namespace IR {
 
                         // forwardProj process
                         for (int y = 0; y < sizeV[1]; y++) {
-                            forwardProj<<<gridV, blockV>>>(devProj, devVoxel, devGeom, cond, y, n);
+                            forwardProj<<<gridV, blockV>>>(devProj, devVoxel, devProjFactor, devGeom, y, n, cond);
                             cudaDeviceSynchronize();
                         }
+                        correlationProjByLength<<<gridD, blockD>>>(devProj, devProjFactor, n, devGeom, cond);
 //                        projCompare<<<gridD, blockD>>>(&devCompare[lenD * cond], &devSino[lenD * cond],
 //                                                       &devProj[lenD * cond], devGeom, n);
                         // ratio process
@@ -111,7 +114,7 @@ namespace IR {
 
                         pbar.update();
                         for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
-                            int n = rotation * ((sub + batch * subOrder) % nProj);
+                            int64_t n = rotation * ((sub + batch * subOrder) % nProj);
                             backwardProj<<<gridV, blockV>>>(devProj, devVoxelTmp, devVoxelFactor, devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
@@ -129,11 +132,19 @@ namespace IR {
             cudaMemcpy(voxel[cond].get(), devVoxel, sizeof(float) * lenV, cudaMemcpyDeviceToHost);
         }
 
+/*
 
-
+        Volume<float> sino_tmp(NUM_DETECT_U, NUM_DETECT_V, NUM_PROJ);
+        cudaMemcpy(sino_tmp.get(), devProjFactor, sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+        std::string savefilePathCT =
+                VOLUME_PATH + "_pathLength" + "_" + std::to_string(NUM_DETECT_U) + "x"
+                + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
+        sino_tmp.save(savefilePathCT);
+*/
         cudaFree(devProj);
         cudaFree(devSino);
         cudaFree(devVoxel);
+        cudaFree(devProjFactor);
         cudaFree(devGeom);
         cudaFree(devVoxelFactor);
         cudaFree(devVoxelTmp);
@@ -1588,7 +1599,8 @@ void forwardProjOnly(Volume<float> *sinogram, Volume<float> *voxel, const Geomet
             pbar.update();
             // forwardProj process
             for (int y = 0; y < sizeV[1]; y++) {
-                forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n * rotation);
+                forwardProj<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel,
+                                               nullptr, devGeom, y, n * rotation, cond);
                 cudaDeviceSynchronize();
             }
         }
