@@ -89,7 +89,6 @@ void poissonSolveLDLT(Volume<float> &dst, const Volume<float> *src) {
                 A_trip.emplace_back(co(x, y), co(x, y + 1), -1.0f);
                 A_trip.emplace_back(co(x, y), co(x, y - 1), -1.0f);
             }
-
         }
     }
 

@@ -1,16 +1,16 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 1,
-    "condition" : 1,
+    "vector" : 7,
+    "condition" : 7,
     "base" : [
-      0.0, 0.0, 1.0,
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.57735, 0.57735, 0.57735,
-      0.57735, -0.57735, -0.57735,
-      -0.57735, 0.57735, -0.57735,
-      -0.57735, -0.57735, 0.57735
+      0.0000000, 0.0000000, 1.000000,
+      0.9998477, 0.0174524, 0.000000,
+      -0.0174524, 0.9998477 ,  0.00000,
+      0.56718592, 0.58733821,  0.57735,
+      0.58733821, -0.56718592, -0.57735,
+      -0.58733821, 0.56718592, -0.57735,
+      -0.56718592, -0.58733821,  0.57735
     ]
   },
 
@@ -44,16 +44,16 @@
   },
 
   "cfrp_7d_13rot" : {
-    "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/AT/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/vol_at",
-    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/cond9_test_xtt",
+    "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/xtt_basechanged",
+    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/xtt_md_15ang",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
     "num_det_u": 512,
     "num_det_v": 512,
     "det_size": 0.0581777777,
-    "num_voxel": 512,
+    "num_voxel": 196,
     "rot": 13,
     "matrixRot": [
       1.0, 0.0, 0.0,
@@ -126,7 +126,7 @@
     ],
 
     "areaTrans": [
-      0.00000, 0.0000, 0.0000
+      0.00000, 3.367, 0.0000
     ],
 
     "offset": [

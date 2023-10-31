@@ -38,7 +38,7 @@ namespace IR {
 
         cudaMalloc(&devSino, sizeof(float) * lenD);
         cudaMalloc(&devProj, sizeof(float) * lenD); // memory can be small to subsetSize
-        cudaMalloc(&devProjFactor, sizeof(float) * lenD);
+        cudaMalloc(&devProjFactor, sizeof(float) * sizeD[0] * sizeD[1]);
 //        cudaMalloc(&devCompare, sizeof(float) * lenD);
         cudaMalloc(&devVoxel, sizeof(float) * lenV);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1]);
@@ -63,7 +63,6 @@ namespace IR {
         for (int i = 0; i < batch; i++) {
             subsetOrder[i] = i;
         }
-
         std::vector<float> losses(epoch);
 
         // progress bar
@@ -82,10 +81,11 @@ namespace IR {
                 std::shuffle(subsetOrder.begin(), subsetOrder.end(), get_rand_mt);
                 cudaMemset(loss1, 0.0f, sizeof(float));
                 cudaMemset(devProj, 0.0f, sizeof(float) * lenD);
-                cudaMemset(devProjFactor, 0.0f, sizeof(float) * lenD);
+
                 for (int &sub: subsetOrder) {
                     // forwardProj and ratio
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                        cudaMemset(devProjFactor, 0.0f, sizeof(float) * sizeD[0] * sizeD[1]);
                         int n = rotation * ((sub + batch * subOrder) % nProj);
                         // !!care!! judge from vecSod which plane we chose
                         pbar.update();
@@ -95,7 +95,7 @@ namespace IR {
                             forwardProj<<<gridV, blockV>>>(devProj, devVoxel, devProjFactor, devGeom, y, n, cond);
                             cudaDeviceSynchronize();
                         }
-                        correlationProjByLength<<<gridD, blockD>>>(devProj, devProjFactor, n, devGeom, cond);
+                        correlationProjByLength<<<gridD, blockD>>>(devProj, devProjFactor, devGeom, cond, n);
 //                        projCompare<<<gridD, blockD>>>(&devCompare[lenD * cond], &devSino[lenD * cond],
 //                                                       &devProj[lenD * cond], devGeom, n);
                         // ratio process
@@ -106,6 +106,7 @@ namespace IR {
                         }
                         cudaDeviceSynchronize();
                     }
+
 
                     // backwardProj process
                     for (int y = 0; y < sizeV[1]; y++) {
@@ -825,13 +826,14 @@ namespace XTT {
         int nProj = sizeD[2];
 
         // cudaMalloc
-        float *devSino, *devProj, *devVoxel, *devVoxelFactor, *devVoxelTmp;
+        float *devSino, *devProj, *devProjFactor, *devVoxel, *devVoxelFactor, *devVoxelTmp;
         const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
         const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
         const long lenP = sizeV[0] * sizeV[2];
 
         cudaMalloc(&devSino, sizeof(float) * lenD * NUM_PROJ_COND);
         cudaMalloc(&devProj, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
+        cudaMalloc(&devProjFactor, sizeof(float) * sizeD[0] * sizeD[1]);
         cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelFactor, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
         cudaMalloc(&devVoxelTmp, sizeof(float) * sizeV[0] * sizeV[1] * NUM_BASIS_VECTOR);
@@ -879,6 +881,7 @@ namespace XTT {
                 // forwardProj and ratio
                 for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
                     for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
+                        cudaMemset(devProjFactor, 0.0f, sizeof(float) * sizeD[0] * sizeD[1]);
                         int n = rotation * ((sub + batch * subOrder) % nProj);
                         // !!care!! judge from vecSod which plane we chose
                         pbar.update();
@@ -886,10 +889,11 @@ namespace XTT {
                         // forwardProj process
                         for (int y = 0; y < sizeV[1]; y++) {
                             // iterate basis vector in forwardProjXTT
-                            forwardProjXTT<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devGeom, cond, y, n);
+                            forwardProjXTT<<<gridV, blockV>>>(&devProj[lenD * cond], devProjFactor, devVoxel,
+                                                              devGeom, cond, y, n);
                             cudaDeviceSynchronize();
                         }
-
+                        correlationProjByLength<<<gridD, blockD>>>(&devProj[lenD * cond], devProjFactor, devGeom, cond, n);
                         // ratio process
                         if (method == Method::ART) {
                             projSubtract<<<gridD, blockD>>>(&devProj[lenD * cond], &devSino[lenD * cond], devGeom,

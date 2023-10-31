@@ -131,14 +131,13 @@ backwardProjXTTbyFiber(float *devProj, float *devVoxelTmp, float *devVoxelFactor
 }
 
 __global__ void
-forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
-               int y, int n) {
+forwardProjXTT(float *devProj, float *devProjFactor, float *devVoxel, Geometry *geom, int cond, int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
 
     const int coord[4] = {x, y, z, n};
-    forwardXTTonDevice(coord, devProj, devVoxel, *geom, cond);
+    forwardXTTonDevice(coord, devProj, devProjFactor, devVoxel, *geom, cond);
 }
 
 __global__ void
@@ -1076,13 +1075,13 @@ forwardonDevice(const int coord[4], float *devProj, float *devProjFactor, const 
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n],
               c4 * ratio * devVoxel[idxVoxel]);
 
-    atomicAdd(&devProjFactor[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1);
-    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2);
-    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3);
-    atomicAdd(&devProjFactor[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4);
+    atomicAdd(&devProjFactor[intU + sizeD[0] * (intV + 1)], c1);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * (intV + 1)], c2);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * intV], c3);
+    atomicAdd(&devProjFactor[intU + sizeD[0] * intV], c4);
 }
 
-__global__ void correlationProjByLength(float* devProj, float* devProjFactor, int n, Geometry *geom, int cond) {
+__global__ void correlationProjByLength(float *devProj, const float *devProjFactor, Geometry *geom, int cond, int n) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
     const int v = blockIdx.y * blockDim.y + threadIdx.y;
     if (u >= geom->detect || v >= geom->detect) return;
@@ -1149,8 +1148,7 @@ __global__ void correlationProjByLength(float* devProj, float* devProjFactor, in
     L = sqrt((coord[0] - coord[3]) * (coord[0] - coord[3]) + (coord[1] - coord[4]) * (coord[1] - coord[4])
             + (coord[2] - coord[5]) * (coord[2] - coord[5]));
     const int64_t idx = u + sizeD[0] * v + sizeD[0] * sizeD[1] * n;
-    devProj[idx] *= L / devProjFactor[idx];
-    // devProjFactor[idx] = L;
+    devProj[idx] *= L / (devProjFactor[u + sizeD[0] * v] + 1e-5f);
 }
 
 __global__ void
@@ -1303,7 +1301,7 @@ backwardonDevice(const int coord[4], const float *devProj, float *devVoxelTmp, f
 }
 
 __device__ void
-forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
+forwardXTTonDevice(const int coord[4], float *devProj, float *devProjFactor, const float *devVoxel,
                    const Geometry &geom, int cond) {
 
     int sizeV[3] = {geom.voxel, geom.voxel, geom.voxel};
@@ -1349,6 +1347,10 @@ forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * proj);
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * proj);
 
+    atomicAdd(&devProjFactor[intU + sizeD[0] * (intV + 1)], c1);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * (intV + 1)], c2);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * intV], c3);
+    atomicAdd(&devProjFactor[intU + sizeD[0] * intV], c4);
 }
 
 // change to class

@@ -126,15 +126,14 @@ __global__ void projSubtract(float *devProj, const float *devSino, const Geometr
 __global__ void voxelSqrt(float *devVoxel, const Geometry *geom, int y);
 
 __global__ void
-forwardProjXTT(float *devProj, float *devVoxel, Geometry *geom, int cond,
-               int y, int n);
+forwardProjXTT(float *devProj, float *devProjFactor, float *devVoxel, Geometry *geom, int cond, int y, int n);
 
 __global__ void
 backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
                 int y, int n);
 
 __device__ void
-forwardXTTonDevice(const int coord[4], float *devProj, const float *devVoxel,
+forwardXTTonDevice(const int coord[4], float *devProj, float *devProjFactor, const float *devVoxel,
                    const Geometry &geom, int cond);
 
 __device__ void
@@ -144,7 +143,7 @@ backwardXTTonDevice(const int coord[4], const float *devProj, float *devVoxelTmp
 __global__ void
 forwardProj(float *devProj, float *devVoxel, float *devProjFactor, Geometry *geom, int y, int n, int cond);
 
-__global__ void correlationProjByLength(float* devProj, float* devProjFactor, int n, Geometry *geom, int cond);
+__global__ void correlationProjByLength(float *devProj, const float *devProjFactor, Geometry *geom, int cond, int n);
 
 __global__ void
 backwardProj(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geometry *geom, int cond,
