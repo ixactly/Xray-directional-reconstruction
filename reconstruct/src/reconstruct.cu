@@ -1464,6 +1464,75 @@ namespace FDK {
         cudaFree(weight);
     }
 
+    void hilbertReconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
+        std::cout << "starting reconstruct(Hilbert FBP)..." << std::endl;
+        for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+            voxel[i].forEach([](float value) -> float { return 0.0; });
+        }
+
+        int rotation = (dir == Rotate::CW) ? 1 : -1;
+
+        int64_t sizeV[3] = {voxel[0].x(), voxel[0].y(), voxel[0].z()};
+        int64_t sizeD[3] = {sinogram[0].x(), sinogram[0].y(), sinogram[0].z()};
+        int nProj = sizeD[2];
+
+        // cudaMalloc
+        float *devSino, *devSinoFilt, *devVoxel, *weight, *filt;
+        const long lenV = sizeV[0] * sizeV[1] * sizeV[2];
+        const long lenD = sizeD[0] * sizeD[1] * sizeD[2];
+
+        cudaMalloc(&devSinoFilt, sizeof(float) * lenD * NUM_PROJ_COND); // memory can be small to subsetSize
+        cudaMalloc(&devVoxel, sizeof(float) * lenV * NUM_BASIS_VECTOR);
+        cudaMalloc(&weight, sizeof(float) * sizeD[0] * sizeD[1]);
+        cudaMallocManaged(&filt, sizeof(float) * geom.detect);
+
+        for (int i = 0; i < NUM_PROJ_COND; i++)
+            cudaMemcpy(&devSino[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
+
+        Geometry *devGeom;
+        cudaMalloc(&devGeom, sizeof(Geometry));
+        cudaMemcpy(devGeom, &geom, sizeof(Geometry), cudaMemcpyHostToDevice);
+
+        // define blocksize
+        dim3 blockV(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridV((sizeV[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeV[2] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+        dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+
+        // progress bar
+        progressbar pbar(nProj);
+        // calcWeight<<<gridD, blockD>>>(weight, devGeom);
+        cudaDeviceSynchronize();
+        // make Hilbert fliter
+        cuFFTtoProjection(sinogram[0], geom);
+        for (int i = 0; i < NUM_PROJ_COND; i++) {
+            cudaMemcpy(&devSinoFilt[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
+        }
+
+        float d = geom.detSize * (geom.sod / geom.sdd);
+
+        for (int cond = 0; cond < NUM_PROJ_COND; cond++) {
+            for (int n = 0; n < nProj; n++) {
+                cudaDeviceSynchronize();
+                for (int y = 0; y < geom.voxel; y++) {
+                    filteredBackProj<<<gridV, blockV>>>(devSinoFilt, devVoxel, devGeom, cond, y, rotation * n);
+                }
+            }
+        }
+
+        for (int i = 0; i < NUM_PROJ_COND; i++)
+            cudaMemcpy(sinogram[i].get(), &devSinoFilt[i * lenD], sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+        for (int i = 0; i < NUM_BASIS_VECTOR; i++)
+            cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
+
+        cudaFree(devSinoFilt);
+        cudaFree(devSino);
+        cudaFree(devVoxel);
+        cudaFree(devGeom);
+        cudaFree(filt);
+        cudaFree(weight);
+    }
+
     void gradReconstruct(Volume<float> *sinogram, Volume<float> *voxel, const Geometry &geom, Rotate dir) {
         std::cout << "starting reconstruct(FDK)..." << std::endl;
         for (int i = 0; i < NUM_BASIS_VECTOR; i++) {

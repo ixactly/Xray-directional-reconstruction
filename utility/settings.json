@@ -1,8 +1,8 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 7,
-    "condition" : 7,
+    "vector" : 1,
+    "condition" : 1,
     "base" : [
       0.0000000, 0.0000000, 1.000000,
       0.9998477, 0.0174524, 0.000000,
@@ -16,7 +16,7 @@
 
   "phaseCT" : {
     "proj_path": "../proj_raw_bin/phase_lens/lens_dph",
-    "vol_path": "../volume_bin/phase_lens/lens_vol_grad",
+    "vol_path": "../volume_bin/phase_lens/hilbert",
     "direc_path": "none",
     "sod": 1316.5,
     "sdd": 1819.6,

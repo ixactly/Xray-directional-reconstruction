@@ -7,6 +7,8 @@
 #include <random>
 #include <params.h>
 #include <vec.h>
+#include <cufft.h>
+#include <memory>
 
 __global__ void calcWeight(float *weight, const Geometry *geom) {
     const int u = blockIdx.x * blockDim.x + threadIdx.x;
@@ -291,4 +293,80 @@ __device__ void gradientBackward(const int coord[4], const float *devProj, float
         const int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] + i * (sizeV[0] * sizeV[1] * sizeV[2]);
         devVoxel[idxVoxel] += grad[i] * U * U * U * C * numBack;
     }
+}
+
+__global__ void hilbertFiltering(cufftComplex *proj, const Geometry &geom) {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    if (u >= geom.detect || v >= geom.detect) return;
+
+    // filtering
+
+}
+
+void cuFFTtoProjection(Volume<float>& proj, const Geometry& geom) {
+    // device-memoryの確保(入/出力兼用)
+    int64_t sizeD[3] = {geom.detect, geom.detect, geom.nProj};
+    int64_t lenD = sizeD[0] * sizeD[1] * sizeD[2];
+    int64_t lenP = sizeD[0] * sizeD[1];
+    dim3 blockD(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 gridD((sizeD[0] + BLOCK_SIZE - 1) / BLOCK_SIZE, (sizeD[1] + BLOCK_SIZE - 1) / BLOCK_SIZE, 1);
+
+    cufftHandle plan_f, plan_i;
+    cufftReal *src_proj;
+    cufftComplex *dst_proj;
+
+    cufftComplex *h_fft = new cufftComplex[lenD];
+    cufftReal *h_fft_abs = new cufftReal[(sizeD[0] / 2 + 1) * sizeD[1] * sizeD[2]];
+
+    /*for (int64_t n = 0; n < sizeD[2]; n++) {
+        for (int64_t u = 0; u < sizeD[0]; u++) {
+            for (int64_t v = 0; v < sizeD[1]; v++) {
+                int64_t idx = u + sizeD[0] * v + sizeD[0] * sizeD[1] * n;
+                h_src_proj[idx].x = proj(u, v, n);
+                h_src_proj[idx].y = 0.f;
+            }
+        }
+    }*/
+
+    cudaMalloc((void **)&dst_proj, sizeof(cufftComplex) * lenD); //GPUで使用するメモリの確保
+    cudaMalloc((void **)&src_proj, sizeof(cufftReal) * lenD); //GPUで使用するメモリの確保
+
+    // copy projection data from host to device
+    cudaMemcpy(src_proj, proj.get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
+
+    cufftPlan2d(&plan_f, (int) sizeD[0], (int) sizeD[1], CUFFT_R2C);
+    cufftPlan2d(&plan_i, (int) sizeD[0], (int) sizeD[1], CUFFT_C2R);
+
+    for (int64_t i = 0; i < sizeD[2]; i++) {
+        // The real-to-complex(R2C) transform is implicitly a forward transform.
+        cufftExecR2C(plan_f, &src_proj[i * lenP], &dst_proj[i * (sizeD[0] / 2 + 1) * sizeD[1]]);
+        // filtering here
+        // hilbertFiltering<<<gridD, blockD>>>(dst_proj);
+        // dst_complex needs to be conjugate complex number
+        // The complex-to-real(C2R) transform is implicitly inverse.
+        // cufftExecC2R(plan_i, &dst_proj[i * lenP], &src_proj[i * lenP]);
+    }
+
+    cudaMemcpy(h_fft, dst_proj, sizeof(cufftComplex) * lenD, cudaMemcpyDeviceToHost);
+    // cudaMemcpy(proj.get(), src_proj, sizeof(float) * lenD, cudaMemcpyDeviceToHost);
+    std::cout << "check" << std::endl;
+    int newU = sizeD[0] / 2 + 1;
+
+    for (int64_t n = 0; n < sizeD[2]; n++) {
+        for (int64_t u = 0; u < newU; u++) {
+            for (int64_t v = 0; v < sizeD[1]; v++) {
+                int64_t idx = u + newU * v + newU * sizeD[1] * n;
+                h_fft_abs[idx] = cuCabsf(h_fft[idx]);
+            }
+        }
+    }
+    std::memcpy(proj.get(), h_fft_abs, sizeof(float) * (sizeD[0] / 2 + 1) * sizeD[1] * sizeD[2]);
+
+    cufftDestroy(plan_f);
+    cufftDestroy(plan_i);
+    delete[] h_fft;
+    delete[] h_fft_abs;
+    cudaFree(dst_proj);
+    cudaFree(src_proj);
 }

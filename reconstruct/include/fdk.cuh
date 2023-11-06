@@ -9,6 +9,7 @@
 #include "geometry.h"
 #include "fdk.cuh"
 #include "volume.h"
+#include <cufft.h>
 
 __device__ void
 backwardonDevice(const int coord[4], const float *devProj, float* devVoxel, const Geometry &geom, int cond);
@@ -22,6 +23,10 @@ __global__ void
 filteredBackProj(float *devProj, float* devVoxel, Geometry *geom, int cond, int y, int n);
 __device__ void gradientBackward(const int coord[4], const float *devProj, float* devVoxel, const Geometry &geom, int cond);
 __global__ void gradientFeldKamp(float *devProj, float* devVoxel, Geometry *geom, int cond, int y, int n);
+
+void cuFFTtoProjection(Volume<float>& proj, const Geometry& geom);
+__global__ void hilbertFiltering(cufftComplex *proj, const Geometry &geom);
+
 __global__ void hogeTmpWakaran();
 
 #endif //PCA_FDK_CUH
