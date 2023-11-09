@@ -1345,18 +1345,16 @@ namespace XTT {
             std::string xyz[] = {"x", "y", "z"};
             for (int i = 0; i < 3; i++) {
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/pca/md_cond9_outer" +
-                        std::to_string(outer + 1) + "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
-                        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+                        DIRECTION_PATH + "_sequence" + std::to_string(outer + 1) + "d" + std::to_string(i + 1) + "_"
+                        + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 md[i].save(savefilePathCT);
             }
+
             // save ct volume
             for (int i = 0; i < 3; i++) {
                 std::string savefilePathCT =
-                        "../volume_bin/cfrp_xyz7_13axis/sequence/volume_cond9_" + xyz[i]
-                        + "_" + "outer" + std::to_string(outer + 1) +
-                        "_" + xyz[i] + "_" + std::to_string(NUM_VOXEL) + "x" +
-                        std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
+                        VOLUME_PATH + "_sequence" + std::to_string(outer + 1) + "d" + std::to_string(i + 1) + "_"
+                        + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                 voxel[i].save(savefilePathCT);
             }
         }
@@ -1504,7 +1502,7 @@ namespace FDK {
         // calcWeight<<<gridD, blockD>>>(weight, devGeom);
         cudaDeviceSynchronize();
         // make Hilbert fliter
-        cuFFTtoProjection(sinogram[0], geom);
+        cuFFTtoProjection(sinogram[0], geom, devGeom);
         for (int i = 0; i < NUM_PROJ_COND; i++) {
             cudaMemcpy(&devSinoFilt[i * lenD], sinogram[i].get(), sizeof(float) * lenD, cudaMemcpyHostToDevice);
         }

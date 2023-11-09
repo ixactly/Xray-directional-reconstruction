@@ -1,12 +1,12 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 1,
-    "condition" : 1,
+    "vector" : 3,
+    "condition" : 2,
     "base" : [
       0.0000000, 0.0000000, 1.000000,
-      0.9998477, 0.0174524, 0.000000,
-      -0.0174524, 0.9998477 ,  0.00000,
+      0.0, 1.0000, 0.000000,
+      1.000000, 0.0,  0.00000,
       0.56718592, 0.58733821,  0.57735,
       0.58733821, -0.56718592, -0.57735,
       -0.58733821, 0.56718592, -0.57735,
@@ -16,7 +16,7 @@
 
   "phaseCT" : {
     "proj_path": "../proj_raw_bin/phase_lens/lens_dph",
-    "vol_path": "../volume_bin/phase_lens/hilbert",
+    "vol_path": "../volume_bin/phase_lens/gradIR",
     "direc_path": "none",
     "sod": 1316.5,
     "sdd": 1819.6,
@@ -45,8 +45,8 @@
 
   "cfrp_7d_13rot" : {
     "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/xtt_basechanged",
-    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/xtt_md_15ang",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/tw_1cond",
+    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/tw_1cond_md",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
@@ -146,7 +146,7 @@
     ],
 
     "index": [
-      0, 1, 2, 3, 4, 7, 9, 11
+      1, 2, 3, 4, 7, 9, 11
     ],
     "sorting" : true
   },

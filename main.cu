@@ -6,7 +6,7 @@
 #include <reconstruct.cuh>
 
 int main() {
-    std::string nametag = "phaseCT";
+    std::string nametag = "cfrp_7d_13rot";
     init_params(nametag);
     Volume<float> sinogram[NUM_PROJ_COND];
     for (auto &e: sinogram)
@@ -55,11 +55,11 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 4, 10, 5, Rotate::CW, method, 1e-1);
+    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 4, 20, 5, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, method, 0.01);
-    FDK::hilbertReconstruct(sinogram, ct, geom, Rotate::CW);
+    // FDK::hilbertReconstruct(sinogram, ct, geom, Rotate::CW);
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
-    // IR::gradReconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, Method::ART, 2e-2);
+    // IR::gradReconstruct(sinogram, ct, geom, 100, 5, Rotate::CW, Method::ART, 8e-2);
     // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
     // forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);
@@ -74,7 +74,7 @@ int main() {
         std::string savefilePathProj =
                 VOLUME_PATH + "_proj" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x"
                 + std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-        sinogram[i].save(savefilePathProj);
+        // sinogram[i].save(savefilePathProj);
     }
 
     // save ct volume
