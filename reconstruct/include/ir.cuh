@@ -50,11 +50,11 @@ __global__ void
 calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss);
 
 __global__ void
-updateEstimation(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate, int iter);
+updateEstimation(const float *devVoxel, float *devMD, int y, const Geometry *geom, float *norm_loss, float *devEstimate,
+                 int iter);
 
 __global__ void
-calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const Geometry *geom,
-                                  float *norm_loss, const float *devEstimate);
+calcMDWithEst(float *devVoxel, float *devMD, int y, const Geometry *geom, const float *devEstimate);
 
 __global__ void
 fillVolume(float *devVoxel, float num, int y, const Geometry *geom);

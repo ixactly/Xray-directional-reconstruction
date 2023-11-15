@@ -55,7 +55,7 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 1, 30, 5, Rotate::CW, method, 1e-1);
+    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 1, 10, 5, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, method, 0.01);
     // FDK::hilbertReconstruct(sinogram, ct, geom, Rotate::CW);
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
