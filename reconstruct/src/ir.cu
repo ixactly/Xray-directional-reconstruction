@@ -152,8 +152,8 @@ backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geome
 }
 
 __global__ void
-forwardOrth(float *devProj, const float *devVoxel, const float *devMD, int cond, int y, int n, int it,
-            Geometry *geom) {
+forwardOrthByMD(float *devProj, const float *devVoxel, const float *devMD, int cond, int y, int n, int it,
+                Geometry *geom) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -233,8 +233,8 @@ forwardOrth(float *devProj, const float *devVoxel, const float *devMD, int cond,
 }
 
 __global__ void
-backwardOrth(const float *devProj, const float *devMD, float *devVoxelTmp, float *devVoxelFactor,
-             const Geometry *geom, int cond, int y, int n, int it) {
+backwardOrthByMD(const float *devProj, const float *devMD, float *devVoxelTmp, float *devVoxelFactor,
+                 const Geometry *geom, int cond, int y, int n, int it) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -493,7 +493,7 @@ __both__ Matrix3f rodriguesRotation(float x, float y, float z, float cos, float 
 }
 
 __global__ void
-calcNormalVectorThreeDirec(float *devVoxel, float *devMD, int y, const Geometry *geom, float *norm_loss) {
+calcMainDirection(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -539,7 +539,7 @@ calcNormalVectorThreeDirec(float *devVoxel, float *devMD, int y, const Geometry 
     for (int i = 0; i < 3; i++) {
         int64_t idx = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       i * (sizeV[0] * sizeV[1] * sizeV[2]);
-        devMD[idx] = md[i];
+        devCoef[idx] = md[i];
     }
 }
 

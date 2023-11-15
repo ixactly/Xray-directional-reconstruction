@@ -23,11 +23,11 @@ __global__ void
 projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n);
 
 __global__ void
-forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
+forwardOrthByMD(float *devProj, const float *devVoxel, const float *devMD, int cond, int y, int n, int it, Geometry *geom);
 
 __global__ void
-backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp, float *devVoxelFactor,
-             const Geometry *geom, int cond, int y, int n, int it);
+backwardOrthByMD(const float *devProj, const float *devMD, float *devVoxelTmp, float *devVoxelFactor,
+                 const Geometry *geom, int cond, int y, int n, int it);
 
 __global__ void
 forwardProjGrad(float *devProj, const float *devVoxel, Geometry *geom, int cond, int y, int n);
@@ -47,7 +47,7 @@ __global__ void
 calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
 
 __global__ void
-calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss);
+calcMainDirection(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss);
 
 __global__ void
 updateEstimation(const float *devVoxel, float *devMD, int y, const Geometry *geom, float *norm_loss, float *devEstimate,

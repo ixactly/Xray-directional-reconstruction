@@ -443,8 +443,8 @@ namespace XTT {
                             // forwardProj process
                             for (int y = 0; y < sizeV[1]; y++) {
                                 // 回転行列に従って3方向散乱係数の順投影
-                                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
-                                                               cond, y, n, ep1, devGeom);
+                                forwardOrthByMD<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
+                                                                   cond, y, n, ep1, devGeom);
                                 cudaDeviceSynchronize();
                             }
 
@@ -468,8 +468,8 @@ namespace XTT {
                             for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                                 int n = rotation * ((sub + batch * subOrder) % nProj);
 
-                                backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devCoef, devVoxelTmp,
-                                                                devVoxelFactor, devGeom, cond, y, n, ep1);
+                                backwardOrthByMD<<<gridV, blockV>>>(&devProj[lenD * cond], devCoef, devVoxelTmp,
+                                                                    devVoxelFactor, devGeom, cond, y, n, ep1);
                                 cudaDeviceSynchronize();
                             }
                         }
@@ -510,7 +510,7 @@ namespace XTT {
 
             for (int y = 0; y < sizeV[1]; y++) {
                 // calcNormalVector<<<gridV, blockV>>>(devVoxel, devCoef, y, ep1, devGeom, devLoss2);
-                calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devCoef, y, devGeom, devLoss2);
+                calcMainDirection<<<gridV, blockV>>>(devVoxel, devCoef, y, devGeom, devLoss2);
                 cudaDeviceSynchronize();
             }
             std::string xyz[] = {"x", "y", "z"};
@@ -1105,9 +1105,9 @@ namespace XTT {
     }
 
     void
-    orthTwiceReconstruct(Volume<float> *sinogram, Volume<float> voxel[3], Volume<float> md[3], const Geometry &geom,
+    circleEstReconstruct(Volume<float> *sinogram, Volume<float> voxel[3], Volume<float> md[3], const Geometry &geom,
                          int iter1, int iter2, int batch, Rotate dir, Method method, float lambda) {
-        std::cout << "starting reconstruct(orth)..." << std::endl;
+        std::cout << "starting reconstruct(circle est)..." << std::endl;
 
         // int rotation = (dir == Rotate::CW) ? -1 : 1;
         int rotation = (dir == Rotate::CW) ? 1 : -1;
@@ -1205,8 +1205,8 @@ namespace XTT {
                                 // forwardProj process
                                 for (int y = 0; y < sizeV[1]; y++) {
                                     // 回転行列に従って3方向散乱係数の順投影
-                                    forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devMD,
-                                                                   cond, y, n, ep1, devGeom);
+                                    forwardOrthByMD<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devMD,
+                                                                       cond, y, n, ep1, devGeom);
                                     cudaDeviceSynchronize();
                                 }
                                 // ratio process
@@ -1229,8 +1229,8 @@ namespace XTT {
                                 for (int subOrder = 0; subOrder < subsetSize; subOrder++) {
                                     int n = rotation * ((sub + batch * subOrder) % nProj);
 
-                                    backwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devMD, devVoxelTmp,
-                                                                    devVoxelFactor, devGeom, cond, y, n, ep1);
+                                    backwardOrthByMD<<<gridV, blockV>>>(&devProj[lenD * cond], devMD, devVoxelTmp,
+                                                                        devVoxelFactor, devGeom, cond, y, n, ep1);
                                     cudaDeviceSynchronize();
                                 }
                             }
@@ -1264,7 +1264,7 @@ namespace XTT {
                 } else {
                     for (int y = 0; y < sizeV[1]; y++) {
                         fillVolume<<<gridV, blockV>>>(devEstimate, 100.f, y, devGeom);
-                        calcNormalVectorThreeDirec<<<gridV, blockV>>>(devVoxel, devMD, y, devGeom, devLoss2);
+                        calcMainDirection<<<gridV, blockV>>>(devVoxel, devMD, y, devGeom, devLoss2);
                     }
                     for (int i = 0; i < 3; i++) {
                         cudaMemcpy(voxel[i].get(), &devVoxel[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
@@ -1802,8 +1802,8 @@ forwardProjFiber(Volume<float> *sinogram, Volume<float> *voxel, Volume<float> *m
             pbar.update();
             // forwardProj process
             for (int y = 0; y < sizeV[1]; y++) {
-                forwardOrth<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
-                                               cond, y, n, 0, devGeom);
+                forwardOrthByMD<<<gridV, blockV>>>(&devProj[lenD * cond], devVoxel, devCoef,
+                                                   cond, y, n, 0, devGeom);
                 cudaDeviceSynchronize();
             }
         }
