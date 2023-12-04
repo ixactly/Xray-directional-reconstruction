@@ -2,15 +2,15 @@
   "recon_variable" : {
     "blockSize" : 32,
     "vector" : 3,
-    "condition" : 7,
+    "condition" : 10,
     "base" : [
       1.0000000, 0.0000000, 0.000000,
       0.0, 1.0000, 0.000000,
       0.000000, 0.0,  1.00000,
-      0.56718592, 0.58733821,  0.57735,
-      0.58733821, -0.56718592, -0.57735,
-      -0.58733821, 0.56718592, -0.57735,
-      -0.56718592, -0.58733821,  0.57735
+      0.57735, 0.57735, 0.57735,
+      0.57735, -0.57735, -0.57735,
+      -0.57735, 0.57735, -0.57735,
+      -0.57735, -0.57735, 0.57735
     ]
   },
 
@@ -45,8 +45,8 @@
 
   "cfrp_7d_13rot" : {
     "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/tw_1cond",
-    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/tw_1cond_md",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/tw_123456781012cond",
+    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/tw_123456781012cond_md",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
@@ -146,7 +146,7 @@
     ],
 
     "index": [
-      0, 1, 2, 3, 4, 5, 6, 11
+      0, 1, 2, 3, 4, 5, 6, 7, 9, 11
     ],
     "sorting" : true
   },

@@ -152,8 +152,8 @@ backwardProjXTT(float *devProj, float *devVoxelTmp, float *devVoxelFactor, Geome
 }
 
 __global__ void
-forwardOrthByMD(float *devProj, const float *devVoxel, const float *devMD, int cond, int y, int n, int it,
-                Geometry *geom) {
+forwardOrthByMD(float *devProj, float *devProjFactor, const float *devVoxel, const float *devMD, Geometry *geom,
+                int cond, int it, int n, int y) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -200,13 +200,6 @@ forwardOrthByMD(float *devProj, const float *devVoxel, const float *devMD, int c
                -sint, 0.f, cost);
     */
     float proj = 0.0f;
-
-    // bool out = (x == 50 && y == 50 && z == 50 && (n == 0 || n == 45));
-    /*
-    if (out)
-        printf("B: (%lf, %lf, %lf), G: (%lf, %lf, %lf)\n", B(0), B(1), B(2), G(0), G(1), G(2));
-        */
-
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
         // add scattering coefficient (read paper)
         // B->beam direction unit vector (src2voxel)
@@ -223,13 +216,18 @@ forwardOrthByMD(float *devProj, const float *devVoxel, const float *devMD, int c
 
         float vkm = B.cross(S).norm2() * abs(S * G);
         // float vkm = abs(S * G);
-        proj += vkm * vkm * geom->voxSize * ratio * devVoxel[idxVoxel];
+        proj += vkm * vkm * devVoxel[idxVoxel];
     }
 
     atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1 * proj);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2 * proj);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * proj);
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * proj);
+
+    atomicAdd(&devProjFactor[intU + sizeD[0] * (intV + 1)], c1);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * (intV + 1)], c2);
+    atomicAdd(&devProjFactor[(intU + 1) + sizeD[0] * intV], c3);
+    atomicAdd(&devProjFactor[intU + sizeD[0] * intV], c4);
 }
 
 __global__ void
@@ -292,7 +290,136 @@ backwardOrthByMD(const float *devProj, const float *devMD, float *devVoxelTmp, f
         devVoxelTmp[idxVoxel] += backward;
     }
 }
+__global__ void
+forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it,
+            Geometry *geom) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
 
+    const int coord[4] = {x, y, z, n};
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    float u = 0.0f, v = 0.0f;
+    Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
+    rayCasting(u, v, B, G, cond, coord, *geom);
+
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
+        return;
+
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
+    int intU = floor(u_tmp), intV = floor(v_tmp);
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
+            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
+            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
+
+    const float ratio = (geom->voxSize * geom->voxSize) /
+                        (geom->detSize * (geom->sod / geom->sdd) * geom->detSize * (geom->sod / geom->sdd));
+    const float phi_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1 - cos_c * cos_c)};
+    /*
+    Matrix3f R(cos(phi) * cos(theta), -sin(phi), cos(phi) * sin(theta),
+       sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta),
+       -sin(theta), 0, cos(theta));
+    */
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
+
+    float proj = 0.0f;
+
+    // bool out = (x == 50 && y == 50 && z == 50 && (n == 0 || n == 45));
+    /*
+    if (out)
+        printf("B: (%lf, %lf, %lf), G: (%lf, %lf, %lf)\n", B(0), B(1), B(2), G(0), G(1), G(2));
+        */
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        // add scattering coefficient (read paper)
+        // B->beam direction unit vector (src2voxel)
+        // S->scattering base vector
+        // G->grating sensivity vector
+        // Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+
+        // float vkm = abs(S * G);
+        const int idxVoxel = coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                             i * (sizeV[0] * sizeV[1] * sizeV[2]);
+
+        Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        S = R * S;
+
+        float vkm = B.cross(S).norm2() * abs(S * G);
+        // float vkm = abs(S * G);
+        proj += vkm * vkm * geom->voxSize * ratio * devVoxel[idxVoxel];
+    }
+
+    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1 * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2 * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * proj);
+    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * proj);
+}
+
+__global__ void
+backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp, float *devVoxelFactor,
+             const Geometry *geom, int cond, int y, int n, int it) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    const int coord[4] = {x, y, z, n};
+
+    float u = 0.0f, v = 0.0f;
+    Vector3f B(0.0f, 0.0f, 0.0f), G(0.0f, 0.0f, 0.0f);
+    rayCasting(u, v, B, G, cond, coord, *geom);
+
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+    if (!(0.55f < u && u < (float) sizeD[0] - 0.55f && 0.55f < v && v < (float) sizeD[1] - 0.55f))
+        return;
+
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
+    int intU = floor(u_tmp), intV = floor(v_tmp);
+    float c1 = (1.0f - (u_tmp - (float) intU)) * (v_tmp - (float) intV),
+            c2 = (u_tmp - (float) intU) * (v_tmp - (float) intV),
+            c3 = (u_tmp - (float) intU) * (1.0f - (v_tmp - (float) intV)),
+            c4 = (1.0f - (u_tmp - (float) intU)) * (1.0f - (v_tmp - (float) intV));
+
+    const float phi_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = coefficient[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1 - cos_c * cos_c)};
+
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
+
+    for (int i = 0; i < NUM_BASIS_VECTOR; i++) {
+        // calculate immutable geometry
+        // add scattering coefficient (read paper)
+        // B->beam direction unit vector (src2voxel)
+        // S->scattering base vector
+        // G->grating sensivity vector
+        // v_km = (|B_m x S_k|<S_k*G>)^2
+
+        Vector3f S(basisVector[3 * i + 0], basisVector[3 * i + 1], basisVector[3 * i + 2]);
+        S = R * S;
+
+        float vkm = B.cross(S).norm2() * abs(S * G);
+        //float vkm = abs(S * G);
+
+        const int idxVoxel = coord[0] + sizeV[0] * coord[2] + i * (sizeV[0] * sizeV[1]);
+        const float backward = vkm * vkm * c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                               vkm * vkm * c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+                               vkm * vkm * c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
+                               vkm * vkm * c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
+
+        devVoxelFactor[idxVoxel] += (vkm * vkm);
+        devVoxelTmp[idxVoxel] += backward;
+
+    }
+}
 __global__ void
 forwardProjGrad(float *devProj, const float *devVoxel, Geometry *geom, int cond, int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -502,7 +629,7 @@ calcMainDirection(float *devVoxel, float *devCoef, int y, const Geometry *geom, 
     int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
     int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
 
-    const float mu[3] =
+    float mu[3] =
             {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       0 * (sizeV[0] * sizeV[1] * sizeV[2])],
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
@@ -524,15 +651,31 @@ calcMainDirection(float *devVoxel, float *devCoef, int y, const Geometry *geom, 
     // float rand_rotate = judge;
     // printf("rand: %lf\n", judge);
 
-    float fx = sqrt(0.5f * abs(mu[2] + mu[1] - mu[0])), fy = sqrt(0.5f * abs(mu[0] + mu[2] - mu[1])),
-            fz = sqrt(0.5f * abs(mu[1] + mu[0] - mu[2]));
+    float co = 0.0f;
+    Vector3f n(0.f, 0.f, 0.f);
+    Vector3f mu_v(mu[0], mu[1], mu[2]);
 
-    float mu_mean = (mu[0] + mu[1] + mu[2]) / 3.0f;
+    if (mu[2] + mu[1] - mu[0] < 0.0f) {
+        // n = (-1, 1, 1), mu = (mu1, mu2, mu3)
+        n[0] = -1.f, n[1] = 1.f, n[2] = 1.f;
+    } else if (mu[0] + mu[2] - mu[1] < 0.0f) {
+        n[0] = 1.f, n[1] = -1.f, n[2] = 1.f;
+    } else if (mu[1] + mu[0] - mu[2] < 0.0f) {
+        n[0] = 1.f, n[1] = 1.f, n[2] = -1.f;
+    }
+
+    co = (mu_v * n) / 3.f;
+    mu_v = mu_v - co * n;
+
+    float fx = sqrt(0.5f * abs(mu_v[2] + mu_v[1] - mu_v[0])), fy = sqrt(0.5f * abs(mu_v[0] + mu_v[2] - mu_v[1])),
+            fz = sqrt(0.5f * abs(mu_v[1] + mu_v[0] - mu_v[2]));
+    float mu_mean = (mu[0] + mu[1] + mu[2]) / 2.0f;
+
     float md[3] = {mu_mean * fx, mu_mean * fy, mu_mean * fz};
-
 
     const float coef[5] = {-md[1], md[0], 0.f, md[2] / sqrt(md[0] * md[0] + md[1] * md[1] + md[2] * md[2]),
                            sqrt(md[0] * md[0] + md[1] * md[1]) / sqrt(md[0] * md[0] + md[1] * md[1] + md[2] * md[2])};
+
     Matrix3X R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
     Vector3f norm = R * Vector3f(0.f, 0.f, 1.f);
 
@@ -598,8 +741,13 @@ updateEstimation(const float *devVoxel, float *devMD, int y, const Geometry *geo
                       1 * (sizeV[0] * sizeV[1] * sizeV[2])],
              devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                       2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
+    float mu_l, mu_h;
+    if (mu[0] < mu[1])
+        mu_l = mu[0], mu_h = mu[1];
+    else
+        mu_l = mu[1], mu_h = mu[0];
 
-    float cos = mu[2];
+    float loss = mu[2] * mu[2] + (1.0f - mu_l / mu_h) * (1.0f - mu_l / mu_h);
     float est = devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                             0 * (sizeV[0] * sizeV[1] * sizeV[2])];
 
@@ -621,9 +769,9 @@ updateEstimation(const float *devVoxel, float *devMD, int y, const Geometry *geo
             break;
     }
 
-    if (cos < est) {
+    if (loss < est) {
         devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
-                    0 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+                    0 * (sizeV[0] * sizeV[1] * sizeV[2])] = loss;
         devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                     1 * (sizeV[0] * sizeV[1] * sizeV[2])] = (float) iter;
     }
@@ -637,6 +785,262 @@ fillVolume(float *devVoxel, float num, int y, const Geometry *geom) {
     const int idxVoxel =
             x + geom->voxel * y + geom->voxel * geom->voxel * z;
     devVoxel[idxVoxel] = num;
+}
+
+__global__ void
+calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss, int rot) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    int coord[3] = {x, y, z};
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    const float phi_c = devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1.0f - cos_c * cos_c)};
+
+    const float mu[3] =
+            {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      0 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      1 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
+
+    // float rand_rotate = judge;
+    // printf("rand: %lf\n", judge);
+
+    float mu1 = mu[1], mu2 = mu[2];
+
+    /*
+    if (rand_rotate > .75f) {
+        mu1 = mu[1];
+        mu2 = mu[2];
+    } else if (rand_rotate > .50f) {
+        mu1 = -mu[1];
+        mu2 = mu[2];
+    } else if (rand_rotate > .25f) {
+        mu1 = -mu[1];
+        mu2 = -mu[2];
+    } else {
+        mu1 = mu[1];
+        mu2 = -mu[2];
+    }
+     */
+
+    switch (rot) {
+        case 0: mu1 = mu[1], mu2 = mu[2]; break;
+        case 1: mu1 = -mu[1], mu2 = mu[2]; break;
+        case 2: mu1 = -mu[1], mu2 = -mu[2]; break;
+        case 3: mu1 = mu[1], mu2 = -mu[2]; break;
+        default: break;
+    }
+
+    Vector3f vec1(mu[0] * basisVector[3 * 0 + 0] - mu1 * basisVector[3 * 1 + 0],
+                  mu[0] * basisVector[3 * 0 + 1] - mu1 * basisVector[3 * 1 + 1],
+                  mu[0] * basisVector[3 * 0 + 2] - mu1 * basisVector[3 * 1 + 2]);
+    Vector3f vec2(mu[0] * basisVector[3 * 0 + 0] - mu2 * basisVector[3 * 2 + 0],
+                  mu[0] * basisVector[3 * 0 + 1] - mu2 * basisVector[3 * 2 + 1],
+                  mu[0] * basisVector[3 * 0 + 2] - mu2 * basisVector[3 * 2 + 2]);
+
+    Vector3f norm = vec1.cross(vec2);
+    norm.normalize();
+    // Vector3f normal = (1.0f / (mu[0] + eps)) * S1 + (1.0f / (mu[1] + eps)) * S2 + (1.0f / (mu[2] + eps)) * S3;
+    /*
+    bool out = (y == 50 && z == 50);
+    if (out) {
+        printf("x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, normal[0], normal[1], normal[2]);
+        printf("normalized x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, norm[0], norm[1], norm[2]);
+    }
+    */
+
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    norm = R * norm;
+
+    Vector3f base(0.f, 0.f, 1.f);
+
+    float dump = 0.0f;
+    norm = norm + dump * base;
+    if (norm[2] < 0.0f) {
+        norm[0] = -norm[0];
+        norm[1] = -norm[1];
+        norm[2] = -norm[2];
+    }
+
+    norm.normalize();
+
+    Vector3f norm_diff = (R * base).cross(norm);
+    Vector3f rotAxis = base.cross(norm); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy // mazui?
+    // printf("loss: %lf", norm_diff.norm2());
+    float cos = base * norm;
+    float sin = rotAxis.norm2();
+    float diff = norm_diff.norm2();
+
+    // printf("%lf, ", diff);
+    norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
+    /*
+    if (out)
+    printf("x: %d, cos: %lf, sin: %lf\n", x, cos, sin);
+    */
+    /*
+    if (isnan(theta))
+        printf("norm: (%lf), cos(theta): (%lf)\n", rotAxis.norm2(), base * norm);
+    */
+
+    devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+            0 * (sizeV[0] * sizeV[1] * sizeV[2])] = atan2(rotAxis[1], rotAxis[0]);
+    devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+            1 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+}
+
+__global__ void
+calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const Geometry *geom,
+                                  float *norm_loss, const float *devEstimate) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    int coord[3] = {x, y, z};
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    const float phi_c = devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    const float cos_c = devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+
+    const float coef[5] = {cos(phi_c), sin(phi_c), 0, cos_c, sqrt(1.0f - cos_c * cos_c)};
+
+    const float mu[3] =
+            {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      0 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      1 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
+
+    // float rand_rotate = curand_uniform(&curandStates[z * sizeV[0] + x]);
+    float rand_rotate = devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    // float rand_rotate = judge;
+    // printf("rand: %lf\n", judge);
+
+    float mu1 = mu[1], mu2 = mu[2];
+
+    if (rand_rotate < 0.5f) {
+        mu1 = mu[1];
+        mu2 = mu[2];
+    } else if (rand_rotate < 1.50f) {
+        mu1 = -mu[1];
+        mu2 = mu[2];
+    } else if (rand_rotate < 2.50f) {
+        mu1 = -mu[1];
+        mu2 = -mu[2];
+    } else {
+        mu1 = mu[1];
+        mu2 = -mu[2];
+    }
+
+    Vector3f vec1(mu[0] * basisVector[3 * 0 + 0] - mu1 * basisVector[3 * 1 + 0],
+                  mu[0] * basisVector[3 * 0 + 1] - mu1 * basisVector[3 * 1 + 1],
+                  mu[0] * basisVector[3 * 0 + 2] - mu1 * basisVector[3 * 1 + 2]);
+    Vector3f vec2(mu[0] * basisVector[3 * 0 + 0] - mu2 * basisVector[3 * 2 + 0],
+                  mu[0] * basisVector[3 * 0 + 1] - mu2 * basisVector[3 * 2 + 1],
+                  mu[0] * basisVector[3 * 0 + 2] - mu2 * basisVector[3 * 2 + 2]);
+
+    Vector3f norm = vec1.cross(vec2);
+    norm.normalize();
+    // Vector3f normal = (1.0f / (mu[0] + eps)) * S1 + (1.0f / (mu[1] + eps)) * S2 + (1.0f / (mu[2] + eps)) * S3;
+    /*
+    bool out = (y == 50 && z == 50);
+    if (out) {
+        printf("x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, normal[0], normal[1], normal[2]);
+        printf("normalized x: %d, n1: %lf, n2: %lf, n3: %lf\n", x, norm[0], norm[1], norm[2]);
+    }
+    */
+
+    Matrix3f R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
+    norm = R * norm;
+
+    Vector3f base(0.f, 0.f, 1.f);
+
+    float dump = 0.0f;
+    norm = norm + dump * base;
+    if (norm[2] < 0.0f) {
+        norm[0] = -norm[0];
+        norm[1] = -norm[1];
+        norm[2] = -norm[2];
+    }
+
+    norm.normalize();
+
+    Vector3f norm_diff = (R * base).cross(norm);
+    Vector3f rotAxis = base.cross(norm); // atan2(rotAxis[0], rotAxis[1])  -> phi_xy // mazui?
+    // printf("loss: %lf", norm_diff.norm2());
+    float cos = base * norm;
+    float sin = rotAxis.norm2();
+    float diff = norm_diff.norm2();
+
+    // printf("%lf, ", diff);
+    norm_loss[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z] = diff;
+
+    devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+            0 * (sizeV[0] * sizeV[1] * sizeV[2])] = atan2(rotAxis[1], rotAxis[0]);
+    devCoef[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+            1 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+}
+
+__global__ void
+updateEstimationByCoef(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate, int iter) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    int coord[3] = {x, y, z};
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    const float mu[3] =
+            {devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      0 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      1 * (sizeV[0] * sizeV[1] * sizeV[2])],
+             devVoxel[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                      2 * (sizeV[0] * sizeV[1] * sizeV[2])]};
+
+    float mu1 = mu[1], mu2 = mu[2];
+    Vector3f vec1(mu[0] * basisVector[3 * 0 + 0] - mu1 * basisVector[3 * 1 + 0],
+                  mu[0] * basisVector[3 * 0 + 1] - mu1 * basisVector[3 * 1 + 1],
+                  mu[0] * basisVector[3 * 0 + 2] - mu1 * basisVector[3 * 1 + 2]);
+    Vector3f vec2(mu[0] * basisVector[3 * 0 + 0] - mu2 * basisVector[3 * 2 + 0],
+                  mu[0] * basisVector[3 * 0 + 1] - mu2 * basisVector[3 * 2 + 1],
+                  mu[0] * basisVector[3 * 0 + 2] - mu2 * basisVector[3 * 2 + 2]);
+
+    Vector3f norm = vec1.cross(vec2);
+    norm.normalize();
+
+    Vector3f base(0.f, 0.f, 1.f);
+    if (norm[2] < 0.0f) {
+        norm[0] = -norm[0];
+        norm[1] = -norm[1];
+        norm[2] = -norm[2];
+    }
+    norm.normalize();
+
+    float cos = base * norm;
+    float est = devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                            0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+    if (cos > est) {
+        devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                    0 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+        devEstimate[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
+                    1 * (sizeV[0] * sizeV[1] * sizeV[2])] = (float) iter;
+    }
 }
 
 __global__ void
@@ -807,7 +1211,7 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
         norm_cent[2] = -norm_cent[2];
     }
 
-    Vector3f base(basisVector[0], basisVector[1], basisVector[2]);
+    Vector3f base(0.f, 0.f, 1.f);
     Vector3f rotAxis = base.cross(norm_cent);
     float cos = base * norm_cent;
     float sin = rotAxis.norm2();
@@ -1021,6 +1425,7 @@ __global__ void correlationProjByLength(float *devProj, const float *devProjFact
 
     int cnt = 0;
     float L = 0;
+    // x_min, x_max, y_min, y_max, z_min, z_max
     float coord[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     Vector3f pl;
 
@@ -1028,9 +1433,7 @@ __global__ void correlationProjByLength(float *devProj, const float *devProjFact
     for (int p = 0; p < 3; p++) {
         for (int sign = 0; sign < 2; sign++) {
             pl = ((plane[2 * p + sign] - origin2src[p]) / src2pix[p]) * src2pix + origin2src;
-            /*if (n == 1 && p == 1) {
-                printf("[idx]: %d, (%lf, %lf, %lf), p: %lf\n", p, pl[0], pl[1], pl[2], (plane[2 * p + sign] - origin2src[p]) / src2pix[p]);
-            }*/
+            // 現在選択しているplane以外の座標で領域に収まっているならば
             if (plane[2 * ((p + 1) % 3)] < pl[(p + 1) % 3] && pl[(p + 1) % 3] < plane[2 * ((p + 1) % 3) + 1] &&
                 plane[2 * ((p + 2) % 3)] < pl[(p + 2) % 3] && pl[(p + 2) % 3] < plane[2 * ((p + 2) % 3) + 1]) {
                 for (int i = 0; i < 3; i++) {
@@ -1042,6 +1445,9 @@ __global__ void correlationProjByLength(float *devProj, const float *devProjFact
     }
     L = sqrt((coord[0] - coord[3]) * (coord[0] - coord[3]) + (coord[1] - coord[4]) * (coord[1] - coord[4])
              + (coord[2] - coord[5]) * (coord[2] - coord[5]));
+    /*if (L > 1e-2f)
+    printf("length: %lf, coefficient: %lf\n", L, L / (devProjFactor[u + sizeD[0] * v] + 1e-5f));
+*/
     const int64_t idx = u + sizeD[0] * v + sizeD[0] * sizeD[1] * n;
     devProj[idx] *= L / (devProjFactor[u + sizeD[0] * v] + 1e-5f);
 }

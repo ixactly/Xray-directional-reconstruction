@@ -22,12 +22,22 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry& geom, int cond,
 __global__ void
 projCompare(float *devCompare, const float *devSino, const float *devProj, const Geometry *geom, int n);
 
+
+
 __global__ void
-forwardOrthByMD(float *devProj, const float *devVoxel, const float *devMD, int cond, int y, int n, int it, Geometry *geom);
+forwardOrthByMD(float *devProj, float *devProjFactor, const float *devVoxel, const float *devMD, Geometry *geom,
+                int cond, int it, int n, int y);
 
 __global__ void
 backwardOrthByMD(const float *devProj, const float *devMD, float *devVoxelTmp, float *devVoxelFactor,
                  const Geometry *geom, int cond, int y, int n, int it);
+
+__global__ void
+forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it, Geometry *geom);
+
+__global__ void
+backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp, float *devVoxelFactor,
+             const Geometry *geom, int cond, int y, int n, int it);
 
 __global__ void
 forwardProjGrad(float *devProj, const float *devVoxel, Geometry *geom, int cond, int y, int n);
@@ -55,6 +65,16 @@ updateEstimation(const float *devVoxel, float *devMD, int y, const Geometry *geo
 
 __global__ void
 calcMDWithEst(float *devVoxel, float *devMD, int y, const Geometry *geom, const float *devEstimate);
+
+__global__ void
+calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss, int rot);
+
+__global__ void
+updateEstimationByCoef(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate, int iter);
+
+__global__ void
+calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const Geometry *geom,
+                                  float *norm_loss, const float *devEstimate);
 
 __global__ void
 fillVolume(float *devVoxel, float num, int y, const Geometry *geom);
