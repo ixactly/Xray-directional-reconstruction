@@ -64,11 +64,11 @@ void calcEigenVector(const Volume<float> *ct, Volume<float> *md, Volume<float> *
     // std::cout << varMatrix << std::endl;
 }
 
-void calcPartsAngle(const Volume<float> md[3], Volume<float> angle[2], int size_x, int size_y, int size_z) {
+void calcAngleFromMD(const Volume<float> md[3], Volume<float> angle[2], int size_x, int size_y, int size_z) {
     for (int x = 0; x < size_x; x++) {
         for (int y = 0; y < size_y; y++) {
             for (int z = 0; z < size_z; z++) {
-                angle[0](x, y, z) = std::atan2(md[0](x, y, z), -md[1](x, y, z));
+                angle[0](x, y, z) = std::atan2(md[1](x, y, z), md[0](x, y, z));
                 angle[1](x, y, z) = std::atan2(md[2](x, y, z),
                                   std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z)));
             }

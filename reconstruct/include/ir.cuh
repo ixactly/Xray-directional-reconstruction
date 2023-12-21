@@ -57,7 +57,7 @@ __global__ void
 calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
 
 __global__ void
-calcMainDirection(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss);
+calcMainDirection(float *devVoxel, float *devMD, int y, const Geometry *geom, float *norm_loss, int iter);
 
 __global__ void
 updateEstimation(const float *devVoxel, float *devMD, int y, const Geometry *geom, float *norm_loss, float *devEstimate,

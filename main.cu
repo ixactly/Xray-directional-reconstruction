@@ -4,6 +4,7 @@
 #include <params.h>
 #include <geometry.h>
 #include <reconstruct.cuh>
+#include <pca.cuh>
 
 int main() {
     std::string nametag = "cfrp_7d_13rot";
@@ -15,9 +16,12 @@ int main() {
     // ground truth
     Volume<float> ct[NUM_BASIS_VECTOR];
     Volume<float> md[3];
+    Volume<float> angle[2];
     for (auto &e: ct)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     for (auto &e: md)
+        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    for (auto &e: angle)
         e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
 
     Geometry geom(SRC_DETECT_DISTANCE, SRC_OBJ_DISTANCE, DETECTOR_SIZE, NUM_VOXEL, NUM_DETECT_U, NUM_PROJ);
@@ -53,10 +57,10 @@ int main() {
 
     // main function
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
-    XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 5, 15, 4, Rotate::CW, method, 1e-1);
-    // XTT::circleEstReconstruct(sinogram, ct, md, geom, 1, 15, 4, Rotate::CW, method, 1e-1);
-    // IR::reconstruct(sinogram, ct, geom, 40, 5, Rotate::CW, method, 0.01);
+    // XTT::reconstruct(sinogram, ct, md, geom, 50, 5, Rotate::CW, method, 1e-3);
+    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 5, 20, 4, Rotate::CW, method, 1e-1);
+    XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 30, 4, Rotate::CW, method, 1e-1);
+    // IR::reconstruct(sinogram, ct, geom, 10, 5, Rotate::CW, method, 0.01);
     // FDK::hilbertReconstruct(sinogram, ct, geom, Rotate::CW);
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
     // IR::gradReconstruct(sinogram, ct, geom, 100, 5, Rotate::CW, Method::ART, 8e-2);
@@ -93,6 +97,11 @@ int main() {
         md[i].save(savefilePathCT);
     }
 
+    calcAngleFromMD(md, angle, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    angle[0].save(DIRECTION_PATH + "_phi_" + std::to_string(NUM_VOXEL) + "x" +
+                  std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
+    angle[1].save(DIRECTION_PATH + "_theta_" + std::to_string(NUM_VOXEL) + "x" +
+                  std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
     return 0;
 }
 

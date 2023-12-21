@@ -60,7 +60,7 @@ int main() {
             pbar.update();
             for (int x = 0; x < NUM_VOXEL; x++) {
                 calcEigenVector(ctArray, md, evalues, x, y, z);
-                calcPartsAngle(md, angle, x, y, z);
+                calcAngleFromMD(md, angle, x, y, z);
             }
         }
     }
@@ -131,7 +131,7 @@ int main() {
         // ctArray[i].load(loadfilePath, N, N, N);
     }
 
-    calcPartsAngle(ctArray, angle, N, N, N);
+    calcAngleFromMD(ctArray, angle, N, N, N);
     phi2color(color, angle[0], N, N, N);
 
     for (int i = 0; i < 3; i++) {
