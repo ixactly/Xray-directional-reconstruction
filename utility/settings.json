@@ -16,8 +16,8 @@
 
   "oilpan" : {
     "proj_path": "../proj_raw_bin/oilpan/SC/oilpan",
-    "vol_path": "../volume_bin/oilpan/tw_nofilt_vol",
-    "direc_path": "../volume_bin/oilpan/pca/tw_nofilt",
+    "vol_path": "../volume_bin/oilpan/est_nofilt_vol",
+    "direc_path": "../volume_bin/oilpan/pca/est_nofilt",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
@@ -114,8 +114,8 @@
 
   "cfrp_7d_13rot" : {
     "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/cest_1234567cond",
-    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/cest_1234567cond_md",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/cest_filt_1234567cond",
+    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/cest_filt_1234567cond_md",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,

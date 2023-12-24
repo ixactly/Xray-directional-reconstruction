@@ -20,7 +20,7 @@ X = r * np.sin(T) * np.cos(U)
 Y = r * np.sin(T) * np.sin(U)
 Z = r * np.cos(T)
 alpha = np.ones(res * res)
-XYZ = np.stack([Y.flatten(), X.flatten(),  Z.flatten()], axis=1)
+XYZ = np.stack([X.flatten(), Y.flatten(),  Z.flatten()], axis=1)
 print(XYZ[:3, :3].round(2))
 print(XYZ.shape)
 

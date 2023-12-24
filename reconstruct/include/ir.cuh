@@ -48,8 +48,6 @@ backwardProjGrad(const float *devProj, float *devVoxelTmp, float *devVoxelFactor
 __global__ void
 sinogramGradientCoef(float *devProj, const Geometry *geom, int cond, int n);
 
-
-
 __global__ void
 calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const Geometry *geom, float *norm_loss);
 
@@ -93,6 +91,9 @@ __global__ void setup_rand(curandState *state, int num_thread, int y);
 __global__ void
 meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel, const Geometry *geom, int y,
               float coef);
+
+__global__ void
+meanFiltFiberMD(const float *devMD, float *devMDtmp, const Geometry *geom, int y, float coef);
 
 inline __host__ void setScatterDirecOnXY(float angle, float *vec) {
     vec[0] = std::cos(angle);

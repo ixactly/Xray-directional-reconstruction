@@ -290,6 +290,7 @@ backwardOrthByMD(const float *devProj, const float *devMD, float *devVoxelTmp, f
         devVoxelTmp[idxVoxel] += backward;
     }
 }
+
 __global__ void
 forwardOrth(float *devProj, const float *devVoxel, const float *coefficient, int cond, int y, int n, int it,
             Geometry *geom) {
@@ -420,6 +421,7 @@ backwardOrth(const float *devProj, const float *coefficient, float *devVoxelTmp,
 
     }
 }
+
 __global__ void
 forwardProjGrad(float *devProj, const float *devVoxel, Geometry *geom, int cond, int y, int n) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -657,13 +659,21 @@ calcMainDirection(float *devVoxel, float *devMD, int y, const Geometry *geom, fl
             fz = sqrt(0.5f * abs(mu_v[1] + mu_v[0] - mu_v[2]));
 
     switch (iter) {
-        case 0:  fx = fx; fy = fy;
+        case 0:
+            fx = fx;
+            fy = fy;
             break;
-        case 1:  fx = -fx; fy = fy;
+        case 1:
+            fx = -fx;
+            fy = fy;
             break;
-        case 2:  fx = -fx; fy = -fy;
+        case 2:
+            fx = -fx;
+            fy = -fy;
             break;
-        case 3:  fx = fx; fy = -fy;
+        case 3:
+            fx = fx;
+            fy = -fy;
             break;
         default:
             break;
@@ -679,8 +689,11 @@ calcMainDirection(float *devVoxel, float *devMD, int y, const Geometry *geom, fl
         md_prev[i] = devMD[idx];
     }
 
-    const float coef[5] = {-md_prev[1], md_prev[0], 0.f, md_prev[2] / sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] + md_prev[2] * md_prev[2]),
-                           sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1]) / sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] + md_prev[2] * md_prev[2])};
+    const float coef[5] = {-md_prev[1], md_prev[0], 0.f, md_prev[2] /
+                                                         sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] +
+                                                              md_prev[2] * md_prev[2]),
+                           sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1]) /
+                           sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] + md_prev[2] * md_prev[2])};
 
     Matrix3X R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
     Vector3f norm = R * Vector3f(md[0], md[1], md[2]);
@@ -755,8 +768,11 @@ calcMDWithEst(float *devVoxel, float *devMD, int y, const Geometry *geom, const 
         md_prev[i] = devMD[idx];
     }
 
-    const float coef[5] = {-md_prev[1], md_prev[0], 0.f, md_prev[2] / sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] + md_prev[2] * md_prev[2]),
-                           sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1]) / sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] + md_prev[2] * md_prev[2])};
+    const float coef[5] = {-md_prev[1], md_prev[0], 0.f, md_prev[2] /
+                                                         sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] +
+                                                              md_prev[2] * md_prev[2]),
+                           sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1]) /
+                           sqrt(md_prev[0] * md_prev[0] + md_prev[1] * md_prev[1] + md_prev[2] * md_prev[2])};
 
     Matrix3X R = rodriguesRotation(coef[0], coef[1], coef[2], coef[3], coef[4]);
     Vector3f norm = R * Vector3f(md[0], md[1], md[2]);
@@ -884,11 +900,20 @@ calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, const Geometr
      */
 
     switch (rot) {
-        case 0: mu1 = mu[1], mu2 = mu[2]; break;
-        case 1: mu1 = -mu[1], mu2 = mu[2]; break;
-        case 2: mu1 = -mu[1], mu2 = -mu[2]; break;
-        case 3: mu1 = mu[1], mu2 = -mu[2]; break;
-        default: break;
+        case 0:
+            mu1 = mu[1], mu2 = mu[2];
+            break;
+        case 1:
+            mu1 = -mu[1], mu2 = mu[2];
+            break;
+        case 2:
+            mu1 = -mu[1], mu2 = -mu[2];
+            break;
+        case 3:
+            mu1 = mu[1], mu2 = -mu[2];
+            break;
+        default:
+            break;
     }
 
     Vector3f vec1(mu[0] * basisVector[3 * 0 + 0] - mu1 * basisVector[3 * 1 + 0],
@@ -1046,7 +1071,8 @@ calcNormalVectorThreeDirecWithEst(float *devVoxel, float *devCoef, int y, const 
 }
 
 __global__ void
-updateEstimationByCoef(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate, int iter) {
+updateEstimationByCoef(const float *devVoxel, int y, const Geometry *geom, float *norm_loss, float *devEstimate,
+                       int iter) {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= geom->voxel || z >= geom->voxel) return;
@@ -1224,15 +1250,15 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
                 float phi = -M_PI / 2.0f + devCoefSrc[coord[0] - i + sizeV[0] * (coord[1] - j) +
                                                       sizeV[0] * sizeV[1] * (coord[2] - k) +
                                                       0 * (sizeV[0] * sizeV[1] * sizeV[2])];
-                float mu = /*devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                float mu = devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
                                     sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])] +*/
-                        devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                 sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                 1 * (sizeV[0] * sizeV[1] * sizeV[2])] +
-                        devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
-                                 sizeV[0] * sizeV[1] * (coord[2] - k) +
-                                 2 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                                    0 * (sizeV[0] * sizeV[1] * sizeV[2])] +
+                           devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                    1 * (sizeV[0] * sizeV[1] * sizeV[2])] +
+                           devVoxel[coord[0] - i + sizeV[0] * (coord[1] - j) +
+                                    sizeV[0] * sizeV[1] * (coord[2] - k) +
+                                    2 * (sizeV[0] * sizeV[1] * sizeV[2])];
                 // norm[cnt] = mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
                 norm[cnt] = mu * Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
                 cnt++;
@@ -1241,15 +1267,18 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
     }
 
     Vector3f norm_cent = norm[13];
+    // if inner product below cut_out, do not filter
+    float cut_out = 0.5f; // < 30 deg
+
     for (int i = 0; i < 13; i++) {
-        if (norm[i] * norm[13] > 0.707106f) {
+        if (norm[i] * norm[13] > cut_out) {
             norm_cent = norm_cent + coef * norm[i];
-        } else if (norm[i] * norm[13] < -0.707106f) {
+        } else if (norm[i] * norm[13] < -cut_out) {
             norm_cent = norm_cent - coef * norm[i];
         }
-        if (norm[26 - i] * norm[13] > 0.707106f) {
+        if (norm[26 - i] * norm[13] > cut_out) {
             norm_cent = norm_cent + coef * norm[26 - i];
-        } else if (norm[26 - i] * norm[13] < -0.707106f) {
+        } else if (norm[26 - i] * norm[13] < -cut_out) {
             norm_cent = norm_cent - coef * norm[26 - i];
         }
     }
@@ -1270,6 +1299,74 @@ meanFiltFiber(const float *devCoefSrc, float *devCoefDst, const float *devVoxel,
                0 * (sizeV[0] * sizeV[1] * sizeV[2])] = atan2(rotAxis[1], rotAxis[0]);
     devCoefDst[coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2] +
                1 * (sizeV[0] * sizeV[1] * sizeV[2])] = cos;
+}
+
+__global__ void
+meanFiltFiberMD(const float *devMD, float *devMDtmp, const Geometry *geom, int y, float coef) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel - 2 || x < 2 || z >= geom->voxel - 2 || z < 2) return;
+
+    int sizeV[3] = {geom->voxel, geom->voxel, geom->voxel};
+    int sizeD[3] = {geom->detect, geom->detect, geom->nProj};
+
+    Vector3f norm_cent(devMD[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z + 0 * (sizeV[0] * sizeV[1] * sizeV[2])],
+                       devMD[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z + 1 * (sizeV[0] * sizeV[1] * sizeV[2])],
+                       devMD[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z + 2 * (sizeV[0] * sizeV[1] * sizeV[2])]);
+    Vector3f norm(0.f, 0.f, 0.f);
+
+    // if inner product below cut_out, do not filter
+    float md1, md2, md3;
+    float cut_out = 0.5f; // < 30 deg
+
+    for (int i = -1; i < 2; i++) {
+        for (int j = -1; j < 2; j++) {
+            for (int k = -1; k < 2; k++) {
+                md1 = devMD[x - i + sizeV[0] * (y - j) +
+                             sizeV[0] * sizeV[1] * (z - k) +
+                             0 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                md2 = devMD[x - i + sizeV[0] * (y - j) +
+                              sizeV[0] * sizeV[1] * (z - k) +
+                              1 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                md3 = devMD[x - i + sizeV[0] * (y - j) +
+                              sizeV[0] * sizeV[1] * (z - k) +
+                              2 * (sizeV[0] * sizeV[1] * sizeV[2])];
+                Vector3f other(md1, md2, md3);
+
+                // printf("(%lf, %lf, %lf)\n", md1, md2, md3);
+                if (norm_cent * other > cut_out) {
+                    norm = norm + coef * other;
+                } else if (norm_cent * other < -cut_out) {
+                    norm = norm - coef * other;
+                }
+                // printf("(%lf, %lf, %lf)\n", 0.f, 0.f, 0.f);
+            }
+        }
+    }
+
+    norm.normalize(1e-8);
+    if (norm[2] < 0.0f) {
+        norm[0] = -norm[0];
+        norm[1] = -norm[1];
+        norm[2] = -norm[2];
+    }
+
+    devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
+             0 * (sizeV[0] * sizeV[1] * sizeV[2])] = norm[0];
+    devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
+             1 * (sizeV[0] * sizeV[1] * sizeV[2])] = norm[1];
+    devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
+             2 * (sizeV[0] * sizeV[1] * sizeV[2])] = norm[2];
+
+    /*
+    devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
+             0 * (sizeV[0] * sizeV[1] * sizeV[2])] = 1.0f;
+    devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
+             1 * (sizeV[0] * sizeV[1] * sizeV[2])] = 0.f;
+    devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
+             2 * (sizeV[0] * sizeV[1] * sizeV[2])] = 0.f;
+    */
+    // printf("(%lf, %lf, %lf)\n", norm[0], norm[1], norm[2]);
 }
 
 __global__ void

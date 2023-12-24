@@ -16,7 +16,7 @@
 int main() {
 
     // tv minimized
-
+    /*
     int N = 192;
     Volume<float> ct;
     ct.load("../../volume_bin/cfrp_xyz7_13axis/sc_tmp1_" + std::to_string(N) +
@@ -24,7 +24,25 @@ int main() {
     totalVariationMinimized(ct, 0.5, 0.01, 40);
     ct.save("../../volume_bin/cfrp_xyz7_13axis/sc_tv0015_" + std::to_string(N) +
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
+    */
+    Volume<float> md[3];
+    Volume<float> angle[2];
+    NUM_VOXEL = 196;
+    DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/xtt_1234567cond_md";
+    for (int i = 0; i < 3; i++) {
+        md[i].load("../" + DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw"
+                   ,NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    }
 
+    for (auto &e: angle)
+        e = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+    calcAngleFromMD(md, angle, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+
+    angle[0].save("../" + DIRECTION_PATH + "_phi_" + std::to_string(NUM_VOXEL) + "x" +
+                  std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
+    angle[1].save("../" + DIRECTION_PATH + "_theta_" + std::to_string(NUM_VOXEL) + "x" +
+                  std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
 
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];

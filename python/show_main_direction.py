@@ -16,15 +16,17 @@ bin = 11
 size = int(num_voxel / bin) + 1 # hyouzisuu huyasu
 eps = 1e-20
 
-y, z, x = np.meshgrid(np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size))
 
-# u = u_raw.reshape([num_voxel, num_voxel, num_voxel])[::skip, ::skip, ::skip]
-u = u_raw.reshape([num_voxel, num_voxel, num_voxel])
-v = v_raw.reshape([num_voxel, num_voxel, num_voxel])
-w = w_raw.reshape([num_voxel, num_voxel, num_voxel])
+y, z, x = np.meshgrid(np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), indexing='xy')
+
+u = u_raw.reshape([num_voxel, num_voxel, num_voxel], order='C')
+v = v_raw.reshape([num_voxel, num_voxel, num_voxel], order='C')
+w = w_raw.reshape([num_voxel, num_voxel, num_voxel], order='C')
 
 padding = np.zeros_like(u)
-padding[:465, 50:, :450] = 1.0
+# z, y, x
+# padding[40:180, 40:165, 30:150] = 1.0
+padding[:420, 30:, 5:450] = 1.0
 u = u * padding
 v = v * padding
 w = w * padding
@@ -109,8 +111,9 @@ Z = r * np.cos(T)
 alpha = np.ones(res * res)
 XYZ = np.stack([X.flatten(), Y.flatten(),  Z.flatten()], axis=1)
 # gif
-frame_num = 5
-v_n = np.linspace(start=30.0, stop=30.0, num=frame_num+1)[:frame_num]
+frame_num = 9
+length = 6
+v_n = np.linspace(start=20.0, stop=20.0, num=frame_num+1)[:frame_num]
 h_n = np.linspace(start=0.0, stop=360.0, num=frame_num+1)[:frame_num]
 
 #fig, ax1, ax2 = plt.subplots(figsize=(15, 15), subplot_kw={'projection': '3d'}, constrained_layout=True)
@@ -122,8 +125,8 @@ def update(i):
     plt.cla()
 
     # i番目の角度を取得
-    v = v_n[i]
-    h = h_n[i]
+    v_ = v_n[i]
+    h_ = h_n[i]
 
     ax_fiber.set_facecolor('black')
     ax_fiber.w_xaxis.set_pane_color((0., 0., 0., 1.))
@@ -132,11 +135,11 @@ def update(i):
     ax_fiber.set_xticks([])
     ax_fiber.set_yticks([])
     ax_fiber.set_zticks([])
-    ax_fiber.quiver(x, y, z, u, v, w, color=rgba, length=6, normalize=True)
+    ax_fiber.quiver(y, x, z, v, u, w, color=rgba, length=length, normalize=True)
     ax_fiber.set_aspect('equal')
-    ax_fiber.view_init(elev=v, azim=h)
+    ax_fiber.view_init(elev=v_, azim=h_)
 
-    ax_sphere.scatter(X, Y, Z, color=(np.abs(XYZ))/r, alpha=1.0) # 散布図:(xyz座標の値により色付け)
+    ax_sphere.scatter(Y, X, Z, color=(np.abs(XYZ))/r, alpha=1.0) # 散布図:(xyz座標の値により色付け)
     """
     ax.quiver([-1.5, 0, 0], [0, -1.5, 0], [0, 0, -1.5],
               [3, 0, 0], [0, 3, 0], [0, 0, 3],
@@ -156,16 +159,20 @@ def update(i):
     ax_sphere.quiver([r, 0, 0], [0, r, 0], [0, 0, r],
               [end, 0, 0], [0, end, 0], [0, 0, end],
               color='white', lw=2, zorder=-1e10)
-    ax_sphere.text(r+end, 0, end/2, r"$x$", fontfamily='serif', fontsize=15, fontstyle='italic', color='white')
-    ax_sphere.text(end/2, r+end, 0, r"$y$", fontfamily='serif', fontsize=15, fontstyle='italic', color='white')
-    ax_sphere.text(0, end/2, r+end, r"$z$", fontfamily='serif', fontsize=15, fontstyle='italic', color='white')
+    # ax_sphere.text(r+end, 0, end/2, r"$x$", fontfamily='serif', fontsize=15, fontstyle='italic', color='white')
+    # ax_sphere.text(end/2, r+end, 0, r"$y$", fontfamily='serif', fontsize=15, fontstyle='italic', color='white')
+    # ax_sphere.text(0, end/2, r+end, r"$z$", fontfamily='serif', fontsize=15, fontstyle='italic', color='white')
 
     ax_sphere.set_aspect('equal')
-    ax_sphere.view_init(elev=v, azim=h)
+    ax_sphere.view_init(elev=v_, azim=h_)
 
-update(4)
+"""
+update(6)
 plt.show()
 """
-ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=500)
-ani.save('with_sphere.gif')
-"""
+
+ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=800)
+ani.save('cfrp_uct_with_sphere.gif')
+
+
+

@@ -59,7 +59,7 @@ int main() {
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
     // XTT::reconstruct(sinogram, ct, md, geom, 50, 5, Rotate::CW, method, 1e-3);
     // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 5, 20, 4, Rotate::CW, method, 1e-1);
-    XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 30, 4, Rotate::CW, method, 1e-1);
+    XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 12, 4, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 10, 5, Rotate::CW, method, 0.01);
     // FDK::hilbertReconstruct(sinogram, ct, geom, Rotate::CW);
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
@@ -97,11 +97,13 @@ int main() {
         md[i].save(savefilePathCT);
     }
 
+    /*
     calcAngleFromMD(md, angle, NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     angle[0].save(DIRECTION_PATH + "_phi_" + std::to_string(NUM_VOXEL) + "x" +
                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
     angle[1].save(DIRECTION_PATH + "_theta_" + std::to_string(NUM_VOXEL) + "x" +
                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
+    */
     return 0;
 }
 

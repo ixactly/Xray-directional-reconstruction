@@ -1393,8 +1393,9 @@ namespace XTT {
         for (int i = 0; i < NUM_BASIS_VECTOR; i++)
             cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
         // store theta, phi on polar coordination to devDirection
-        float *devMD;
+        float *devMD, *devMDtmp;
         cudaMalloc(&devMD, sizeof(float) * lenV * 3);
+        cudaMalloc(&devMDtmp, sizeof(float) * lenV * 3);
 
         Geometry *devGeom;
         cudaMalloc(&devGeom, sizeof(Geometry));
@@ -1417,7 +1418,7 @@ namespace XTT {
         }
 
         // progress bar
-        progressbar pbar(5 * iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
+        progressbar pbar(2 * iter1 * iter2 * batch * NUM_PROJ_COND * (subsetSize + sizeV[1]));
 
         std::random_device seed_gen;
         std::mt19937 engine(seed_gen());
@@ -1440,16 +1441,21 @@ namespace XTT {
         }
         for (int y = 0; y < sizeV[1]; y++) {
             fillVolume<<<gridV, blockV>>>(&devMD[2 * lenV], 1.0f, y, devGeom);
+            cudaDeviceSynchronize();
         }
 
         // main routine
         // 5 kai de zyubun
         for (int outer = 0; outer < iter1; outer++) {
+            for (int i = 0; i < 3; i++) {
+                for (int y = 1; y < sizeV[1] - 1; y++) {
+                    meanFiltFiberMD<<<gridV, blockV>>>(devMD, devMDtmp, devGeom, y, 1.0f);
+                    cudaDeviceSynchronize();
+                }
+                cudaMemcpy(devMD, devMDtmp, sizeof(float) * 3 * lenV, cudaMemcpyDeviceToDevice);
+            }
             for (int ep1 = 0; ep1 < 5; ep1++) {
                 // use devMD_previous
-                if (ep1 == 0) {
-                    // meanFiltFiber
-                }
                 if (ep1 != 0) {
                     for (int i = 0; i < 3; i++) {
                         cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
@@ -1463,7 +1469,14 @@ namespace XTT {
                 }
 
                 // reconstruction
-                for (int ep2 = 0; ep2 < iter2; ep2++) {
+                int iter_tmp;
+                if (ep1 == 0) {
+                    iter_tmp = iter2;
+                } else {
+                    iter_tmp = iter2 / 4;
+                }
+
+                for (int ep2 = 0; ep2 < iter_tmp; ep2++) {
                     std::shuffle(subsetOrder.begin(), subsetOrder.end(), engine);
                     cudaMemset(devProj, 0.0f, sizeof(float) * lenD * NUM_PROJ_COND);
                     for (int &sub: subsetOrder) {
@@ -1560,7 +1573,7 @@ namespace XTT {
                             + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
                     tmp[i].save(savefilePathCT);
                 }*/
-                // ----- end iter1 -----
+                // ----- end estim -----
             }
             for (int i = 0; i < 3; i++) {
                 cudaMemcpy(&devVoxel[i * lenV], voxel[i].get(), sizeof(float) * lenV, cudaMemcpyHostToDevice);
@@ -1569,6 +1582,14 @@ namespace XTT {
             for (int y = 0; y < sizeV[1]; y++) {
                 calcMDWithEst<<<gridV, blockV>>>(devVoxel, devMD, y, devGeom, devEstimate);
                 cudaDeviceSynchronize();
+            }
+
+            for (int i = 0; i < 3; i++) {
+                for (int y = 1; y < sizeV[1] - 1; y++) {
+                    meanFiltFiberMD<<<gridV, blockV>>>(devMD, devMDtmp, devGeom, y, 1.0f);
+                    cudaDeviceSynchronize();
+                }
+                cudaMemcpy(devMD, devMDtmp, sizeof(float) * 3 * lenV, cudaMemcpyDeviceToDevice);
             }
             for (int i = 0; i < 3; i++) {
                 cudaMemcpy(md[i].get(), &devMD[i * lenV], sizeof(float) * lenV, cudaMemcpyDeviceToHost);
