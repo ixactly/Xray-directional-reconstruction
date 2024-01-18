@@ -70,12 +70,36 @@ void calcAngleFromMD(const Volume<float> md[3], Volume<float> angle[2], int size
             for (int z = 0; z < size_z; z++) {
                 if (md[1](x, y, z) < 0.f) {
                     angle[0](x, y, z) = std::atan2(-md[1](x, y, z), -md[0](x, y, z));
+                    angle[1](x, y, z) = std::atan2(std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z))
+                            , -md[2](x, y, z));
                 } else {
                     angle[0](x, y, z) = std::atan2(md[1](x, y, z), md[0](x, y, z));
+                    angle[1](x, y, z) = std::atan2(std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z)),
+                                                   md[2](x, y, z));
                 }
+            }
+        }
+    }
+}
 
-                angle[1](x, y, z) = std::atan2(md[2](x, y, z),
-                                  std::sqrt(md[1](x, y, z) * md[1](x, y, z) + md[0](x, y, z) * md[0](x, y, z)));
+void directionNormalization(Volume<float> md[3]) {
+    float eps = 0.025f;
+    for (int x = 0; x < md[0].x(); x++) {
+        for (int y = 0; y < md[0].y(); y++) {
+            for (int z = 0; z < md[0].z(); z++) {
+                float x_dir = md[0](x, y, z);
+                float y_dir = md[1](x, y, z);
+                float z_dir = md[2](x, y, z);
+
+                float norm = std::sqrt(x_dir*x_dir + y_dir*y_dir + z_dir*z_dir);
+
+                if (norm > eps) {
+                    md[0](x, y, z) = x_dir / norm;
+                    md[1](x, y, z) = y_dir / norm;
+                    md[2](x, y, z) = z_dir / norm;
+                } else {
+                    md[0](x, y, z) = 0.f; md[1](x, y, z) = 0.f; md[2](x, y, z) = 0.f;
+                }
             }
         }
     }

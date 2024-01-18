@@ -25,10 +25,12 @@ int main() {
     ct.save("../../volume_bin/cfrp_xyz7_13axis/sc_tv0015_" + std::to_string(N) +
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
     */
+
+    /*
     Volume<float> md[3];
     Volume<float> angle[2];
     NUM_VOXEL = 196;
-    DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/xtt_1234567cond_md";
+    DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/tw_1234567cond_md";
     for (int i = 0; i < 3; i++) {
         md[i].load("../" + DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                    std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw"
@@ -43,7 +45,42 @@ int main() {
                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
     angle[1].save("../" + DIRECTION_PATH + "_theta_" + std::to_string(NUM_VOXEL) + "x" +
                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
+    */
 
+    Volume<float> md[3];
+    NUM_VOXEL = 196;
+    std::string xyz[] = {"x", "y", "z"};
+
+    // DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/tw_1234567cond_md";
+    // std::to_string(i + 1)
+    for (int i = 0; i < 3; i++) {
+        md[i].load("/home/tomokimori/Documents/Prog/haikou_prog/dat/OilPan-" + xyz[i] + "-2229x2257x665-6.892175um.raw"
+                ,2229, 2257, 665);
+    }
+
+    directionNormalization(md);
+    for (int i = 0; i < 3; i++) {
+        md[i].save("/home/tomokimori/Documents/Prog/haikou_prog/dat/OilPan-" + xyz[i] + "-2229x2257x665-6.892175um.raw");
+    }
+
+    /*
+    Volume<float> vol;
+    Volume<float> vol_tmp;
+    NUM_VOXEL = 400;
+    DIRECTION_PATH = "../../volume_bin/oilpan/pca/OilPan-z-400x400x133-6.892175um.raw";
+    vol.load(DIRECTION_PATH ,NUM_VOXEL, NUM_VOXEL, 133);
+    vol_tmp = Volume<float>(NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
+
+    for (int x = 0; x < NUM_VOXEL; x++) {
+        for (int y = 0; y < NUM_VOXEL; y++) {
+            for (int z = 0; z < 133; z++) {
+                vol_tmp(x, y, 133 + z) = vol(x, y, z);
+            }
+        }
+    }
+    DIRECTION_PATH = "../../volume_bin/oilpan/pca/OilPan-z-400x400x400-6.892175um.raw";
+    vol_tmp.save(DIRECTION_PATH);
+    */
     /*
     Volume<float> ctArray[NUM_BASIS_VECTOR];
     for (auto &e: ctArray)

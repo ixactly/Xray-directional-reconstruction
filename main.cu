@@ -55,11 +55,11 @@ int main() {
     std::chrono::system_clock::time_point start, end;
     start = std::chrono::system_clock::now();
 
-    // main function
+    // main functio
     // XTT::newReconstruct(sinogram, ct, md, geom, 40, 1, 30, Rotate::CW, Method::ART, 1e-2);
-    // XTT::reconstruct(sinogram, ct, md, geom, 50, 5, Rotate::CW, method, 1e-3);
-    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 5, 20, 4, Rotate::CW, method, 1e-1);
-    XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 12, 4, Rotate::CW, method, 1e-1);
+    XTT::reconstruct(sinogram, ct, md, geom, 50, 5, Rotate::CW, method, 1e-3);
+    // XTT::orthTwiceReconstruct(sinogram, ct, md, geom, 3, 32, 4, Rotate::CW, method, 1e-1);
+    // XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 32, 4, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram, ct, geom, 10, 5, Rotate::CW, method, 0.01);
     // FDK::hilbertReconstruct(sinogram, ct, geom, Rotate::CW);
     // FDK::gradReconstruct(sinogram, ct, geom, Rotate::CW);
@@ -86,7 +86,7 @@ int main() {
         std::string savefilePathCT =
                 VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x"
                 + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        ct[i].save(savefilePathCT);
+        // ct[i].save(savefilePathCT);
     }
 
     // save direction volume
@@ -94,7 +94,7 @@ int main() {
         std::string savefilePathCT =
                 DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        md[i].save(savefilePathCT);
+        // md[i].save(savefilePathCT);
     }
 
     /*

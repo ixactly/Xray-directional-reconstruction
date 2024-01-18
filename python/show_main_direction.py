@@ -2,20 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/pca/cfrp7d_rotate_float_x_485x485x485.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/oilpan/pca/OilPan-x-400x400x400-6.892175um.raw') as f:
     u_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/pca/cfrp7d_rotate_float_y_485x485x485.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/oilpan/pca/OilPan-y-400x400x400-6.892175um.raw') as f:
     v_raw = np.fromfile(f, dtype=np.float32)
 
-with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/cfrp_xyz7_13axis/pca/cfrp7d_rotate_float_z_485x485x485.raw') as f:
+with open('/home/tomokimori/CLionProjects/3dreconGPU/volume_bin/oilpan/pca/OilPan-z-400x400x400-6.892175um.raw') as f:
     w_raw = np.fromfile(f, dtype=np.float32)
 
-num_voxel = 485 # voxel suu
-bin = 11
+num_voxel = 400 # voxel suu
+bin = 7
 size = int(num_voxel / bin) + 1 # hyouzisuu huyasu
 eps = 1e-20
-
 
 y, z, x = np.meshgrid(np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), np.linspace(0, num_voxel, size), indexing='xy')
 
@@ -36,7 +35,7 @@ v = v[::bin, ::bin, ::bin]
 w = w[::bin, ::bin, ::bin]
 
 # thresholding
-eps2 = 110 #ika kirisuteru
+eps2 = 0.05 #ika kirisuteru
 uvw = u.reshape([-1, 1]) + v.reshape([-1, 1]) + w.reshape([-1, 1])
 judge = np.where((np.abs(u.reshape([-1, 1])) < eps2) & (np.abs(v.reshape([-1, 1])) < eps2) & (np.abs(w.reshape([-1, 1])) < eps2), 0, 1)
 # judge = np.where((np.abs(u.reshape([-1, 1])) + np.abs(v.reshape([-1, 1])) + np.abs(w.reshape([-1, 1]))) / 3 < eps2, 0, 1)
@@ -111,9 +110,9 @@ Z = r * np.cos(T)
 alpha = np.ones(res * res)
 XYZ = np.stack([X.flatten(), Y.flatten(),  Z.flatten()], axis=1)
 # gif
-frame_num = 9
-length = 6
-v_n = np.linspace(start=20.0, stop=20.0, num=frame_num+1)[:frame_num]
+frame_num = 4
+length = 5
+v_n = np.linspace(start=90.0, stop=90.0, num=frame_num+1)[:frame_num]
 h_n = np.linspace(start=0.0, stop=360.0, num=frame_num+1)[:frame_num]
 
 #fig, ax1, ax2 = plt.subplots(figsize=(15, 15), subplot_kw={'projection': '3d'}, constrained_layout=True)
@@ -166,13 +165,13 @@ def update(i):
     ax_sphere.set_aspect('equal')
     ax_sphere.view_init(elev=v_, azim=h_)
 
-"""
-update(6)
+update(0)
 plt.show()
+
+
 """
-
 ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=800)
-ani.save('cfrp_uct_with_sphere.gif')
-
+ani.save('gfrp_uct_with_sphere.gif')
+"""
 
 

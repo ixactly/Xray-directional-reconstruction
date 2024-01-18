@@ -1313,11 +1313,13 @@ meanFiltFiberMD(const float *devMD, float *devMDtmp, const Geometry *geom, int y
     Vector3f norm_cent(devMD[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z + 0 * (sizeV[0] * sizeV[1] * sizeV[2])],
                        devMD[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z + 1 * (sizeV[0] * sizeV[1] * sizeV[2])],
                        devMD[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z + 2 * (sizeV[0] * sizeV[1] * sizeV[2])]);
+    // norm_cent.normalize(1e-8);
     Vector3f norm(0.f, 0.f, 0.f);
+    float norm2 = norm_cent.norm2();
 
     // if inner product below cut_out, do not filter
     float md1, md2, md3;
-    float cut_out = 0.5f; // < 30 deg
+    float cut_out = 0.0f; // < 30 deg
 
     for (int i = -1; i < 2; i++) {
         for (int j = -1; j < 2; j++) {
@@ -1332,7 +1334,7 @@ meanFiltFiberMD(const float *devMD, float *devMDtmp, const Geometry *geom, int y
                               sizeV[0] * sizeV[1] * (z - k) +
                               2 * (sizeV[0] * sizeV[1] * sizeV[2])];
                 Vector3f other(md1, md2, md3);
-
+                // other.normalize(1e-8);
                 // printf("(%lf, %lf, %lf)\n", md1, md2, md3);
                 if (norm_cent * other > cut_out) {
                     norm = norm + coef * other;
@@ -1345,11 +1347,12 @@ meanFiltFiberMD(const float *devMD, float *devMDtmp, const Geometry *geom, int y
     }
 
     norm.normalize(1e-8);
-    if (norm[2] < 0.0f) {
-        norm[0] = -norm[0];
-        norm[1] = -norm[1];
-        norm[2] = -norm[2];
+    if (norm.norm2() < 1e-8) {
+        norm[0] = 0.0f;
+        norm[1] = 0.0f;
+        norm[2] = 1.f;
     }
+    norm = norm2 * norm;
 
     devMDtmp[x + sizeV[0] * y + sizeV[0] * sizeV[1] * z +
              0 * (sizeV[0] * sizeV[1] * sizeV[2])] = norm[0];
