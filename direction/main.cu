@@ -26,11 +26,11 @@ int main() {
             "x" + std::to_string(N) + "x" + std::to_string(N) + ".raw");
     */
 
-    /*
+    /* fiber orientation analysis
     Volume<float> md[3];
     Volume<float> angle[2];
     NUM_VOXEL = 196;
-    DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/tw_1234567cond_md";
+    DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/xtt_sd7_basechanged_1234567cond_md_sec";
     for (int i = 0; i < 3; i++) {
         md[i].load("../" + DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                    std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw"
@@ -47,20 +47,23 @@ int main() {
                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
     */
 
+
     Volume<float> md[3];
-    NUM_VOXEL = 196;
+    NUM_VOXEL = 300;
     std::string xyz[] = {"x", "y", "z"};
 
-    // DIRECTION_PATH = "../volume_bin/cfrp_xyz7_13axis/pca/tw_1234567cond_md";
+    DIRECTION_PATH = "../volume_bin/oilpan/pca/xtt_basechange_md";
     // std::to_string(i + 1)
+
     for (int i = 0; i < 3; i++) {
-        md[i].load("/home/tomokimori/Documents/Prog/haikou_prog/dat/OilPan-" + xyz[i] + "-2229x2257x665-6.892175um.raw"
-                ,2229, 2257, 665);
+        md[i].load("../" + DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw", NUM_VOXEL, NUM_VOXEL, NUM_VOXEL);
     }
 
     directionNormalization(md);
     for (int i = 0; i < 3; i++) {
-        md[i].save("/home/tomokimori/Documents/Prog/haikou_prog/dat/OilPan-" + xyz[i] + "-2229x2257x665-6.892175um.raw");
+        md[i].save("../" + DIRECTION_PATH + "normalized" + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
+                   std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw");
     }
 
     /*

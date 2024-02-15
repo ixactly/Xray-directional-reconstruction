@@ -7,7 +7,7 @@
 #include <pca.cuh>
 
 int main() {
-    std::string nametag = "cfrp_7d_13rot";
+    std::string nametag = "oilpan";
     init_params(nametag);
     Volume<float> sinogram[NUM_PROJ_COND];
     for (auto &e: sinogram)
@@ -86,7 +86,7 @@ int main() {
         std::string savefilePathCT =
                 VOLUME_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x"
                 + std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        // ct[i].save(savefilePathCT);
+        ct[i].save(savefilePathCT);
     }
 
     // save direction volume
@@ -94,7 +94,7 @@ int main() {
         std::string savefilePathCT =
                 DIRECTION_PATH + std::to_string(i + 1) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        // md[i].save(savefilePathCT);
+        md[i].save(savefilePathCT);
     }
 
     /*

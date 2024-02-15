@@ -83,7 +83,7 @@ void calcAngleFromMD(const Volume<float> md[3], Volume<float> angle[2], int size
 }
 
 void directionNormalization(Volume<float> md[3]) {
-    float eps = 0.025f;
+    float eps = 0.65f;
     for (int x = 0; x < md[0].x(); x++) {
         for (int y = 0; y < md[0].y(); y++) {
             for (int z = 0; z < md[0].z(); z++) {

@@ -4,20 +4,20 @@
     "vector" : 7,
     "condition" : 7,
     "base" : [
-      1.0000000, 0.0000000, 0.000000,
-      0.0, 1.0000, 0.000000,
-      0.000000, 0.0,  1.00000,
-      0.57735, 0.57735, 0.57735,
-      0.57735, -0.57735, -0.57735,
-      -0.57735, 0.57735, -0.57735,
-      -0.57735, -0.57735, 0.57735
+      0.666667, -0.666667, -0.333333,
+      -0.333333, -0.666667, 0.666667,
+      0.666667, 0.333333, 0.666667,
+      0.57735, -0.57735, 0.57735,
+      0.19245, 0.96225, 0.19245,
+      -0.19245, 0.19245, 0.96225,
+      0.96225, 0.19245, -0.19245
     ]
   },
 
   "oilpan" : {
     "proj_path": "../proj_raw_bin/oilpan/SC/oilpan",
-    "vol_path": "../volume_bin/oilpan/dummy",
-    "direc_path": "../volume_bin/oilpan/pca/dummy",
+    "vol_path": "../volume_bin/oilpan/xtt_basechange",
+    "direc_path": "../volume_bin/oilpan/pca/xtt_basechange_md",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
@@ -114,8 +114,8 @@
 
   "cfrp_7d_13rot" : {
     "proj_path": "../proj_raw_bin/cfrp_xyz7_13axis/SC/cfrp_ax",
-    "vol_path": "../volume_bin/cfrp_xyz7_13axis/xtt_sd3_1234567cond",
-    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/xtt_sd3_1234567cond_md",
+    "vol_path": "../volume_bin/cfrp_xyz7_13axis/xtt_sd7_basechanged_1234567cond_sec",
+    "direc_path": "../volume_bin/cfrp_xyz7_13axis/pca/xtt_sd7_basechanged_1234567cond_md_sec",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
