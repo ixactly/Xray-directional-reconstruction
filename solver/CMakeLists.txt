@@ -126,7 +126,7 @@ add_library(solver)
 target_sources(solver
         PUBLIC ${PROJECT_SOURCE_DIR}/src/tvmin.cpp
 )
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+
 find_package(CUDAToolkit)
 find_package(OpenMP)
 target_include_directories(solver
@@ -134,9 +134,11 @@ target_include_directories(solver
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/../reconstruct/include
 )
+
 target_link_libraries(solver
-        PRIVATE CUDA::cudart CUDA::cusparse CUDA::cublas Eigen3::Eigen OpenMP::OpenMP_CXX
+        PRIVATE CUDA::cudart CUDA::cusparse CUDA::cublas util_lib OpenMP::OpenMP_CXX
 )
+
 set_target_properties(solver
         PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 

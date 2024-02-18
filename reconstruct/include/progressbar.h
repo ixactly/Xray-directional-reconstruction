@@ -38,9 +38,9 @@
 #ifndef __PROGRESSBAR_HPP
 #define __PROGRESSBAR_HPP
 
-#include "../../../../../../usr/include/c++/9/iostream"
-#include "../../../../../../usr/include/c++/9/string"
-#include "../../../../../../usr/include/c++/9/stdexcept"
+#include <iostream>
+#include <string>
+#include <stdexcept>
 
 class progressbar {
 

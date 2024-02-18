@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(UTIL LANGUAGES CXX)
 add_library(util_lib INTERFACE)
-target_include_directories(util_lib INTERFACE .)
+target_include_directories(util_lib INTERFACE . Eigen)
 
 project(sandbox LANGUAGES CUDA C CXX)
 add_executable(sandbox sandbox.cu)
