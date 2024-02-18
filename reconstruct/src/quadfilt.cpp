@@ -6,7 +6,6 @@
 #include "volume.h"
 #include <Eigen/Dense>
 #include <Eigen/LU>
-#include "tvmin.h"
 
 void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient, float lambda) {
     Volume<float> quadElement[6];
@@ -90,9 +89,10 @@ void quadlicFormFilterCPU(Volume<float> voxel[3], Volume<float> *coefficient, fl
     }
     // std::cout << "in total variation" << std::endl;
     // total variation minimized, eigenvalue decompose, rotation to coefficient
+    /*
     for (auto & e : quadElement)
         totalVariationMinimized(e, 3.0, lambda, 20);
-
+        */
     // decompose
     for (int x_idx = 0; x_idx < voxel[0].x(); x_idx++) {
 // #pragma omp parallel for // sus

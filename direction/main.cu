@@ -11,7 +11,6 @@
 #include <omp.h>
 #include "quadfilt.h"
 #include "ir.cuh"
-#include "tvmin.h"
 
 int main() {
     //--2309 edit by kido (start)--//
