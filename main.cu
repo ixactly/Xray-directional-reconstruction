@@ -6,7 +6,7 @@
 #include <reconstruct.cuh>
 
 int main() {
-    std::string nametag = "phaseCT";
+    std::string nametag = "env_km_bike";
     init_params(nametag);
 
     std::vector<Volume<float>> sinogram(NUM_PROJ_COND);
@@ -59,9 +59,8 @@ int main() {
     // XTT::reconstruct(sinogram, ct, md, geom, 4, 5, Rotate::CW, method, 1e-3);
 
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
-    // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
-    // XTT::orthTwiceReconstruct(sinogram.data(), ct.data(), md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
-    // XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 32, 4, Rotate::CW, method, 1e-1);
+    XTT::orthTwiceReconstruct(sinogram.data(), ct.data(), md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
+    // XTT::circleEstReconstruct(sinogram.data(), ct.data(), md, geom, 2, 5, 4, Rotate::CW, method, 1e-1);
     // IR::reconstruct(sinogram.data(), ct.data(), geom, 10, 5, Rotate::CW, method, 0.01);
     // FDK::hilbertReconstruct(sinogram.data(), ct.data(), geom, Rotate::CW);
     // FDK::gradReconstruct(sinogram.data(), ct.data(), geom, Rotate::CW);
@@ -89,7 +88,7 @@ int main() {
         std::string savefilePathCT =
                 DIRECTION_PATH + std::to_string(i) + "_" + std::to_string(NUM_VOXEL) + "x" +
                 std::to_string(NUM_VOXEL) + "x" + std::to_string(NUM_VOXEL) + ".raw";
-        // md[i].save(savefilePathCT);
+        md[i].save(savefilePathCT);
     }
 
     return 0;

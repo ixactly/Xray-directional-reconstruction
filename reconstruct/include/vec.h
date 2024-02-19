@@ -44,6 +44,14 @@ public:
         return w;
     }
 
+    __both__ Vector3X operator-() const {
+        Vector3X w;
+        w.x = -this->x;
+        w.y = -this->y;
+        w.z = -this->z;
+        return w;
+    }
+
     __both__ T operator()(const int i) const {
         return this->val[i];
     }

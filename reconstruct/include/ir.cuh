@@ -16,6 +16,44 @@
 #include "Volume.h"
 #include "Vec.h"
 
+
+__global__ void
+fillVolume(float* devVoxel, float num, int y, const Geometry* geom);
+
+__global__ void
+meanFiltFiberMD(const float* devMD, float* devMDtmp, const Geometry* geom, int y, float coef);
+
+__global__ void
+calcMainDirection(float* devVoxel, float* devMD, int y, const Geometry* geom, float* norm_loss, int iter);
+
+__global__ void
+calcNormalVectorThreeDirec(float* devVoxel, float* devCoef, int y, const Geometry* geom, float* norm_loss, int rot);
+
+__global__ void
+calcMDWithEst(float* devVoxel, float* devMD, int y, const Geometry* geom, const float* devEstimate);
+
+__global__ void
+updateEstimationByCoef(const float* devVoxel, int y, const Geometry* geom, float* norm_loss, float* devEstimate,
+    int iter);
+
+__global__ void
+calcNormalVectorThreeDirecWithEst(float* devVoxel, float* devCoef, int y, const Geometry* geom,
+    float* norm_loss, const float* devEstimate);
+
+__global__ void
+forwardOrthByMD(float* devProj, float* devProjFactor, const float* devVoxel, const float* devMD, Geometry* geom,
+    int cond, int it, int n, int y);
+
+__global__ void
+backwardOrthByMD(const float* devProj, const float* devMD, float* devVoxelTmp, float* devVoxelFactor,
+    const Geometry* geom, int cond, int y, int n, int it);
+
+__global__ void correlationProjByLength(float* devProj, const float* devProjFactor, Geometry* geom, int cond, int n);
+
+__global__ void
+updateEstimation(const float* devVoxel, float* devMD, int y, const Geometry* geom, float* norm_loss,
+    float* devEstimate, int iter);
+
 __global__ void
 sinogramGradientCoef(float* devProj, const Geometry* geom, int cond, int n);
 
@@ -48,10 +86,6 @@ calcNormalVector(const float *devVoxel, float *coefficient, int y, int it, const
 
 __global__ void
 calcRotation(const float *md, float *coefficient, int y, const Geometry *geom, float *norm_loss);
-
-__global__ void
-calcNormalVectorThreeDirec(float *devVoxel, float *devCoef, int y, int it, const Geometry *geom, float *norm_loss,
-                           curandState *curandStates, float judge);
 
 __global__ void
 calcNormalVectorThreeDirecSaveEst(float *devVoxel, float *devCoef, int y, const Geometry *geom, float *norm_loss,

@@ -1,8 +1,8 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 1,
-    "condition" : 1,
+    "vector" : 3,
+    "condition" : 4,
     "base" : [
       0.0, 0.0, 1.0,
       1.0, 0.0, 0.0,
@@ -14,11 +14,11 @@
     ]
   },
 
-  "env_km_bike" : {
+  "env_km_bike": {
     "proj_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC",
     "vol_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
     "colCT_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
-    "direc_path": "none",
+    "direc_path": "C:\\Users\\m1411\\Documents\\cf_gf_bike_SC_DIREC",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
@@ -28,47 +28,89 @@
     "num_voxel": 500,
     "rot": 4,
     "matrixRot": [
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.0, 0.0, 1.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
 
-      0.709021, 0.001282, -0.705187,
-      -0.003983, 0.999990, -0.002186,
-      0.705177, 0.004359, 0.709019,
+      0.709021,
+      0.001282,
+      -0.705187,
+      -0.003983,
+      0.999990,
+      -0.002186,
+      0.705177,
+      0.004359,
+      0.709019,
 
-      -0.009338, -0.006549, -0.999935,
-      -0.007773, 0.999949, -0.006477,
-      0.999926, 0.007712, -0.009388,
+      -0.009338,
+      -0.006549,
+      -0.999935,
+      -0.007773,
+      0.999949,
+      -0.006477,
+      0.999926,
+      0.007712,
+      -0.009388,
 
-      -0.704373, -0.009494, -0.709766,
-      -0.009695, 0.999946, -0.003754,
-      0.709763, 0.004237, -0.704427
+      -0.704373,
+      -0.009494,
+      -0.709766,
+      -0.009695,
+      0.999946,
+      -0.003754,
+      0.709763,
+      0.004237,
+      -0.704427
     ],
 
     "vecTrans": [
-      0.000000, 0.000000, 0.000000,
-      0.431028, 0.029718, 0.022372,
-      0.657039, -0.033221, 0.546340,
-      0.492497, -0.011603, 0.927790
+      0.000000,
+      0.000000,
+      0.000000,
+      0.431028,
+      0.029718,
+      0.022372,
+      0.657039,
+      -0.033221,
+      0.546340,
+      0.492497,
+      -0.011603,
+      0.927790
     ],
 
     "areaTrans": [
-      0.0, 0.0, 0.0
+      0.0,
+      0.0,
+      0.0
     ],
 
     "offset": [
-      0.250000, 0.000000, 0.000000,
-      -0.02000, 0.000000, 0.000000,
-      0.010000, 0.000000, 0.000000,
-      -0.16000, 0.000000, 0.000000
+      0.250000,
+      0.000000,
+      0.000000,
+      -0.02000,
+      0.000000,
+      0.000000,
+      0.010000,
+      0.000000,
+      0.000000,
+      -0.16000,
+      0.000000,
+      0.000000
     ]
   },
 
   "phaseCT": {
     "proj_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC",
-    "vol_path": "C:\\Users\\m14111\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
+    "vol_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
     "colCT_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
-    "direc_path": "none",
+    "direc_path": "C:\\Users\\m1411\\Documents\\cf_gf_bike_SC_DIREC",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
