@@ -1,8 +1,8 @@
 {
   "recon_variable" : {
     "blockSize" : 32,
-    "vector" : 4,
-    "condition" : 4,
+    "vector" : 1,
+    "condition" : 1,
     "base" : [
       0.0, 0.0, 1.0,
       1.0, 0.0, 0.0,
@@ -25,7 +25,7 @@
     "num_det_u": 500,
     "num_det_v": 500,
     "det_size": 0.0581777777,
-    "num_voxel": 1344,
+    "num_voxel": 500,
     "rot": 4,
     "matrixRot": [
       1.0, 0.0, 0.0,
@@ -64,31 +64,44 @@
     ]
   },
 
-  "phaseCT" : {
-    "proj_path": "../proj_raw_bin/phase_lens/difference_cfrp",
-    "vol_path": "../volume_bin/phase_lens/vol_gradIR",
+  "phaseCT": {
+    "proj_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC",
+    "vol_path": "C:\\Users\\m14111\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
+    "colCT_path": "C:\\Users\\talbot\\source\\data\\Test_Xray-directional-reconstruction\\cf_gf_bike_SC_VOL",
     "direc_path": "none",
     "sod": 1316.5,
     "sdd": 1819.6,
     "proj": 360,
-    "num_det_u": 510,
-    "num_det_v": 510,
+    "num_det_u": 500,
+    "num_det_v": 500,
     "det_size": 0.0581777777,
-    "num_voxel": 510,
+    "num_voxel": 500,
     "rot": 1,
     "matrixRot": [
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.0, 0.0, 1.0
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
     ],
     "vecTrans": [
-      0.000000, 0.000000, 0.000000
+      0.000000,
+      0.000000,
+      0.000000
     ],
     "areaTrans": [
-      0.00000, 0.0000, 0.0000
+      0.00000,
+      0.0000,
+      0.0000
     ],
     "offset": [
-      0.11996289, 0.0, 0.0
+      0.11996289,
+      0.0,
+      0.0
     ]
   },
 

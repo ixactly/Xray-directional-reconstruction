@@ -40,7 +40,7 @@ __managed__ float d_loss_proj;
 __managed__ float d_loss_norm;
 
 void init_params(const std::string& tag) {
-    std::ifstream f(R"(C:\Users\m1411\CLionProjects\Xray-directional-reconstruction\utility\settings.json)");
+    std::ifstream f(R"(C:\Users\m1411\Source\Repos\ixactly\Xray-directional-reconstruction\utility\settings.json)");
     json data = json::parse(f);
 
     PROJ_PATH = data[tag]["proj_path"];

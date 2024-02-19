@@ -6,7 +6,7 @@
 #include <reconstruct.cuh>
 
 int main() {
-    std::string nametag = "env_km_bike";
+    std::string nametag = "phaseCT";
     init_params(nametag);
 
     std::vector<Volume<float>> sinogram(NUM_PROJ_COND);
@@ -61,9 +61,12 @@ int main() {
     // XTT::reconstruct(sinogram, ct, md, geom, 40, 5, Rotate::CW, method, 1e-3);
     // XTT::orthReconstruct(sinogram, ct, md, geom, 15, 15, 5, Rotate::CW, method, 1e-1);
     // XTT::orthTwiceReconstruct(sinogram.data(), ct.data(), md, geom, 3, 30, 5, Rotate::CW, method, 1e-1);
-    IR::reconstruct(sinogram.data(), ct.data(), geom, 10, 5, Rotate::CW, method, 0.01);
-
-    // FDK::reconstruct(sinogram, ct, geom, Rotate::CW);
+    // XTT::circleEstReconstruct(sinogram, ct, md, geom, 3, 32, 4, Rotate::CW, method, 1e-1);
+    // IR::reconstruct(sinogram.data(), ct.data(), geom, 10, 5, Rotate::CW, method, 0.01);
+    // FDK::hilbertReconstruct(sinogram.data(), ct.data(), geom, Rotate::CW);
+    // FDK::gradReconstruct(sinogram.data(), ct.data(), geom, Rotate::CW);
+    // IR::gradReconstruct(sinogram.data(), ct.data(), geom, 100, 5, Rotate::CW, Method::ART, 8e-2);
+    // FDK::reconstruct(sinogram.data(), ct.data(), geom, Rotate::CW);
     // forwardProjOnly(sinogram, ct, geom, Rotate::CW);
     // forwardProjFiber(sinogram, ct, md, Rotate::CW, geom);
 
@@ -71,14 +74,6 @@ int main() {
 	double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /
 									  (1000.0 * 1000.0));
 	std::cout << "\ntime: " << time << " (s)" << std::endl;
-
-	// save sinogram
-	for (int i = 0; i < NUM_PROJ_COND; i++) {
-		std::string savefilePath1 =
-				"C:\\Users\\m1411\\Source\\Repos\\3dreconGPU\\volume_bin\\CFRP_XYZ3\\CFRP_XYZ3_PROJ" + std::to_string(i + 1) + "_" + std::to_string(NUM_DETECT_U) + "x" +
-				std::to_string(NUM_DETECT_V) + "x" + std::to_string(NUM_PROJ) + ".raw";
-		// sinogram[i].save(savefilePath1);
-	}
 
     // save ct volume
     for (int i = 0; i < NUM_BASIS_VECTOR; i++) {

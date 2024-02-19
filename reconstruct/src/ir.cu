@@ -7,6 +7,97 @@
 #include <params.h>
 #include <cmath>
 
+__global__ void
+sinogramGradientCoef(float* devProj, const Geometry* geom, int cond, int n) {
+    const int u = blockIdx.x * blockDim.x + threadIdx.x;
+    const int v = blockIdx.y * blockDim.y + threadIdx.y;
+    if (u >= geom->detect || v >= geom->detect) return;
+
+    const int idx = u + geom->detect * v + geom->detect * geom->detect * abs(n);
+    float theta = 2.0f * (float)M_PI * (float)n / (float)geom->nProj;
+    float grad[3] = { cosf(theta), sinf(theta), 1.0f };
+    devProj[idx] = grad[cond % 3] * devProj[idx];
+}
+
+__global__ void
+forwardProjGrad(float* devProj, const float* devVoxel, Geometry* geom, int cond, int y, int n) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    const int coord[4] = { x, y, z, n };
+    // forwardXTTonDevice(coord, devProj, devVoxel, *geom, cond);
+    int sizeV[3] = { geom->voxel, geom->voxel, geom->voxel };
+    int sizeD[3] = { geom->detect, geom->detect, geom->nProj };
+
+    const float theta = 2.0f * (float)M_PI * (float)n / (float)sizeD[2];
+    Vector3f offset(INIT_OFFSET[3 * cond + 0], INIT_OFFSET[3 * cond + 1], INIT_OFFSET[3 * cond + 2]);
+
+    // need to modify
+    // need multiply Rotate matrix (axis and rotation geom) to vecSod
+    Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
+    // printf("%lf\n", elemR[0]);
+    Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
+        elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
+        elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);
+    Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
+
+    Rotate = condR * Rotate; // no need
+    offset = Rotate * offset;
+    Vector3f origin2src(0.0f, -geom->sod, 0.0f);
+    Vector3f baseU(1.0f, 0.0f, 0.0f);
+    Vector3f baseV(0.0f, 0.0f, 1.0f); // 0, 0, -1 is correct
+
+    // this origin is rotation center
+    origin2src = Rotate * origin2src;
+
+    // set coordinate to the boundary between adjacent voxels, so coord range leads to [-0.5 ~ voxel_area + 0.5]
+    Vector3f origin2voxel(
+        (2.0f * ((float)coord[0] - 0.5f) - (float)sizeV[0] + 1.0f) * 0.5f * geom->voxSize - offset[0] -
+        t[0], // -R * offset
+        (2.0f * ((float)coord[1] - 0.5f) - (float)sizeV[1] + 1.0f) * 0.5f * geom->voxSize - offset[1] - t[1],
+        (2.0f * ((float)coord[2] - 0.5f) - (float)sizeV[2] + 1.0f) * 0.5f * geom->voxSize - offset[2] - t[2]);
+
+    // Source to voxel
+//    Vector3f src2voxel(origin2voxel[0] - origin2src[0],
+//                       origin2voxel[1] - origin2src[1],
+//                       origin2voxel[2] - origin2src[2]);
+    Vector3f src2voxel = origin2voxel - origin2src;
+
+    // src2voxel and plane that have vecSod norm vector
+    // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
+    const float coeff = -(origin2src * origin2src) / (origin2src * src2voxel); // -(n * s) / (n * v)
+    Vector3f p = origin2src + coeff * src2voxel;
+
+    float u = (p * (Rotate * baseU)) * (geom->sdd / geom->sod) / geom->detSize + 0.5f * (float)(sizeD[0]);
+    float v = (p * (Rotate * baseV)) * (geom->sdd / geom->sod) / geom->detSize + 0.5f * (float)(sizeD[1]);
+
+    if (!(0.55f < u && u < (float)sizeD[0] - 0.55f && 0.55f < v && v < (float)sizeD[1] - 0.55f))
+        return;
+
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
+    int intU = floor(u_tmp), intV = floor(v_tmp);
+    float c1 = (1.0f - (u_tmp - (float)intU)) * (v_tmp - (float)intV),
+        c2 = (u_tmp - (float)intU) * (v_tmp - (float)intV),
+        c3 = (u_tmp - (float)intU) * (1.0f - (v_tmp - (float)intV)),
+        c4 = (1.0f - (u_tmp - (float)intU)) * (1.0f - (v_tmp - (float)intV));
+
+    const float ratio = (geom->voxSize * geom->voxSize) /
+        (geom->detSize * (geom->sod / geom->sdd) * geom->detSize * (geom->sod / geom->sdd));
+
+    float proj = 0.0f;
+    // float grad[3] = {cos(theta), sin(theta), 1.0f};
+    const int idxVoxel =
+        coord[0] + sizeV[0] * coord[1] + sizeV[0] * sizeV[1] * coord[2];
+    // proj = grad[cond % 3] * geom->voxSize * ratio * devVoxel[idxVoxel];
+    proj = geom->voxSize * ratio * devVoxel[idxVoxel];
+    atomicAdd(&devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c1 * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2 * proj);
+    atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * proj);
+    atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * proj);
+    // printf("%d: %lf\n", i+1, vkm);
+    // printf("sinogram: %lf\n", devSino[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n]);
+}
 
 __global__ void
 forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry &geom, int cond,
@@ -68,6 +159,86 @@ forwardProjXTTbyFiber(float *devProj, float *devVoxel, Geometry &geom, int cond,
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n], c2 * proj);
     atomicAdd(&devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c3 * proj);
     atomicAdd(&devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n], c4 * proj);
+}
+
+__global__ void
+backwardProjGrad(const float* devProj, float* devVoxelTmp, float* devVoxelFactor, Geometry* geom, int cond, int y,
+    int n) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= geom->voxel || z >= geom->voxel) return;
+
+    const int coord[4] = { x, y, z, n };
+    // forwardXTTonDevice(coord, devProj, devVoxel, *geom, cond);
+    int sizeV[3] = { geom->voxel, geom->voxel, geom->voxel };
+    int sizeD[3] = { geom->detect, geom->detect, geom->nProj };
+    n = abs(n);
+    const float theta = 2.0f * (float)M_PI * (float)n / (float)sizeD[2];
+    Vector3f offset(INIT_OFFSET[3 * cond + 0], INIT_OFFSET[3 * cond + 1], INIT_OFFSET[3 * cond + 2]);
+
+    // need to modify
+    // need multiply Rotate matrix (axis and rotation geom) to vecSod
+    Matrix3f Rotate(cosf(theta), -sinf(theta), 0.0f, sinf(theta), cosf(theta), 0.0f, 0.0f, 0.0f, 1.0f);
+    // printf("%lf\n", elemR[0]);
+    Matrix3f condR(elemR[9 * cond + 0], elemR[9 * cond + 1], elemR[9 * cond + 2],
+        elemR[9 * cond + 3], elemR[9 * cond + 4], elemR[9 * cond + 5],
+        elemR[9 * cond + 6], elemR[9 * cond + 7], elemR[9 * cond + 8]);
+    Vector3f t(elemT[3 * cond + 0], elemT[3 * cond + 1], elemT[3 * cond + 2]);
+
+    Rotate = condR * Rotate; // no need
+    offset = Rotate * offset;
+    Vector3f origin2src(0.0f, -geom->sod, 0.0f);
+    Vector3f baseU(1.0f, 0.0f, 0.0f);
+    Vector3f baseV(0.0f, 0.0f, 1.0f); // 0, 0, -1 is correct
+
+    // this origin is rotation center
+    origin2src = Rotate * origin2src;
+
+    // set coordinate to the boundary between adjacent voxels, so coord range leads to [-0.5 ~ voxel_area + 0.5]
+    Vector3f origin2voxel(
+        (2.0f * ((float)coord[0] - 0.5f) - (float)sizeV[0] + 1.0f) * 0.5f * geom->voxSize - offset[0] -
+        t[0], // -R * offset
+        (2.0f * ((float)coord[1] - 0.5f) - (float)sizeV[1] + 1.0f) * 0.5f * geom->voxSize - offset[1] - t[1],
+        (2.0f * ((float)coord[2] - 0.5f) - (float)sizeV[2] + 1.0f) * 0.5f * geom->voxSize - offset[2] - t[2]);
+
+    // Source to voxel
+//    Vector3f src2voxel(origin2voxel[0] - origin2src[0],
+//                       origin2voxel[1] - origin2src[1],
+//                       origin2voxel[2] - origin2src[2]);
+    Vector3f src2voxel = origin2voxel - origin2src;
+
+    // src2voxel and plane that have vecSod norm vector
+    // p = s + t*d (vector p is on the plane, s is vecSod, d is src2voxel)
+    const float coeff = -(origin2src * origin2src) / (origin2src * src2voxel); // -(n * s) / (n * v)
+    Vector3f p = origin2src + coeff * src2voxel;
+
+    float u = (p * (Rotate * baseU)) * (geom->sdd / geom->sod) / geom->detSize + 0.5f * (float)(sizeD[0]);
+    float v = (p * (Rotate * baseV)) * (geom->sdd / geom->sod) / geom->detSize + 0.5f * (float)(sizeD[1]);
+
+    if (!(0.55f < u && u < (float)sizeD[0] - 0.55f && 0.55f < v && v < (float)sizeD[1] - 0.55f))
+        return;
+
+    float u_tmp = u - 0.5f, v_tmp = v - 0.5f;
+    int intU = floor(u_tmp), intV = floor(v_tmp);
+    float c1 = (1.0f - (u_tmp - (float)intU)) * (v_tmp - (float)intV),
+        c2 = (u_tmp - (float)intU) * (v_tmp - (float)intV),
+        c3 = (u_tmp - (float)intU) * (1.0f - (v_tmp - (float)intV)),
+        c4 = (1.0f - (u_tmp - (float)intU)) * (1.0f - (v_tmp - (float)intV));
+
+    const float ratio = (geom->voxSize * geom->voxSize) /
+        (geom->detSize * (geom->sod / geom->sdd) * geom->detSize * (geom->sod / geom->sdd));
+
+    float proj = 0.0f;
+    // float grad[3] = {cos(theta), sin(theta), 1.0f};
+    // proj = grad[cond % 3] * geom->voxSize * ratio * devVoxel[idxVoxel];
+    const int idxVoxel = coord[0] + sizeV[0] * coord[2];
+    const float numBack = c1 * devProj[intU + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+        c2 * devProj[(intU + 1) + sizeD[0] * (intV + 1) + sizeD[0] * sizeD[1] * n] +
+        c3 * devProj[(intU + 1) + sizeD[0] * intV + sizeD[0] * sizeD[1] * n] +
+        c4 * devProj[intU + sizeD[0] * intV + sizeD[0] * sizeD[1] * n];
+
+    devVoxelFactor[idxVoxel] += 1.0f;
+    devVoxelTmp[idxVoxel] += numBack;
 }
 
 __global__ void
